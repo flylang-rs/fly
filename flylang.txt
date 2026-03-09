@@ -1,0 +1,342 @@
+# Variables
+
+a = 7
+b = 9
+
+# Type hints (not necessary)
+# Checked on pre-run.
+c: int = a + b
+c: int = a - b
+
+# To divide two numbers and get an integer
+# we have to use one of two operations
+# that control rounding:
+#     /- - is used for rounding down `(int)a / (int)b`
+#     /+ - is used for rounding up `(int)a / (int)b + (a % b == 0 ? 0 : 1)`
+#
+c: int = a /- b
+c: int = a /+ b
+
+# Or keep result as a real.
+c: real = a / b
+
+c: int = a * b
+
+
+
+# Multiple assignation
+
+a, b = 1, 2  # Ok!
+a = 1, 2     # Error!
+
+a, b = b, a  # Ok! It will swap two variables.
+
+
+
+# Semicolons?
+
+# In Fly, they are not necessary, but they are not forbidden!
+# Use them if you want to combine multiple operations in one line!
+# It hurts your code readability.
+
+a = 1; b = 2; c = 3;
+
+
+
+# Functions
+
+func add(a, b) {
+	return a + b
+}
+
+# Or with type annotations
+
+func add(a, b: int) -> float {
+	return float::from(a + b)
+}
+
+# Or with generics if you want
+
+func add<T>(a, b: T) -> T {
+	return a + b
+}
+
+# Or with default parameters
+
+func taxes(salary, tax_rate = 0.22) {
+	return salary * tax_rate
+}
+
+
+
+
+# Visibility
+
+# By default all types (records) are private, so they're
+# inaccessible for access from another module or a program.
+
+# Add `public` keyword to make it visible for every module.
+
+public func help() {
+	# ...
+}
+
+
+# Scopes
+
+# They are like {} clauses in Rust, C, and other C-like languages
+# Repeat after me:
+
+{
+	a = 7
+	c = 3
+}
+
+b = a + c  # UndefinedNameError: a is not defined
+
+
+# Advanced scopes
+
+# When you need complex operations and you want to define
+# an object to work with and it will be destroyed when
+# the scope ends you can make an advanced scope.
+
+use(my_object) {
+	...
+
+	# `my_object` will be destroyed.
+}
+
+
+# Note: If an object will be assigned in outside of the scope,
+# it won't be destroyed.
+
+obj1 = null
+obj2 = "Hi!"
+
+use(obj2) {
+	obj1 = obj2
+}
+
+print(obj1)  # "Hi!"
+print(obj2)  # "Hi!"
+
+
+
+
+# I/O
+
+# Print and read
+# (print, println and stdin are part of std::io module,
+# but std::io is imported by the interpreter via inner preludes)
+
+print("What is your name?\n> ")
+
+name: string = stdin.read()
+
+println("Hi,", name)
+
+
+# Files
+
+# Just like in Python, but we specify operating mode
+# more simpler:
+# "r" - read only
+# "w" - write only
+# "rw" - read + write
+#
+# That's all folks!
+
+my_file = open("A letter for Lloyd.txt", "rw")
+
+my_file.write("Hello Lloyd! It's me, Prigozhyn Zhenya!")
+
+# You can close a file, or you can scope whole operation,
+# and it will be done automatically, thanks to RAII.
+my_file.close()
+
+# With scopes
+
+{
+	file = open(...)
+
+	...
+
+	# `file` will be dropped
+}
+
+# With advanced scope
+
+use(file = open("Fly.txt")) {
+	file.write("Fly with me to the places unknown.")
+
+	# `file` will be destroyed.
+}
+
+
+
+# Data structures
+
+# You maybe familiar to `struct` in Rust and C and `class` in Python?
+# We bring them too!
+
+# But in this case, type annotations MUST be provided
+
+public record City {
+	name: string,
+	latitude: real,
+	longitude: real
+}
+
+helsinki: City = City {
+	name: "Helsinki",
+	latitude: 60.192059,
+	longitude: 24.945831
+}
+
+# Of course you can break type system by setting `City::name`
+# to -42, it will work on interpreter, but if you wish to compile
+# it won't be possible!
+
+
+# Helpers... or methods.
+
+# To define a method for a record, you just make it a function
+# with prepended record identifier and the `::` delimiter.
+#
+# Note: The `self` will be passed automatically without providing
+# it as an argument:
+# 
+# Like this:
+
+func City::i_love_it() {
+	return "I love " + self.name
+}
+
+print(helsinki.i_love_it())  # "I love Helsinki!"
+
+
+# Static methods allow to use then without having an instance.
+# They are useful for creating an instance by using other ways.
+
+record Rectangle {
+	width, height: int
+}
+
+static func Rectangle::create(width, height: int) -> Self {
+	return Self {
+		width, height
+	}
+}
+
+static func Rectangle::square(side: int) -> Self {
+	return Self {
+		width: side,
+		height: side
+	}
+}
+
+# Notice those `Self`!
+# The CamelCase `Self` is a record itself,
+# but python_case `self` is an instance reference!
+
+
+# Overridden methods.
+
+# If some record has a method you want to override, use `override` keyword.
+# Note: Every object in Fly implements `to_string() -> string`.
+
+override func City::to_string() -> string {
+	return \
+		"City: " + \
+		self.name + \
+		"; Latitude: " + \
+		self.latitude + \
+		"; Longitude: " + \
+		self.longitude
+}
+
+# And yes, you can use the `\` to break a line and continue in next line 
+# for convinience and code readability.
+
+
+# Operator overloading
+
+# In math, it's necessary to overload operations!
+# Fly won't fly without them!
+
+# To overload an operation, you have to use `operator` keyword
+# and operator you want to overload:
+
+# Avaiable operators:
+# + (add)
+# - (sub)
+# / (div)
+# /- (rounding_down_div)
+# /+ (rounding_up_div)
+# % (mod)
+# * (mul)
+
+# Note: if you have overloaded `div`, you won't be able to use
+# their rounding versions until you implement `mod` and `add`!
+# Solution: implement `mod` and `add`, or implement them by yourself.
+
+record Vector2 {
+	x, y: int
+}
+
+operator + Vector2(rhs: Self) {
+	return Self {
+		x: self.x + rhs.x,
+		y: self.y + rhs.y
+	}
+}
+
+# Constructors and destructors
+
+# You can use any static method as a constructor,
+# but you will have only one destructor.
+
+destructor City() {
+	# Some chore here...
+}
+
+
+# Early destruction
+
+# To call instance's destructor and free the object,
+# use the `drop` keyword
+
+drop helsinki  # Whoops, I'm sorry.
+
+
+
+
+# Arrays
+
+# They are simple
+a: []int = [1, 2, 3]
+
+# And multi-typed!
+b: []any = ["This is a string", true, 20302]
+
+# Type annotations are not necessary there.
+
+
+
+
+# Modules
+
+use module
+
+module::function1()
+
+# Or
+
+use module::*
+
+function1()
+
+# Or
+
+use module::{function1, function2, submodule::function3}
