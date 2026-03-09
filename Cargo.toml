@@ -1,0 +1,10 @@
+[package]
+name = "fly-lang"
+version = "0.1.0"
+edition = "2024"
+
+[workspace]
+members = ["lexer"]
+
+[dependencies]
+fly-lexer = { path = "lexer/" }
