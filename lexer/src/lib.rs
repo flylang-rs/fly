@@ -74,8 +74,20 @@ impl Lexer {
         }
     }
 
-    fn next_symbol(&mut self) -> Option<char> {
+    fn next_symbol_any(&mut self) -> Option<char> {
         self.source.next()
+    }
+
+    fn next_symbol(&mut self) -> Option<char> {
+    	while let Some(sym) = self.next_symbol_any() {
+    		if sym == ' ' {
+    			continue;
+    		}
+
+    		return Some(sym);
+    	}
+
+    	None
     }
 
     fn error(&self, msg: &str) -> ! {
@@ -87,10 +99,15 @@ impl Lexer {
     pub fn next_token(&mut self) -> Option<Token> {
         let character = self.next_symbol()?;
 
-        match character {
+        let value = match character {
+        	'!' => TokenValue::Bang,
+        	'#' => TokenValue::Hash,
+        	'=' => TokenValue::Equals,
             _ => {
                 self.error(&format!("Unknown character: {}", character));
             }
-        }
+        };
+
+        Some(Token::new(&self, value))
     }
 }

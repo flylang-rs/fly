@@ -14,7 +14,7 @@ fn main() -> std::io::Result<()> {
     let mut lexer = fly_lexer::Lexer::new(&source_code);
 
     while let Some(token) = lexer.next_token() {
-        println!("{token:?}");
+        println!("Token: {token:?}");
     }
 
     Ok(())
