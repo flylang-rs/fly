@@ -1,0 +1,4 @@
+myvar = "abc"
+
+la = myvar /+ "t"
+lb = myvar /- "t"

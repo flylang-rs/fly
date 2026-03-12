@@ -1,4 +1,6 @@
-use fly_lexer;
+use std::sync::Arc;
+
+use fly_lexer::{self, source::Source};
 
 fn main() -> std::io::Result<()> {
     let filepath = if let Some(arg) = std::env::args().nth(1) {
@@ -9,12 +11,12 @@ fn main() -> std::io::Result<()> {
         std::process::exit(1);
     };
 
-    let source_code = std::fs::read_to_string(filepath)?;
+    let source_code = std::fs::read_to_string(&filepath)?;
 
-    let mut lexer = fly_lexer::Lexer::new(&source_code);
+    let mut lexer = fly_lexer::Lexer::new(Arc::new(Source::new(filepath, source_code)));
 
     while let Some(token) = lexer.next_token() {
-        println!("Token: {token:?}");
+        println!("Token: {:?} @ {:?}", token.value, token.address.span);
     }
 
     Ok(())
