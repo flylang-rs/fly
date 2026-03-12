@@ -158,9 +158,9 @@ impl Lexer {
     }
 
     pub fn next_token(&mut self) -> Option<Token> {
-        let position = (self.position_line, self.position_char);
-
         let character = self.next_symbol()?;
+
+        let position = (self.position_line, self.position_char);
 
         let value = match character {
             '!' => TokenValue::Bang,
@@ -182,7 +182,7 @@ impl Lexer {
         Some(Token {
             value,
             line: position.0,
-            char: position.1,
+            char: position.1.saturating_sub(1),
         })
     }
 }
