@@ -1,11 +1,11 @@
 use crate::address::Address;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TokenValue {
     // Atoms
     Identifier(String),
     String(String),
-    Equals,
+    Assign,
     Plus,
     Minus,
     Asterisk,
@@ -26,6 +26,9 @@ pub enum TokenValue {
     BitOr,
     Newline,
 
+    Less,
+    Greater,
+
     // There come more complex tokens that consist out of two and more symbols.
     RoundingUpDiv,   // /+
     RoundingDownDiv, // /-
@@ -38,6 +41,11 @@ pub enum TokenValue {
     RoundingDownDivAssign, // /-=
     BitAndAssign,          // &=
     BitOrAssign,           // |=
+
+    Equals,          // ==
+    NotEquals,       // !=
+    LessOrEquals,    // <=
+    GraeterOrEquals, // >=
 
     LogicalAnd, // &&
     LogicalOr,  // ||

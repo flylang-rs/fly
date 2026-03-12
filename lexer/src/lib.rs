@@ -121,7 +121,7 @@ impl Lexer {
 
     /// Lexes a string. Takes `begin_char` as a starting character
     /// Since Fly supports single-quoted (') and double-quoted (") strings, we should differ them.
-    pub fn lex_string(&mut self, start: usize, begin_char: char) -> (TokenValue, usize) {
+    fn lex_string(&mut self, start: usize, begin_char: char) -> (TokenValue, usize) {
         let mut string = String::new();
 
         let mut end = start + begin_char.len_utf8();
@@ -153,6 +153,95 @@ impl Lexer {
         (TokenValue::String(string), end)
     }
 
+    /// Lexes `/`, `/=`, `/+`, `/-`, `/+=` and `/-=`
+    fn lex_division(&mut self, start: usize) -> (TokenValue, usize) {
+        match self.peek_symbol() {
+            // /=
+            Some((offset, '=')) => {
+                self.next_character_any();
+
+                (TokenValue::DivAssign, offset + 1)
+            }
+            // /+
+            Some((offset, '+')) => {
+                self.next_character_any();
+
+                match self.peek_symbol() {
+                    // /+=
+                    Some((offset, '=')) => {
+                        self.next_character_any();
+
+                        (TokenValue::RoundingUpDivAssign, offset + 1)
+                    }
+                    _ => (TokenValue::RoundingUpDiv, offset + 1),
+                }
+            }
+            // /-
+            Some((offset, '-')) => {
+                self.next_character_any();
+
+                match self.peek_symbol() {
+                    // /-=
+                    Some((offset, '=')) => {
+                        self.next_character_any();
+
+                        (TokenValue::RoundingDownDivAssign, offset + 1)
+                    }
+                    _ => (TokenValue::RoundingDownDiv, offset + 1),
+                }
+            }
+            // /
+            _ => (TokenValue::Slash, start + 1),
+        }
+    }
+
+    /// Lexes `=` and `==`
+    fn lex_equality_sign(&mut self, start: usize) -> (TokenValue, usize) {
+        match self.peek_symbol() {
+            Some((offset, '=')) => {
+                self.next_character_any();
+
+                (TokenValue::Equals, offset + 1)
+            },
+            _ => (TokenValue::Assign, start + 1),
+        }
+    }
+
+    /// Lexes only greater or less comparisons (`<`, `>`, `<=`, `>=`)
+    fn lex_comparison(&mut self, start: usize, comparator: char) -> (TokenValue, usize) {
+        match self.peek_symbol() {
+            Some((offset, '=')) => {
+                self.next_character_any();
+
+                match comparator {
+                    '<' => (TokenValue::LessOrEquals, offset + 1),
+                    '>' => (TokenValue::GraeterOrEquals, offset + 1),
+                    _ => unreachable!()
+                }
+
+            },
+            _ => {
+                match comparator {
+                    '<' => (TokenValue::Less, start + 1),
+                    '>' => (TokenValue::Greater, start + 1),
+                    _ => unreachable!()
+                }
+            },
+        }
+    }
+
+    /// Lexes `!` and `!=`
+    fn lex_bang(&mut self, start: usize) -> (TokenValue, usize) {
+        match self.peek_symbol() {
+            Some((offset, '=')) => {
+                self.next_character_any();
+
+                (TokenValue::NotEquals, offset + 1)
+            }
+            _ => (TokenValue::Bang, start + 1)
+        }
+    }
+
     /// Main code: Returns a next token in the code.
     pub fn next_token(&mut self) -> Option<Token> {
         let (position, character) = self.next_character()?;
@@ -160,44 +249,17 @@ impl Lexer {
         // In single-character operations they are all ASCII, so we can safely increment the position.
 
         let (value, end) = match character {
-            '!' => (TokenValue::Bang, position + 1),
             '#' => (TokenValue::Hash, position + 1),
-            '=' => (TokenValue::Equals, position + 1),
-            '/' => match self.peek_symbol() {
-                Some((offset, '=')) => {
-                    self.next_character_any();
-
-                    (TokenValue::DivAssign, offset + 1)
-                },
-                Some((offset, '+')) => {
-                    self.next_character_any();
-
-                    match self.peek_symbol() {
-                        Some((offset, '=')) => {
-                            self.next_character_any();
-
-                            (TokenValue::RoundingUpDivAssign, offset + 1)
-                        },
-                        _ => (TokenValue::RoundingUpDiv, offset + 1)
-                    }
-                },
-                Some((offset, '-')) => {
-                    self.next_character_any();
-
-                    match self.peek_symbol() {
-                        Some((offset, '=')) => {
-                            self.next_character_any();
-
-                            (TokenValue::RoundingDownDivAssign, offset + 1)
-                        },
-                        _ => (TokenValue::RoundingDownDiv, offset + 1)
-                    }
-                }
-                _ => (TokenValue::Slash, position + 1),
-            },
+            '!' => self.lex_bang(position),
+            '=' => self.lex_equality_sign(position),
+            '/' => self.lex_division(position),
             '+' => (TokenValue::Plus, position + 1),
             '-' => (TokenValue::Minus, position + 1),
             '\n' => (TokenValue::Newline, position + 1),
+
+            comparator @ ('<' | '>') => {
+                self.lex_comparison(position, comparator)
+            }
 
             string_start_character @ ('\"' | '\'') => {
                 self.lex_string(position, string_start_character)

@@ -1,4 +1,15 @@
 myvar = "abc"
 
-la = myvar /+ "t"
+la = myvar / "t"
 lb = myvar /- "t"
+lc = myvar /+ "t"
+myvar /= "a"
+myvar /-= "c"
+myvar /+= "b"
+
+a == "a"
+b != "b"
+c <= "c"
+d >= "d"
+e > "e"
+f < "f"
