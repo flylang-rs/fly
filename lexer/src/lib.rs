@@ -9,7 +9,6 @@ pub struct Lexer {
 #[derive(Debug, Clone)]
 pub enum TokenValue {
     // Atoms
-
     Identifier(String),
     String(String),
     Equals,
@@ -34,28 +33,27 @@ pub enum TokenValue {
     Newline,
 
     // There come more complex tokens that consist out of two and more symbols.
+    RoundingUpDiv,   // /+
+    RoundingDownDiv, // /-
 
-    RoundingUpDiv,          // /+
-    RoundingDownDiv,        // /-
+    PlusAssign,            // +=
+    MinusAssign,           // -=
+    MulAssign,             // *=
+    DivAssign,             // /=
+    RoundingUpDivAssign,   // /+=
+    RoundingDownDivAssign, // /-=
+    BitAndAssign,          // &=
+    BitOrAssign,           // |=
 
-    PlusAssign,             // +=
-    MinusAssign,            // -=
-    MulAssign,              // *=
-    DivAssign,              // /=
-    RoundingUpDivAssign,    // /+=
-    RoundingDownDivAssign,  // /-=
-    BitAndAssign,           // &=
-    BitOrAssign,            // |=
-
-    LogicalAnd,          // &&
-    LogicalOr,           // ||
+    LogicalAnd, // &&
+    LogicalOr,  // ||
 }
 
 #[derive(Debug, Clone)]
 pub struct Token {
     value: TokenValue,
     line: usize,
-    char: usize
+    char: usize,
 }
 
 impl Token {
@@ -63,7 +61,7 @@ impl Token {
         Self {
             value,
             line: lexer.position_line,
-            char: lexer.position_char
+            char: lexer.position_char,
         }
     }
 }
@@ -71,9 +69,13 @@ impl Token {
 impl Lexer {
     pub fn new(source_code: &str) -> Self {
         Self {
-            source: source_code.chars().collect::<Vec<char>>().into_iter().peekable(),
+            source: source_code
+                .chars()
+                .collect::<Vec<char>>()
+                .into_iter()
+                .peekable(),
             position_line: 0,
-            position_char: 0
+            position_char: 0,
         }
     }
 
@@ -90,19 +92,23 @@ impl Lexer {
     }
 
     fn next_symbol(&mut self) -> Option<char> {
-    	while let Some(sym) = self.next_symbol_any() {
-    		if sym == ' ' {
-    			continue;
-    		}
+        while let Some(sym) = self.next_symbol_any() {
+            if sym == ' ' {
+                continue;
+            }
 
-    		return Some(sym);
-    	}
+            return Some(sym);
+        }
 
-    	None
+        None
     }
 
     fn error(&self, msg: &str) -> ! {
-        eprintln!("lexer error: {msg:?} at line {}; column: {}", self.position_line + 1, self.position_char + 1);
+        eprintln!(
+            "lexer error: {msg:?} at line {}; column: {}",
+            self.position_line + 1,
+            self.position_char + 1
+        );
 
         std::process::exit(1);
     }
@@ -138,7 +144,10 @@ impl Lexer {
             let symbol = self.next_symbol_any();
 
             // If name contains letters, numbers and the `_` symbol, then ...
-            if symbol.map(|x| x.is_alphanumeric() || x == '_').unwrap_or_default() {
+            if symbol
+                .map(|x| x.is_alphanumeric() || x == '_')
+                .unwrap_or_default()
+            {
                 id.push(symbol.unwrap());
             } else {
                 break;
@@ -154,15 +163,15 @@ impl Lexer {
         let character = self.next_symbol()?;
 
         let value = match character {
-        	'!' => TokenValue::Bang,
-        	'#' => TokenValue::Hash,
-        	'=' => TokenValue::Equals,
+            '!' => TokenValue::Bang,
+            '#' => TokenValue::Hash,
+            '=' => TokenValue::Equals,
             '\n' => {
                 self.position_line += 1;
                 self.position_char = 0;
 
                 TokenValue::Newline
-            },
+            }
             '"' => self.lex_string(),
             _ if (character.is_alphabetic() || character == '_') => self.lex_identifier(character),
             _ => {
