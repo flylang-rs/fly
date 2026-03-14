@@ -5,6 +5,7 @@ pub enum TokenValue {
     // Atoms
     Identifier(String),
     String(String),
+    Number(String),
     Assign,
     Plus,
     Minus,

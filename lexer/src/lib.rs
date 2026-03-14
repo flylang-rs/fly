@@ -153,6 +153,38 @@ impl Lexer {
         (TokenValue::String(string), end)
     }
 
+	/// Lexes a number
+	/// TODO: `0x`, `0o`, and `0b` prefixes
+    fn lex_number(&mut self, start: usize, first_digit: char) -> (TokenValue, usize) {
+    	let mut number = String::new();
+
+    	number.push(first_digit);
+
+    	// Digits (0..=9) are ASCII characters, so adding 1 wouldn't make problems.
+    	let mut end = start + 1;
+
+    	loop {
+    		let current = self.peek_symbol();
+
+    		match current {
+    			Some((offset, character)) => {
+    				if !character.is_numeric() {
+    					break;
+    				}
+    				
+    				self.next_character_any();
+
+    				number.push(character);
+
+    				end = offset + 1;
+    			},
+    			_ => ()
+    		}
+    	}
+
+    	(TokenValue::Number(number), end)
+    }
+
     /// Lexes `/`, `/=`, `/+`, `/-`, `/+=` and `/-=`
     fn lex_division(&mut self, start: usize) -> (TokenValue, usize) {
         match self.peek_symbol() {
@@ -267,6 +299,10 @@ impl Lexer {
 
             _ if character.is_alphabetic() || character == '_' => {
                 self.lex_identifier(position, character)
+            }
+
+            _ if character.is_numeric() => {
+            	self.lex_number(position, character)
             }
 
             _ => self.error(&format!("Unknown character: `{}`", character), None),
