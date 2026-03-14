@@ -1,4 +1,5 @@
 pub mod address;
+pub mod kw_lookup_table;
 pub mod source;
 pub mod token;
 
@@ -93,6 +94,7 @@ impl Lexer {
     }
 
     /// Lexes an identifier.
+    /// Returns a TokenValue::Identifier or one of keywords if matched.
     fn lex_identifier(&mut self, start: usize, first: char) -> (TokenValue, usize) {
         let mut id = String::new();
 
@@ -114,6 +116,10 @@ impl Lexer {
                 }
                 _ => break,
             }
+        }
+
+        if let Some(kw) = kw_lookup_table::KEYWORDS.get(id.as_str()) {
+            return (kw.clone(), end);
         }
 
         (TokenValue::Identifier(id), end)
@@ -153,36 +159,36 @@ impl Lexer {
         (TokenValue::String(string), end)
     }
 
-	/// Lexes a number
-	/// TODO: `0x`, `0o`, and `0b` prefixes
+    /// Lexes a number
+    /// TODO: `0x`, `0o`, and `0b` prefixes
     fn lex_number(&mut self, start: usize, first_digit: char) -> (TokenValue, usize) {
-    	let mut number = String::new();
+        let mut number = String::new();
 
-    	number.push(first_digit);
+        number.push(first_digit);
 
-    	// Digits (0..=9) are ASCII characters, so adding 1 wouldn't make problems.
-    	let mut end = start + 1;
+        // Digits (0..=9) are ASCII characters, so adding 1 wouldn't make problems.
+        let mut end = start + 1;
 
-    	loop {
-    		let current = self.peek_symbol();
+        loop {
+            let current = self.peek_symbol();
 
-    		match current {
-    			Some((offset, character)) => {
-    				if !character.is_numeric() {
-    					break;
-    				}
-    				
-    				self.next_character_any();
+            match current {
+                Some((offset, character)) => {
+                    if !character.is_numeric() {
+                        break;
+                    }
 
-    				number.push(character);
+                    self.next_character_any();
 
-    				end = offset + 1;
-    			},
-    			_ => ()
-    		}
-    	}
+                    number.push(character);
 
-    	(TokenValue::Number(number), end)
+                    end = offset + 1;
+                }
+                _ => (),
+            }
+        }
+
+        (TokenValue::Number(number), end)
     }
 
     /// Lexes `/`, `/=`, `/+`, `/-`, `/+=` and `/-=`
@@ -234,7 +240,7 @@ impl Lexer {
                 self.next_character_any();
 
                 (TokenValue::Equals, offset + 1)
-            },
+            }
             _ => (TokenValue::Assign, start + 1),
         }
     }
@@ -248,16 +254,13 @@ impl Lexer {
                 match comparator {
                     '<' => (TokenValue::LessOrEquals, offset + 1),
                     '>' => (TokenValue::GraeterOrEquals, offset + 1),
-                    _ => unreachable!()
+                    _ => unreachable!(),
                 }
-
-            },
-            _ => {
-                match comparator {
-                    '<' => (TokenValue::Less, start + 1),
-                    '>' => (TokenValue::Greater, start + 1),
-                    _ => unreachable!()
-                }
+            }
+            _ => match comparator {
+                '<' => (TokenValue::Less, start + 1),
+                '>' => (TokenValue::Greater, start + 1),
+                _ => unreachable!(),
             },
         }
     }
@@ -270,7 +273,7 @@ impl Lexer {
 
                 (TokenValue::NotEquals, offset + 1)
             }
-            _ => (TokenValue::Bang, start + 1)
+            _ => (TokenValue::Bang, start + 1),
         }
     }
 
@@ -289,21 +292,16 @@ impl Lexer {
             '-' => (TokenValue::Minus, position + 1),
             '\n' => (TokenValue::Newline, position + 1),
 
-            comparator @ ('<' | '>') => {
-                self.lex_comparison(position, comparator)
-            }
-
-            string_start_character @ ('\"' | '\'') => {
-                self.lex_string(position, string_start_character)
-            }
+            '<' | '>' => self.lex_comparison(position, character),
+            '\"' | '\'' => self.lex_string(position, character),
 
             _ if character.is_alphabetic() || character == '_' => {
                 self.lex_identifier(position, character)
             }
 
             _ if character.is_numeric() => {
-            	self.lex_number(position, character)
-            }
+                self.lex_number(position, character)
+            },
 
             _ => self.error(&format!("Unknown character: `{}`", character), None),
         };

@@ -31,6 +31,9 @@ pub enum TokenValue {
     Greater,
 
     // There come more complex tokens that consist out of two and more symbols.
+
+    ArrowForward,  // ->
+
     RoundingUpDiv,   // /+
     RoundingDownDiv, // /-
 
@@ -50,6 +53,22 @@ pub enum TokenValue {
 
     LogicalAnd, // &&
     LogicalOr,  // ||
+
+    // Keywords
+
+    Func,
+    Return,
+    Public,
+    Use,
+    Null,
+    Record,
+    SelfReference,
+    SelfRecord,
+    Static,
+    Override,
+    Operator,
+    Destructor,
+    Drop,
 }
 
 #[derive(Debug, Clone)]
