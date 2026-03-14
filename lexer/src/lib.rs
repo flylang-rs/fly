@@ -178,6 +178,10 @@ impl Lexer {
 
             match current {
                 Some((offset, character)) => {
+                    if character == '_' {
+                        continue;
+                    }
+                    
                     if !character.is_numeric() {
                         break;
                     }
