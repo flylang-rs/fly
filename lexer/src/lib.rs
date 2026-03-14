@@ -8,7 +8,7 @@ pub mod token;
 mod tests;
 
 use core::{iter::Peekable, ops::Range};
-use std::sync::Arc;
+use std::{sync::Arc};
 
 use crate::{
     address::Address,
@@ -164,7 +164,8 @@ impl Lexer {
     }
 
     /// Lexes a number
-    /// TODO: `0x`, `0o`, and `0b` prefixes
+    /// Note: Even invalid numbers like `12345asdfzxcv` and `0z14198wdwdf3rf` will be lexed into number,
+    /// but those kind of numbers will cause an error in parser, so it's fine.
     fn lex_number(&mut self, start: usize, first_digit: char) -> (TokenValue, usize) {
         let mut number = String::new();
 
@@ -173,16 +174,33 @@ impl Lexer {
         // Digits (0..=9) are ASCII characters, so adding 1 wouldn't make problems.
         let mut end = start + 1;
 
+        let mut is_hexadecimal = false;
+
         loop {
+            if let Some((_, 'x')) = self.peek_symbol() {
+                self.next_character_any();
+
+                number.push('x');
+                
+                is_hexadecimal = true;
+            }
+
             let current = self.peek_symbol();
 
             match current {
                 Some((offset, character)) => {
-                    if character == '_' {
+                    if is_hexadecimal && "_0123456789abcdefABCDEF".contains(character) {
+                        self.next_character_any();
+
+                        number.push(character);
+    
+                        end = offset + 1;
+
                         continue;
                     }
-                    
-                    if !character.is_numeric() {
+
+                    // Numbers can be only separated by spaces
+                    if character.is_whitespace() {
                         break;
                     }
 

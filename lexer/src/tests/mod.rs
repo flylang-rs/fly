@@ -61,6 +61,10 @@ fn test_numbers() {
 -12345678
 +12345678
 1234_5678
+
+0x1234_5678_90ab_cdef
+0b1010_1010
+0o12345670
 "#;
 
     let tokens = utils::code_to_tokens(code);

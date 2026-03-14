@@ -46,7 +46,47 @@ expression: tokens.into_values_with_positions()
         29..30,
     ),
     (
+        Number(
+            "1234_5678",
+        ),
+        30..39,
+    ),
+    (
         Newline,
-        30..31,
+        39..40,
+    ),
+    (
+        Newline,
+        40..41,
+    ),
+    (
+        Number(
+            "0x1234_5678_90ab_cdef",
+        ),
+        41..62,
+    ),
+    (
+        Newline,
+        62..63,
+    ),
+    (
+        Number(
+            "0b1010_1010",
+        ),
+        63..74,
+    ),
+    (
+        Newline,
+        74..75,
+    ),
+    (
+        Number(
+            "0o12345670",
+        ),
+        75..85,
+    ),
+    (
+        Newline,
+        85..86,
     ),
 ]
