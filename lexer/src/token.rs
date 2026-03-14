@@ -5,6 +5,7 @@ pub enum TokenValue {
     // Atoms
     Identifier(String),
     String(String),
+    Comment(String),
     Number(String),
     Assign,
     Plus,
@@ -25,6 +26,12 @@ pub enum TokenValue {
     BackSlash,
     BitAnd,
     BitOr,
+    Backslash,
+    Dot,
+    Comma,
+    Colon,
+    Semicolon,
+
     Newline,
 
     Less,
@@ -57,6 +64,8 @@ pub enum TokenValue {
     // Keywords
 
     Func,
+    For,
+    While,
     Return,
     Public,
     Use,

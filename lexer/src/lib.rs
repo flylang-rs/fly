@@ -277,6 +277,30 @@ impl Lexer {
         }
     }
 
+    fn lex_comment(&mut self, start: usize) -> (TokenValue, usize) {
+        let mut comment = String::new();
+        let mut end = start + 1;
+
+        loop {
+            match self.peek_symbol() {
+                Some((offset, char)) => {
+                    if char == '\n' {
+                        break;
+                    }
+                    
+                    self.next_character_any();
+                    
+                    comment.push(char);
+
+                    end = offset + char.len_utf8();
+                }
+                _ => break
+            }
+        }
+
+        (TokenValue::Comment(comment), end)
+    }
+
     /// Main code: Returns a next token in the code.
     pub fn next_token(&mut self) -> Option<Token> {
         let (position, character) = self.next_character()?;
@@ -284,12 +308,24 @@ impl Lexer {
         // In single-character operations they are all ASCII, so we can safely increment the position.
 
         let (value, end) = match character {
-            '#' => (TokenValue::Hash, position + 1),
+            '#' => self.lex_comment(position),
             '!' => self.lex_bang(position),
             '=' => self.lex_equality_sign(position),
-            '/' => self.lex_division(position),
             '+' => (TokenValue::Plus, position + 1),
             '-' => (TokenValue::Minus, position + 1),
+            '/' => self.lex_division(position),
+            '*' => (TokenValue::Asterisk, position + 1),
+            '\\' => (TokenValue::Backslash, position + 1),
+            '(' => (TokenValue::OpenParen, position + 1),
+            ')' => (TokenValue::CloseParen, position + 1),
+            '[' => (TokenValue::OpenBracket, position + 1),
+            ']' => (TokenValue::CloseBracket, position + 1),
+            '{' => (TokenValue::OpenBrace, position + 1),
+            '}' => (TokenValue::CloseBrace, position + 1),
+            '.' => (TokenValue::Dot, position + 1),
+            ',' => (TokenValue::Comma, position + 1),
+            ':' => (TokenValue::Colon, position + 1),
+            ';' => (TokenValue::Semicolon, position + 1),
             '\n' => (TokenValue::Newline, position + 1),
 
             '<' | '>' => self.lex_comparison(position, character),
