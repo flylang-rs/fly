@@ -1,0 +1,52 @@
+---
+source: lexer/src/tests/mod.rs
+expression: tokens.into_values_with_positions()
+---
+[
+    (
+        Newline,
+        0..1,
+    ),
+    (
+        Number(
+            "12345678",
+        ),
+        1..9,
+    ),
+    (
+        Newline,
+        9..10,
+    ),
+    (
+        Minus,
+        10..11,
+    ),
+    (
+        Number(
+            "12345678",
+        ),
+        11..19,
+    ),
+    (
+        Newline,
+        19..20,
+    ),
+    (
+        Plus,
+        20..21,
+    ),
+    (
+        Number(
+            "12345678",
+        ),
+        21..29,
+    ),
+    (
+        Newline,
+        29..30,
+    ),
+    (
+        Newline,
+        30..31,
+    ),
+]

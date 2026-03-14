@@ -3,6 +3,10 @@ pub mod kw_lookup_table;
 pub mod source;
 pub mod token;
 
+// Import tests when necessary
+#[cfg(test)]
+mod tests;
+
 use core::{iter::Peekable, ops::Range};
 use std::sync::Arc;
 

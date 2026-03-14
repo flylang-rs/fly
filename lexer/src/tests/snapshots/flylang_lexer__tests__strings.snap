@@ -1,0 +1,50 @@
+---
+source: lexer/src/tests/mod.rs
+expression: tokens.into_values_with_positions()
+---
+[
+    (
+        Newline,
+        0..1,
+    ),
+    (
+        String(
+            "string",
+        ),
+        1..8,
+    ),
+    (
+        Newline,
+        9..10,
+    ),
+    (
+        String(
+            "string with whitespaces",
+        ),
+        10..34,
+    ),
+    (
+        Newline,
+        35..36,
+    ),
+    (
+        String(
+            "123456789 123456789",
+        ),
+        36..56,
+    ),
+    (
+        Newline,
+        57..58,
+    ),
+    (
+        String(
+            "string with \\n newline",
+        ),
+        58..81,
+    ),
+    (
+        Newline,
+        82..83,
+    ),
+]
