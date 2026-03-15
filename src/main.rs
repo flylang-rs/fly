@@ -1,6 +1,22 @@
 use std::sync::Arc;
 
-use flylang_lexer::{self, source::Source, token::TokenValue};
+use flylang_lexer::{self, source::Source, token::{Token, TokenValue}};
+
+fn run_file(source: Source) {
+    let mut lexer = flylang_lexer::Lexer::new(Arc::new(source));
+    let mut tokens: Vec<Token> = vec![];
+
+    while let Some(token) = lexer.next_token() {
+        if token.value == TokenValue::Newline {
+            println!();
+        }
+        
+        println!("Token: {:?} @ {:?}", token.value, token.address.span);
+        tokens.push(token);
+    }
+
+    // Parse here...
+}
 
 fn main() -> std::io::Result<()> {
     let filepath = if let Some(arg) = std::env::args().nth(1) {
@@ -13,15 +29,7 @@ fn main() -> std::io::Result<()> {
 
     let source_code = std::fs::read_to_string(&filepath)?;
 
-    let mut lexer = flylang_lexer::Lexer::new(Arc::new(Source::new(filepath, source_code)));
-
-    while let Some(token) = lexer.next_token() {
-        if token.value == TokenValue::Newline {
-            println!();
-        }
-        
-        println!("Token: {:?} @ {:?}", token.value, token.address.span);
-    }
+    run_file(Source::new(filepath, source_code));
 
     Ok(())
 }
