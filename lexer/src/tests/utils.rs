@@ -1,29 +1,40 @@
 use core::ops::Range;
 
-use crate::{source::Source, token::{Token, TokenValue}};
+use flylang_common::source::Source;
+
+use crate::{
+    LexerResult,
+    error::LexerError,
+    token::{Token, TokenValue},
+};
 
 pub(super) struct Tester {
-    tokens: Vec<Token>
+    tokens: Vec<LexerResult>,
 }
 
 impl Tester {
-    pub fn into_values_with_positions(self) -> Vec<(TokenValue, Range<usize>)> {
-        self.tokens.into_iter().map(|token| (token.value, token.address.span)).collect()
+    pub fn into_values_with_positions(self) -> Vec<Result<(TokenValue, Range<usize>), LexerError>> {
+        self.tokens
+            .into_iter()
+            .map(|result| result.map(|token| (token.value, token.address.span)))
+            .collect()
     }
 }
 
 pub(super) fn code_to_tokens(code: &str) -> Tester {
-    let mut lexer = crate::Lexer::new(
-        Source::new(
-            "test.fly".to_owned(),
-            code.to_owned()
-        ).into()
-    );
+    let mut lexer = crate::Lexer::new(Source::new("test.fly".to_owned(), code.to_owned()).into());
 
     let mut vec = Vec::with_capacity(8);
 
-    while let Some(token) = lexer.next_token() {
-        vec.push(token);
+    loop {
+        match lexer.next_token() {
+            Err(LexerError::EOF) => {
+                break;
+            },
+            token_result => {
+                vec.push(token_result);
+            },
+        }
     }
 
     Tester { tokens: vec }

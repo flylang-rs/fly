@@ -1,6 +1,5 @@
-pub mod address;
+pub mod error;
 pub mod kw_lookup_table;
-pub mod source;
 pub mod token;
 
 // Import tests when necessary
@@ -8,13 +7,19 @@ pub mod token;
 mod tests;
 
 use core::{iter::Peekable, ops::Range};
-use std::{sync::Arc};
+use std::sync::Arc;
+
+use flylang_common::{Address, source::Source};
 
 use crate::{
-    address::Address,
-    source::Source,
+    error::LexerError,
     token::{Token, TokenValue},
 };
+
+// TODO: Rename it
+type LexResult = Result<(TokenValue, usize), error::LexerError>;
+
+pub type LexerResult = Result<Token, error::LexerError>;
 
 /// The lexer.
 pub struct Lexer {
@@ -28,7 +33,6 @@ impl Lexer {
         let input = source
             .code
             .char_indices()
-            .map(|(i, c)| (i, c))
             .collect::<Vec<_>>()
             .into_iter()
             .peekable();
@@ -79,24 +83,6 @@ impl Lexer {
         }
     }
 
-    /// Shows an error and bails out.
-    fn error(&self, msg: &str, range: Option<&Range<usize>>) -> ! {
-        let offset = range.map(|x| x.start).unwrap_or(self.current_offset);
-        let len = range.map(|x| x.end - x.start).unwrap_or(1);
-
-        let (line, col) = self.source.location(offset);
-
-        eprintln!(
-            "lexer error: {msg}; in {} at line {}; column: {}",
-            &self.source.filepath, line, col,
-        );
-
-        eprintln!("{:>4} | {}", line, self.source.line_text(line));
-        eprintln!("     | {}{}", " ".repeat(col - 1), "^".repeat(len));
-
-        std::process::exit(1);
-    }
-
     /// Lexes an identifier.
     /// Returns a TokenValue::Identifier or one of keywords if matched.
     fn lex_identifier(&mut self, start: usize, first: char) -> (TokenValue, usize) {
@@ -131,7 +117,7 @@ impl Lexer {
 
     /// Lexes a string. Takes `begin_char` as a starting character
     /// Since Fly supports single-quoted (') and double-quoted (") strings, we should differ them.
-    fn lex_string(&mut self, start: usize, begin_char: char) -> (TokenValue, usize) {
+    fn lex_string(&mut self, start: usize, begin_char: char) -> LexResult {
         let mut string = String::new();
 
         let mut end = start + begin_char.len_utf8();
@@ -155,66 +141,91 @@ impl Lexer {
                 None => {
                     // We've (probably) got an EOF.
 
-                    self.error("EOF while lexing a string", Some(&(start..end)));
+                    return Err(LexerError::UnexpectedEOF {
+                        span: Address {
+                            source: self.source.clone(),
+                            span: (start..end),
+                        },
+                    });
                 }
             }
         }
 
-        (TokenValue::String(string), end)
+        Ok((TokenValue::String(string), end))
     }
 
     /// Lexes a number
-    /// Note: Even invalid numbers like `12345asdfzxcv` and `0z14198wdwdf3rf` will be lexed into number,
-    /// but those kind of numbers will cause an error in parser, so it's fine.
-    fn lex_number(&mut self, start: usize, first_digit: char) -> (TokenValue, usize) {
+    /// TODO: Floating-point numbers.
+    fn lex_number(&mut self, start: usize, first_digit: char) -> LexResult {
         let mut number = String::new();
-
         number.push(first_digit);
 
-        // Digits (0..=9) are ASCII characters, so adding 1 wouldn't make problems.
-        let mut end = start + 1;
+        let mut end = start + first_digit.len_utf8();
 
-        let mut is_hexadecimal = false;
+        // Determine radix from prefix
+        let radix = if first_digit == '0' {
+            match self.peek_symbol() {
+                Some((_, 'x')) => {
+                    self.next_character_any();
+                    number.push('x');
+                    16
+                }
+                Some((_, 'o')) => {
+                    self.next_character_any();
+                    number.push('o');
+                    8
+                }
+                Some((_, 'b')) => {
+                    self.next_character_any();
+                    number.push('b');
+                    2
+                }
+                _ => 10,
+            }
+        } else {
+            10
+        };
 
         loop {
-            if let Some((_, 'x')) = self.peek_symbol() {
-                self.next_character_any();
-
-                number.push('x');
-                
-                is_hexadecimal = true;
-            }
-
-            let current = self.peek_symbol();
-
-            match current {
-                Some((offset, character)) => {
-                    if is_hexadecimal && "_0123456789abcdefABCDEF".contains(character) {
-                        self.next_character_any();
-
-                        number.push(character);
-    
-                        end = offset + 1;
-
-                        continue;
-                    }
-
-                    // Numbers can be only separated by spaces
-                    if character.is_whitespace() {
-                        break;
-                    }
-
+            match self.peek_symbol() {
+                Some((offset, ch)) if Self::is_digit_for_radix(ch, radix) || ch == '_' => {
                     self.next_character_any();
-
-                    number.push(character);
-
-                    end = offset + 1;
+                    number.push(ch);
+                    end = offset + ch.len_utf8();
                 }
-                _ => (),
+                Some((offset, ch)) if ch.is_alphabetic() => {
+                    return Err(LexerError::InvalidNumberError {
+                        span: Address {
+                            source: self.source.clone(),
+                            span: start..offset + ch.len_utf8(),
+                        },
+                    });
+                }
+                Some((offset, ch))
+                    if ch.is_ascii_digit() && !Self::is_digit_for_radix(ch, radix) =>
+                {
+                    return Err(LexerError::InvalidDigitForNumberBase {
+                        span: Address {
+                            source: self.source.clone(),
+                            span: start..offset + ch.len_utf8(),
+                        },
+                    });
+                }
+                _ => break, // anything else - delimiter, operator, EOF - stops the number
             }
         }
 
-        (TokenValue::Number(number), end)
+        Ok((TokenValue::Number(number), end))
+    }
+
+    fn is_digit_for_radix(ch: char, radix: u8) -> bool {
+        match radix {
+            16 => ch.is_ascii_hexdigit(),
+            10 => ch.is_ascii_digit(),
+            8 => matches!(ch, '0'..='7'),
+            2 => matches!(ch, '0' | '1'),
+            _ => false,
+        }
     }
 
     /// Lexes `/`, `/=`, `/+`, `/-`, `/+=` and `/-=`
@@ -313,14 +324,14 @@ impl Lexer {
                     if char == '\n' {
                         break;
                     }
-                    
+
                     self.next_character_any();
-                    
+
                     comment.push(char);
 
                     end = offset + char.len_utf8();
                 }
-                _ => break
+                _ => break,
             }
         }
 
@@ -328,8 +339,8 @@ impl Lexer {
     }
 
     /// Main code: Returns a next token in the code.
-    pub fn next_token(&mut self) -> Option<Token> {
-        let (position, character) = self.next_character()?;
+    pub fn next_token(&mut self) -> LexerResult {
+        let (position, character) = self.next_character().ok_or(LexerError::EOF)?;
 
         // In single-character operations they are all ASCII, so we can safely increment the position.
 
@@ -355,19 +366,23 @@ impl Lexer {
             '\n' => (TokenValue::Newline, position + 1),
 
             '<' | '>' => self.lex_comparison(position, character),
-            '\"' | '\'' => self.lex_string(position, character),
+            '\"' | '\'' => self.lex_string(position, character)?,
 
             _ if character.is_alphabetic() || character == '_' => {
                 self.lex_identifier(position, character)
             }
 
-            _ if character.is_numeric() => {
-                self.lex_number(position, character)
-            },
+            _ if character.is_numeric() => self.lex_number(position, character)?,
 
-            _ => self.error(&format!("Unknown character: `{}`", character), None),
+            _ => Err(LexerError::UnknownCharacter {
+                character,
+                span: Address {
+                    source: self.source.clone(),
+                    span: (position..position),
+                },
+            })?,
         };
 
-        Some(self.make_token(value, position..end))
+        Ok(self.make_token(value, position..end))
     }
 }

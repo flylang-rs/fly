@@ -3,70 +3,100 @@ source: lexer/src/tests/mod.rs
 expression: tokens.into_values_with_positions()
 ---
 [
-    (
-        Newline,
-        0..1,
-    ),
-    (
-        Func,
-        1..5,
-    ),
-    (
-        Identifier(
-            "main",
+    Ok(
+        (
+            Newline,
+            0..1,
         ),
-        6..10,
     ),
-    (
-        OpenParen,
-        10..11,
-    ),
-    (
-        CloseParen,
-        11..12,
-    ),
-    (
-        OpenBrace,
-        13..14,
-    ),
-    (
-        Newline,
-        14..15,
-    ),
-    (
-        Identifier(
-            "print",
+    Ok(
+        (
+            Func,
+            1..5,
         ),
-        19..24,
     ),
-    (
-        OpenParen,
-        24..25,
-    ),
-    (
-        String(
-            "Hello, world!",
+    Ok(
+        (
+            Identifier(
+                "main",
+            ),
+            6..10,
         ),
-        25..39,
     ),
-    (
-        CloseParen,
-        40..41,
+    Ok(
+        (
+            OpenParen,
+            10..11,
+        ),
     ),
-    (
-        Semicolon,
-        41..42,
+    Ok(
+        (
+            CloseParen,
+            11..12,
+        ),
     ),
-    (
-        Newline,
-        42..43,
+    Ok(
+        (
+            OpenBrace,
+            13..14,
+        ),
     ),
-    (
-        CloseBrace,
-        43..44,
+    Ok(
+        (
+            Newline,
+            14..15,
+        ),
     ),
-    (
-        Newline,
-        44..45,
+    Ok(
+        (
+            Identifier(
+                "print",
+            ),
+            19..24,
+        ),
+    ),
+    Ok(
+        (
+            OpenParen,
+            24..25,
+        ),
+    ),
+    Ok(
+        (
+            String(
+                "Hello, world!",
+            ),
+            25..39,
+        ),
+    ),
+    Ok(
+        (
+            CloseParen,
+            40..41,
+        ),
+    ),
+    Ok(
+        (
+            Semicolon,
+            41..42,
+        ),
+    ),
+    Ok(
+        (
+            Newline,
+            42..43,
+        ),
+    ),
+    Ok(
+        (
+            CloseBrace,
+            43..44,
+        ),
+    ),
+    Ok(
+        (
+            Newline,
+            44..45,
+        ),
     ),
 ]

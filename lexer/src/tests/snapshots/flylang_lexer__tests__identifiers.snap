@@ -3,58 +3,80 @@ source: lexer/src/tests/mod.rs
 expression: tokens.into_values_with_positions()
 ---
 [
-    (
-        Newline,
-        0..1,
-    ),
-    (
-        Identifier(
-            "identifier",
+    Ok(
+        (
+            Newline,
+            0..1,
         ),
-        1..11,
     ),
-    (
-        Newline,
-        11..12,
-    ),
-    (
-        Identifier(
-            "_prefixed_identifier",
+    Ok(
+        (
+            Identifier(
+                "identifier",
+            ),
+            1..11,
         ),
-        12..32,
     ),
-    (
-        Newline,
-        32..33,
-    ),
-    (
-        Identifier(
-            "______what_about_that",
+    Ok(
+        (
+            Newline,
+            11..12,
         ),
-        33..54,
     ),
-    (
-        Newline,
-        54..55,
-    ),
-    (
-        Identifier(
-            "_12345678",
+    Ok(
+        (
+            Identifier(
+                "_prefixed_identifier",
+            ),
+            12..32,
         ),
-        55..64,
     ),
-    (
-        Newline,
-        64..65,
-    ),
-    (
-        Identifier(
-            "_",
+    Ok(
+        (
+            Newline,
+            32..33,
         ),
-        65..66,
     ),
-    (
-        Newline,
-        66..67,
+    Ok(
+        (
+            Identifier(
+                "______what_about_that",
+            ),
+            33..54,
+        ),
+    ),
+    Ok(
+        (
+            Newline,
+            54..55,
+        ),
+    ),
+    Ok(
+        (
+            Identifier(
+                "_12345678",
+            ),
+            55..64,
+        ),
+    ),
+    Ok(
+        (
+            Newline,
+            64..65,
+        ),
+    ),
+    Ok(
+        (
+            Identifier(
+                "_",
+            ),
+            65..66,
+        ),
+    ),
+    Ok(
+        (
+            Newline,
+            66..67,
+        ),
     ),
 ]

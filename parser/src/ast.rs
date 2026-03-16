@@ -1,45 +1,65 @@
+use core::fmt::Display;
+use core::fmt::Debug;
+
+use flylang_common::Address;
+use flylang_common::spanned::Spanned;
+
 #[derive(Debug, Clone)]
-pub enum Node {
+pub enum Expression {
     // Binary operations
 
-    Add(Box<Node>, Box<Node>),
-    Sub(Box<Node>, Box<Node>),
-    Mul(Box<Node>, Box<Node>),
-    Div(Box<Node>, Box<Node>, DivisionKind),
-    Mod(Box<Node>, Box<Node>),
+    Add(Box<Expression>, Box<Expression>),
+    Sub(Box<Expression>, Box<Expression>),
+    Mul(Box<Expression>, Box<Expression>),
+    Div(Box<Expression>, Box<Expression>, DivisionKind),
+    Mod(Box<Expression>, Box<Expression>),
 
-    And(Box<Node>, Box<Node>),
-    Or(Box<Node>, Box<Node>),
+    And(Box<Expression>, Box<Expression>),
+    Or(Box<Expression>, Box<Expression>),
 
-    BitAnd(Box<Node>, Box<Node>),
-    BitOr(Box<Node>, Box<Node>),
-    BitShiftLeft(Box<Node>, Box<Node>),
-    BitShiftRight(Box<Node>, Box<Node>),
+    BitAnd(Box<Expression>, Box<Expression>),
+    BitOr(Box<Expression>, Box<Expression>),
+    BitShiftLeft(Box<Expression>, Box<Expression>),
+    BitShiftRight(Box<Expression>, Box<Expression>),
 
     // Unary operations
 
-    Not(Box<Node>),
+    Not(Box<Expression>),
+    Neg(Box<Expression>),
 
     // Language items
 
-    Block(Vec<Node>),
+    Identifier(Spanned<String>),
+    Number(Spanned<String>),
+
+    Block(Vec<Statement>),
+
+    Call {
+        callee: Box<Expression>,
+        parameters: Vec<Expression>
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum Statement {
+    Assignment {
+        name: Spanned<String>,
+        value: Box<Expression>
+    },
 
     VariableDefinition {
-        name: String,
-        type_annotation: Box<Node>,
-        value: Box<Node>
+        name: Spanned<String>,
+        type_annotation: Box<Expression>,
+        value: Box<Expression>
     },
 
     Function {
-        name: String,
-        arguments: Vec<Node>,
-        body: Box<Node>
+        name: Spanned<String>,
+        arguments: Vec<Expression>,
+        body: Box<Statement>
     },
 
-    Call {
-        func_name: String,
-        parameters: Vec<Node>
-    }
+    Expr(Expression),
 }
 
 #[derive(Debug, Copy, Clone)]

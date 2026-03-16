@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+flylang-common = { path = "../common" }
 
 [dev-dependencies]
 insta = "1.46.3"

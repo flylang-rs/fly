@@ -1,4 +1,6 @@
-use crate::address::Address;
+use flylang_common::spanned::Spanned;
+
+use flylang_common::Address;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenValue {
@@ -38,8 +40,7 @@ pub enum TokenValue {
     Greater,
 
     // There come more complex tokens that consist out of two and more symbols.
-
-    ArrowForward,  // ->
+    ArrowForward, // ->
 
     RoundingUpDiv,   // /+
     RoundingDownDiv, // /-
@@ -62,7 +63,6 @@ pub enum TokenValue {
     LogicalOr,  // ||
 
     // Keywords
-
     Func,
     For,
     While,
@@ -84,4 +84,23 @@ pub enum TokenValue {
 pub struct Token {
     pub value: TokenValue,
     pub address: Address,
+}
+
+impl Token {
+    pub fn is_identifier(&self) -> bool {
+        matches!(self.value, TokenValue::Identifier(_))
+    }
+
+    pub fn into_spanned_identifier(self) -> Option<Spanned<String>> {
+        match self {
+            Token {
+                value: TokenValue::Identifier(id),
+                address,
+            } => Some(Spanned {
+                value: id,
+                address,
+            }),
+            _ => None
+        }
+    }
 }
