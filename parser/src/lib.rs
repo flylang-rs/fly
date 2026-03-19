@@ -104,11 +104,7 @@ impl Parser {
 
         self.expect(TokenValue::OpenParen);
 
-        let mut arguments = vec![];
-
-        // TODO: Arguments
-
-        self.expect(TokenValue::CloseParen);
+        let arguments = self.parse_argument_list();
 
         let body = self.parse_block();
 
