@@ -1,7 +1,5 @@
 use flylang_common::{Address, spanned::Spanned};
-use flylang_lexer::{
-    token::{Token, TokenValue},
-};
+use flylang_lexer::token::{Token, TokenValue};
 use std::iter::Peekable;
 
 use crate::state::ParserState;
@@ -21,11 +19,14 @@ impl Parser {
     }
 
     fn skip_comments(&mut self) {
-        while matches!(self.tokens.peek().map(|t| &t.value), Some(TokenValue::Comment(_))) {
+        while matches!(
+            self.tokens.peek().map(|t| &t.value),
+            Some(TokenValue::Comment(_))
+        ) {
             self.tokens.next();
         }
     }
-    
+
     fn peek(&mut self) -> Option<&TokenValue> {
         self.skip_comments();
         self.tokens.peek().map(|t| &t.value)
@@ -59,21 +60,21 @@ impl Parser {
 
     pub fn parse(&mut self, state: ParserState) -> Vec<ast::Statement> {
         let mut stmts = Vec::new();
-    
+
         loop {
             self.skip_whitespaces();
-    
+
             match self.peek() {
                 Some(TokenValue::CloseBrace) if state == ParserState::InBlock => break,
                 None => break,
                 _ => {}
             }
-    
+
             if let Some(stmt) = self.parse_statement() {
                 stmts.push(stmt);
             }
         }
-    
+
         stmts
     }
 
@@ -98,7 +99,7 @@ impl Parser {
         }
 
         let name = name.into_spanned_identifier().unwrap();
-        
+
         eprintln!("Name: {name:?}");
 
         self.expect(TokenValue::OpenParen);
@@ -111,7 +112,11 @@ impl Parser {
 
         let body = self.parse_block();
 
-        ast::Statement::Function { name, arguments, body: Box::new(body) }
+        ast::Statement::Function {
+            name,
+            arguments,
+            body: Box::new(body),
+        }
     }
 
     // Maybe it should be in lexer.
@@ -134,15 +139,15 @@ impl Parser {
 
     fn parse_argument_list(&mut self) -> Vec<ast::Expression> {
         let mut args = Vec::new();
-    
+
         if self.peek() == Some(&TokenValue::CloseParen) {
             self.next_token();
             return args;
         }
-    
+
         loop {
             args.push(self.parse_expression(0));
-    
+
             match self.peek() {
                 Some(TokenValue::Comma) => {
                     self.next_token();
@@ -154,7 +159,7 @@ impl Parser {
                 other => panic!("expected `,` or `)` in argument list, got {:?}", other),
             }
         }
-    
+
         args
     }
 
@@ -172,6 +177,10 @@ impl Parser {
                 value: TokenValue::Identifier(nr),
                 address,
             }) => ast::Expression::Identifier(Spanned { value: nr, address }),
+            Some(Token {
+                value: TokenValue::String(nr),
+                address,
+            }) => ast::Expression::String(Spanned { value: nr, address }),
             Some(Token {
                 value: TokenValue::Minus,
                 ..
@@ -205,7 +214,7 @@ impl Parser {
                 // | `- (x)
                 // | +
                 // | 1
-                // 
+                //
                 // Not into:
                 // | foo
                 // | `- (x)
@@ -215,21 +224,25 @@ impl Parser {
                 if 20 < min_binding_power {
                     break;
                 }
-        
+
                 self.next_token(); // consume `(`
                 let args = self.parse_argument_list();
-        
+
                 lhs = ast::Expression::Call {
                     callee: Box::new(lhs),
                     parameters: args,
                 };
-        
+
                 continue; // don't fall through to infix handling
             }
 
             let (left_bp, right_bp) = match op {
                 TokenValue::Plus | TokenValue::Minus => (1, 2),
-                TokenValue::Asterisk | TokenValue::Slash => (3, 4),
+                TokenValue::Asterisk
+                | TokenValue::Slash
+                | TokenValue::RoundingDownDiv
+                | TokenValue::RoundingUpDiv
+                | TokenValue::Percent => (3, 4),
                 _ => break, // not an infix operator
             };
 
@@ -247,11 +260,32 @@ impl Parser {
                 TokenValue::Slash => {
                     ast::Expression::Div(Box::new(lhs), Box::new(rhs), ast::DivisionKind::Neutral)
                 }
-                _ => unreachable!(),
+                TokenValue::RoundingUpDiv => ast::Expression::Div(
+                    Box::new(lhs),
+                    Box::new(rhs),
+                    ast::DivisionKind::RoundingUp,
+                ),
+                TokenValue::RoundingDownDiv => ast::Expression::Div(
+                    Box::new(lhs),
+                    Box::new(rhs),
+                    ast::DivisionKind::RoundingDown,
+                ),
+                TokenValue::Percent => ast::Expression::Mod(Box::new(lhs), Box::new(rhs)),
+                _ => unreachable!(
+                    "Maybe you've added a binding power rule, but forgot how to handle them, add new operators."
+                ),
             };
         }
 
         lhs
+    }
+
+    fn parse_return(&mut self) -> ast::Statement {
+        self.next_token();
+
+        let value = self.parse_expression(0);
+
+        ast::Statement::Return { value: Box::new(value) }
     }
 
     fn skip_whitespaces(&mut self) {
@@ -266,34 +300,36 @@ impl Parser {
     }
 
     fn parse_statement(&mut self) -> Option<ast::Statement> {
-		self.skip_whitespaces();
-	
+        self.skip_whitespaces();
+
         loop {
             return match self.peek()? {
                 TokenValue::Func => Some(self.parse_func()),
+                TokenValue::Return => Some(self.parse_return()),
                 TokenValue::OpenBrace => Some(self.parse_block()),
                 tok => {
                     eprintln!("Entering expression with token: {tok:?}");
 
                     // Parse the left side speculatively as an expression
                     let lhs = self.parse_expression(0);
-        
+
                     // Now decide what kind of statement this is
                     if self.peek() == Some(&TokenValue::Assign) {
                         self.next_token();
                         let value = self.parse_expression(0);
-        
+
                         match lhs {
-                            ast::Expression::Identifier(name) => {
-                                Some(ast::Statement::Assignment { name, value: Box::new(value) })
-                            }
+                            ast::Expression::Identifier(name) => Some(ast::Statement::Assignment {
+                                name,
+                                value: Box::new(value),
+                            }),
                             _ => panic!("invalid assignment target"),
                         }
                     } else {
                         Some(ast::Statement::Expr(lhs))
                     }
                 }
-            }
+            };
         }
     }
 }

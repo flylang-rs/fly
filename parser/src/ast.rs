@@ -31,6 +31,7 @@ pub enum Expression {
 
     Identifier(Spanned<String>),
     Number(Spanned<String>),
+    String(Spanned<String>),
 
     Block(Vec<Statement>),
 
@@ -57,6 +58,10 @@ pub enum Statement {
         name: Spanned<String>,
         arguments: Vec<Expression>,
         body: Box<Statement>
+    },
+
+    Return {
+        value: Box<Expression>
     },
 
     Expr(Expression),
