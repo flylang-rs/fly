@@ -163,31 +163,70 @@ impl Parser {
         args
     }
 
+    fn parse_array_inner(&mut self) -> Vec<ast::Expression> {
+        let mut args = Vec::new();
+
+        if self.peek() == Some(&TokenValue::CloseBracket) {
+            self.next_token();
+            return args;
+        }
+
+        loop {
+            args.push(self.parse_expression(0));
+
+            match self.peek() {
+                Some(TokenValue::Comma) => {
+                    self.next_token();
+                }
+                Some(TokenValue::CloseBracket) => {
+                    self.next_token();
+                    break;
+                }
+                other => panic!("expected `,` or `]` in argument list, got {:?}", other),
+            }
+        }
+
+        args
+    }
+
     // Parse an expression.
     // Instead of using recursive descend we use Pratt's parsing method.
     fn parse_expression(&mut self, min_binding_power: usize) -> ast::Expression {
         self.skip_whitespaces();
 
         let mut lhs = match self.next_token() {
+            // Number
             Some(Token {
                 value: TokenValue::Number(nr),
                 address,
             }) => self.check_number(nr, address),
+            // Idenitifer
             Some(Token {
                 value: TokenValue::Identifier(nr),
                 address,
             }) => ast::Expression::Identifier(Spanned { value: nr, address }),
+            // "String"
             Some(Token {
                 value: TokenValue::String(nr),
                 address,
             }) => ast::Expression::String(Spanned { value: nr, address }),
+            // -Unary minus
             Some(Token {
                 value: TokenValue::Minus,
                 ..
             }) => {
                 let rhs = self.parse_expression(9); // unary minus has high BP
                 ast::Expression::Neg(Box::new(rhs))
-            }
+            },
+            // ['a', 'r', 'r', 'a', 'y']
+            Some(Token {
+                value: TokenValue::OpenBracket,
+                ..
+            }) => {
+                let inner = self.parse_array_inner();
+                ast::Expression::Array(inner)
+            },
+            // (Open Paren, ...
             Some(Token {
                 value: TokenValue::OpenParen,
                 ..

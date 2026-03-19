@@ -34,6 +34,7 @@ pub enum Expression {
     String(Spanned<String>),
 
     Block(Vec<Statement>),
+    Array(Vec<Expression>),
 
     Call {
         callee: Box<Expression>,
