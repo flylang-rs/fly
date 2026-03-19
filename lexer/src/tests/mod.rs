@@ -11,7 +11,7 @@ fn test_strings() {
 
     let tokens = utils::code_to_tokens(code);
 
-    insta::assert_debug_snapshot!(tokens.into_values_with_positions());
+    insta::assert_debug_snapshot!(tokens.map(|x| x.into_values_with_positions()));
 }
 
 #[test]
@@ -26,7 +26,7 @@ _
 
     let tokens = utils::code_to_tokens(code);
 
-    insta::assert_debug_snapshot!(tokens.into_values_with_positions());
+    insta::assert_debug_snapshot!(tokens.map(|x| x.into_values_with_positions()));
 }
 
 #[test]
@@ -47,11 +47,15 @@ c <= "c"
 d >= "d"
 e > "e"
 f < "f"
+
+a % b
+
+5 % 2 == 1
 "#;
 
     let tokens = utils::code_to_tokens(code);
 
-    insta::assert_debug_snapshot!(tokens.into_values_with_positions());
+    insta::assert_debug_snapshot!(tokens.map(|x| x.into_values_with_positions()));
 }
 
 #[test]
@@ -69,11 +73,11 @@ fn test_numbers() {
 
     let tokens = utils::code_to_tokens(code);
 
-    insta::assert_debug_snapshot!(tokens.into_values_with_positions());
+    insta::assert_debug_snapshot!(tokens.map(|x| x.into_values_with_positions()));
 }
 
 #[test]
-fn test_hello_world() {   
+fn test_hello_world() {
     let code = r#"
 func main() {
     print("Hello, world!");
@@ -82,7 +86,7 @@ func main() {
 
     let tokens = utils::code_to_tokens(code);
 
-    insta::assert_debug_snapshot!(tokens.into_values_with_positions());
+    insta::assert_debug_snapshot!(tokens.map(|x| x.into_values_with_positions()));
 }
 
 #[test]
@@ -99,5 +103,5 @@ some_code = again
 
     let tokens = utils::code_to_tokens(code);
 
-    insta::assert_debug_snapshot!(tokens.into_values_with_positions());
+    insta::assert_debug_snapshot!(tokens.map(|x| x.into_values_with_positions()));
 }

@@ -363,6 +363,7 @@ impl Lexer {
             ',' => (TokenValue::Comma, position + 1),
             ':' => (TokenValue::Colon, position + 1),
             ';' => (TokenValue::Semicolon, position + 1),
+            '%' => (TokenValue::Percent, position + 1),
             '\n' => (TokenValue::Newline, position + 1),
 
             '<' | '>' => self.lex_comparison(position, character),

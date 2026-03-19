@@ -1,430 +1,368 @@
 ---
 source: lexer/src/tests/mod.rs
-expression: tokens.into_values_with_positions()
+expression: tokens.map(|x| x.into_values_with_positions())
 ---
-[
-    Ok(
+Ok(
+    [
         (
             Newline,
             0..1,
         ),
-    ),
-    Ok(
         (
             Identifier(
                 "myvar",
             ),
             1..6,
         ),
-    ),
-    Ok(
         (
             Assign,
             7..8,
         ),
-    ),
-    Ok(
         (
             String(
                 "abc",
             ),
             9..13,
         ),
-    ),
-    Ok(
         (
             Newline,
             14..15,
         ),
-    ),
-    Ok(
         (
             Newline,
             15..16,
         ),
-    ),
-    Ok(
         (
             Identifier(
                 "la",
             ),
             16..18,
         ),
-    ),
-    Ok(
         (
             Assign,
             19..20,
         ),
-    ),
-    Ok(
         (
             Identifier(
                 "myvar",
             ),
             21..26,
         ),
-    ),
-    Ok(
         (
             Slash,
             27..28,
         ),
-    ),
-    Ok(
         (
             String(
                 "t",
             ),
             29..31,
         ),
-    ),
-    Ok(
         (
             Newline,
             32..33,
         ),
-    ),
-    Ok(
         (
             Identifier(
                 "lb",
             ),
             33..35,
         ),
-    ),
-    Ok(
         (
             Assign,
             36..37,
         ),
-    ),
-    Ok(
         (
             Identifier(
                 "myvar",
             ),
             38..43,
         ),
-    ),
-    Ok(
         (
             RoundingDownDiv,
             44..46,
         ),
-    ),
-    Ok(
         (
             String(
                 "t",
             ),
             47..49,
         ),
-    ),
-    Ok(
         (
             Newline,
             50..51,
         ),
-    ),
-    Ok(
         (
             Identifier(
                 "lc",
             ),
             51..53,
         ),
-    ),
-    Ok(
         (
             Assign,
             54..55,
         ),
-    ),
-    Ok(
         (
             Identifier(
                 "myvar",
             ),
             56..61,
         ),
-    ),
-    Ok(
         (
             RoundingUpDiv,
             62..64,
         ),
-    ),
-    Ok(
         (
             String(
                 "t",
             ),
             65..67,
         ),
-    ),
-    Ok(
         (
             Newline,
             68..69,
         ),
-    ),
-    Ok(
         (
             Identifier(
                 "myvar",
             ),
             69..74,
         ),
-    ),
-    Ok(
         (
             DivAssign,
             75..77,
         ),
-    ),
-    Ok(
         (
             String(
                 "a",
             ),
             78..80,
         ),
-    ),
-    Ok(
         (
             Newline,
             81..82,
         ),
-    ),
-    Ok(
         (
             Identifier(
                 "myvar",
             ),
             82..87,
         ),
-    ),
-    Ok(
         (
             RoundingDownDivAssign,
             88..91,
         ),
-    ),
-    Ok(
         (
             String(
                 "c",
             ),
             92..94,
         ),
-    ),
-    Ok(
         (
             Newline,
             95..96,
         ),
-    ),
-    Ok(
         (
             Identifier(
                 "myvar",
             ),
             96..101,
         ),
-    ),
-    Ok(
         (
             RoundingUpDivAssign,
             102..105,
         ),
-    ),
-    Ok(
         (
             String(
                 "b",
             ),
             106..108,
         ),
-    ),
-    Ok(
         (
             Newline,
             109..110,
         ),
-    ),
-    Ok(
         (
             Newline,
             110..111,
         ),
-    ),
-    Ok(
         (
             Identifier(
                 "a",
             ),
             111..112,
         ),
-    ),
-    Ok(
         (
             Equals,
             113..115,
         ),
-    ),
-    Ok(
         (
             String(
                 "a",
             ),
             116..118,
         ),
-    ),
-    Ok(
         (
             Newline,
             119..120,
         ),
-    ),
-    Ok(
         (
             Identifier(
                 "b",
             ),
             120..121,
         ),
-    ),
-    Ok(
         (
             NotEquals,
             122..124,
         ),
-    ),
-    Ok(
         (
             String(
                 "b",
             ),
             125..127,
         ),
-    ),
-    Ok(
         (
             Newline,
             128..129,
         ),
-    ),
-    Ok(
         (
             Identifier(
                 "c",
             ),
             129..130,
         ),
-    ),
-    Ok(
         (
             LessOrEquals,
             131..133,
         ),
-    ),
-    Ok(
         (
             String(
                 "c",
             ),
             134..136,
         ),
-    ),
-    Ok(
         (
             Newline,
             137..138,
         ),
-    ),
-    Ok(
         (
             Identifier(
                 "d",
             ),
             138..139,
         ),
-    ),
-    Ok(
         (
             GraeterOrEquals,
             140..142,
         ),
-    ),
-    Ok(
         (
             String(
                 "d",
             ),
             143..145,
         ),
-    ),
-    Ok(
         (
             Newline,
             146..147,
         ),
-    ),
-    Ok(
         (
             Identifier(
                 "e",
             ),
             147..148,
         ),
-    ),
-    Ok(
         (
             Greater,
             149..150,
         ),
-    ),
-    Ok(
         (
             String(
                 "e",
             ),
             151..153,
         ),
-    ),
-    Ok(
         (
             Newline,
             154..155,
         ),
-    ),
-    Ok(
         (
             Identifier(
                 "f",
             ),
             155..156,
         ),
-    ),
-    Ok(
         (
             Less,
             157..158,
         ),
-    ),
-    Ok(
         (
             String(
                 "f",
             ),
             159..161,
         ),
-    ),
-    Ok(
         (
             Newline,
             162..163,
         ),
-    ),
-]
+        (
+            Newline,
+            163..164,
+        ),
+        (
+            Identifier(
+                "a",
+            ),
+            164..165,
+        ),
+        (
+            Percent,
+            166..167,
+        ),
+        (
+            Identifier(
+                "b",
+            ),
+            168..169,
+        ),
+        (
+            Newline,
+            169..170,
+        ),
+        (
+            Newline,
+            170..171,
+        ),
+        (
+            Number(
+                "5",
+            ),
+            171..172,
+        ),
+        (
+            Percent,
+            173..174,
+        ),
+        (
+            Number(
+                "2",
+            ),
+            175..176,
+        ),
+        (
+            Equals,
+            177..179,
+        ),
+        (
+            Number(
+                "1",
+            ),
+            180..181,
+        ),
+        (
+            Newline,
+            181..182,
+        ),
+    ],
+)

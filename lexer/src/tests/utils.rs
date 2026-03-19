@@ -9,19 +9,19 @@ use crate::{
 };
 
 pub(super) struct Tester {
-    tokens: Vec<LexerResult>,
+    tokens: Vec<Token>,
 }
 
 impl Tester {
-    pub fn into_values_with_positions(self) -> Vec<Result<(TokenValue, Range<usize>), LexerError>> {
+    pub fn into_values_with_positions(self) -> Vec<(TokenValue, Range<usize>)> {
         self.tokens
             .into_iter()
-            .map(|result| result.map(|token| (token.value, token.address.span)))
+            .map(|token| (token.value, token.address.span))
             .collect()
     }
 }
 
-pub(super) fn code_to_tokens(code: &str) -> Tester {
+pub(super) fn code_to_tokens(code: &str) -> Result<Tester, LexerError> {
     let mut lexer = crate::Lexer::new(Source::new("test.fly".to_owned(), code.to_owned()).into());
 
     let mut vec = Vec::with_capacity(8);
@@ -32,10 +32,10 @@ pub(super) fn code_to_tokens(code: &str) -> Tester {
                 break;
             },
             token_result => {
-                vec.push(token_result);
+                vec.push(token_result?);
             },
         }
     }
 
-    Tester { tokens: vec }
+    Ok(Tester { tokens: vec })
 }

@@ -1,130 +1,96 @@
 ---
 source: lexer/src/tests/mod.rs
-expression: tokens.into_values_with_positions()
+expression: tokens.map(|x| x.into_values_with_positions())
 ---
-[
-    Ok(
+Ok(
+    [
         (
             Newline,
             0..1,
         ),
-    ),
-    Ok(
         (
             Comment(
                 " This is a comment.",
             ),
             1..21,
         ),
-    ),
-    Ok(
         (
             Newline,
             21..22,
         ),
-    ),
-    Ok(
         (
             Identifier(
                 "this",
             ),
             22..26,
         ),
-    ),
-    Ok(
         (
             Assign,
             27..28,
         ),
-    ),
-    Ok(
         (
             Identifier(
                 "code",
             ),
             29..33,
         ),
-    ),
-    Ok(
         (
             Newline,
             33..34,
         ),
-    ),
-    Ok(
         (
             Newline,
             34..35,
         ),
-    ),
-    Ok(
         (
             Comment(
                 " There are no multiline comments",
             ),
             35..68,
         ),
-    ),
-    Ok(
         (
             Newline,
             68..69,
         ),
-    ),
-    Ok(
         (
             Comment(
                 " Duuuuuuude!",
             ),
             69..82,
         ),
-    ),
-    Ok(
         (
             Newline,
             82..83,
         ),
-    ),
-    Ok(
         (
             Comment(
                 " A set of singleline comments are already one multiline comment!",
             ),
             83..148,
         ),
-    ),
-    Ok(
         (
             Newline,
             148..149,
         ),
-    ),
-    Ok(
         (
             Identifier(
                 "some_code",
             ),
             149..158,
         ),
-    ),
-    Ok(
         (
             Assign,
             159..160,
         ),
-    ),
-    Ok(
         (
             Identifier(
                 "again",
             ),
             161..166,
         ),
-    ),
-    Ok(
         (
             Newline,
             166..167,
         ),
-    ),
-]
+    ],
+)

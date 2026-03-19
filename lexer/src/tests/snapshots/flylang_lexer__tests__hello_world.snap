@@ -1,102 +1,74 @@
 ---
 source: lexer/src/tests/mod.rs
-expression: tokens.into_values_with_positions()
+expression: tokens.map(|x| x.into_values_with_positions())
 ---
-[
-    Ok(
+Ok(
+    [
         (
             Newline,
             0..1,
         ),
-    ),
-    Ok(
         (
             Func,
             1..5,
         ),
-    ),
-    Ok(
         (
             Identifier(
                 "main",
             ),
             6..10,
         ),
-    ),
-    Ok(
         (
             OpenParen,
             10..11,
         ),
-    ),
-    Ok(
         (
             CloseParen,
             11..12,
         ),
-    ),
-    Ok(
         (
             OpenBrace,
             13..14,
         ),
-    ),
-    Ok(
         (
             Newline,
             14..15,
         ),
-    ),
-    Ok(
         (
             Identifier(
                 "print",
             ),
             19..24,
         ),
-    ),
-    Ok(
         (
             OpenParen,
             24..25,
         ),
-    ),
-    Ok(
         (
             String(
                 "Hello, world!",
             ),
             25..39,
         ),
-    ),
-    Ok(
         (
             CloseParen,
             40..41,
         ),
-    ),
-    Ok(
         (
             Semicolon,
             41..42,
         ),
-    ),
-    Ok(
         (
             Newline,
             42..43,
         ),
-    ),
-    Ok(
         (
             CloseBrace,
             43..44,
         ),
-    ),
-    Ok(
         (
             Newline,
             44..45,
         ),
-    ),
-]
+    ],
+)

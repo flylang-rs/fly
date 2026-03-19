@@ -1,68 +1,52 @@
 ---
 source: lexer/src/tests/mod.rs
-expression: tokens.into_values_with_positions()
+expression: tokens.map(|x| x.into_values_with_positions())
 ---
-[
-    Ok(
+Ok(
+    [
         (
             Newline,
             0..1,
         ),
-    ),
-    Ok(
         (
             String(
                 "string",
             ),
             1..8,
         ),
-    ),
-    Ok(
         (
             Newline,
             9..10,
         ),
-    ),
-    Ok(
         (
             String(
                 "string with whitespaces",
             ),
             10..34,
         ),
-    ),
-    Ok(
         (
             Newline,
             35..36,
         ),
-    ),
-    Ok(
         (
             String(
                 "123456789 123456789",
             ),
             36..56,
         ),
-    ),
-    Ok(
         (
             Newline,
             57..58,
         ),
-    ),
-    Ok(
         (
             String(
                 "string with \\n newline",
             ),
             58..81,
         ),
-    ),
-    Ok(
         (
             Newline,
             82..83,
         ),
-    ),
-]
+    ],
+)

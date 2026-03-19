@@ -1,128 +1,94 @@
 ---
 source: lexer/src/tests/mod.rs
-expression: tokens.into_values_with_positions()
+expression: tokens.map(|x| x.into_values_with_positions())
 ---
-[
-    Ok(
+Ok(
+    [
         (
             Newline,
             0..1,
         ),
-    ),
-    Ok(
         (
             Number(
                 "12345678",
             ),
             1..9,
         ),
-    ),
-    Ok(
         (
             Newline,
             9..10,
         ),
-    ),
-    Ok(
         (
             Minus,
             10..11,
         ),
-    ),
-    Ok(
         (
             Number(
                 "12345678",
             ),
             11..19,
         ),
-    ),
-    Ok(
         (
             Newline,
             19..20,
         ),
-    ),
-    Ok(
         (
             Plus,
             20..21,
         ),
-    ),
-    Ok(
         (
             Number(
                 "12345678",
             ),
             21..29,
         ),
-    ),
-    Ok(
         (
             Newline,
             29..30,
         ),
-    ),
-    Ok(
         (
             Number(
                 "1234_5678",
             ),
             30..39,
         ),
-    ),
-    Ok(
         (
             Newline,
             39..40,
         ),
-    ),
-    Ok(
         (
             Newline,
             40..41,
         ),
-    ),
-    Ok(
         (
             Number(
                 "0x1234_5678_90ab_cdef",
             ),
             41..62,
         ),
-    ),
-    Ok(
         (
             Newline,
             62..63,
         ),
-    ),
-    Ok(
         (
             Number(
                 "0b1010_1010",
             ),
             63..74,
         ),
-    ),
-    Ok(
         (
             Newline,
             74..75,
         ),
-    ),
-    Ok(
         (
             Number(
                 "0o12345670",
             ),
             75..85,
         ),
-    ),
-    Ok(
         (
             Newline,
             85..86,
         ),
-    ),
-]
+    ],
+)
