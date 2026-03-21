@@ -401,6 +401,12 @@ impl Parser {
                                 name,
                                 value: Box::new(value),
                             }),
+                            ast::Expression::Array(targets) => {
+                                Some(ast::Statement::MultipleAssignment {
+                                    targets,
+                                    values: Box::new(value),
+                                })
+                            }
                             _ => panic!("invalid assignment target"),
                         }
                     } else {

@@ -57,6 +57,11 @@ pub enum Statement {
         value: Box<Expression>
     },
 
+    MultipleAssignment {
+        targets: Vec<Expression>,
+        values: Box<Expression>
+    },
+
     VariableDefinition {
         name: Spanned<String>,
         type_annotation: Box<Expression>,
