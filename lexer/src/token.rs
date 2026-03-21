@@ -41,6 +41,9 @@ pub enum TokenValue {
 
     // There come more complex tokens that consist out of two and more symbols.
     ArrowForward, // ->
+    
+    Range, // ..
+    RangeInclusive, // ..=
 
     RoundingUpDiv,   // /+
     RoundingDownDiv, // /-

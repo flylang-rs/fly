@@ -338,6 +338,24 @@ impl Lexer {
         (TokenValue::Comment(comment), end)
     }
 
+    fn lex_dot(&mut self, position: usize) -> (TokenValue, usize) {
+        match self.peek_symbol() {
+            Some((offset, '.')) => {
+                self.next_character();
+
+                match self.peek_symbol() {
+                    Some((offset, '=')) => {
+                        self.next_character();
+
+                        (TokenValue::RangeInclusive, offset + 1)
+                    }
+                    _ => (TokenValue::Range, offset + 1)
+               }
+            }
+            _ => (TokenValue::Dot, position + 1)
+        }
+    }
+
     /// Main code: Returns a next token in the code.
     pub fn next_token(&mut self) -> LexerResult {
         let (position, character) = self.next_character().ok_or(LexerError::EOF)?;
@@ -359,7 +377,7 @@ impl Lexer {
             ']' => (TokenValue::CloseBracket, position + 1),
             '{' => (TokenValue::OpenBrace, position + 1),
             '}' => (TokenValue::CloseBrace, position + 1),
-            '.' => (TokenValue::Dot, position + 1),
+            '.' => self.lex_dot(position),
             ',' => (TokenValue::Comma, position + 1),
             ':' => (TokenValue::Colon, position + 1),
             ';' => (TokenValue::Semicolon, position + 1),
