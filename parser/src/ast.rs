@@ -74,6 +74,15 @@ pub enum Statement {
         else_body: Option<Box<Statement>>,
     },
 
+    ModuleUsageDeclaration {
+        path: Box<Expression>
+    },
+
+    Scope {
+        held_value: Box<Expression>,
+        body: Box<Statement>
+    },
+
     Return {
         value: Box<Expression>,
     },

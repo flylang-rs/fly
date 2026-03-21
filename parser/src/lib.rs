@@ -329,12 +329,10 @@ impl Parser {
                 TokenValue::GreaterOrEquals => {
                     ast::Expression::GreaterOrEquals(Box::new(lhs), Box::new(rhs))
                 }
-                TokenValue::Dot => {
-                    ast::Expression::PropertyAccess {
-                        origin: Box::new(lhs),
-                        property: Box::new(rhs)
-                    }
-                }
+                TokenValue::Dot => ast::Expression::PropertyAccess {
+                    origin: Box::new(lhs),
+                    property: Box::new(rhs),
+                },
                 _ => unreachable!(
                     "Maybe you've added a binding power rule, but forgot how to handle them, add new operators."
                 ),
@@ -380,6 +378,27 @@ impl Parser {
         }
     }
 
+    fn parse_use(&mut self) -> ast::Statement {
+        self.next_token();
+
+        match self.peek() {
+            Some(TokenValue::OpenParen) => {
+                let held_value = self.parse_expression(0);
+                let body = self.parse_block();
+
+                ast::Statement::Scope {
+                    held_value: Box::new(held_value),
+                    body: Box::new(body),
+                }
+            }
+            _ => {
+                let path= self.parse_expression(0);
+
+                ast::Statement::ModuleUsageDeclaration { path: Box::new(path) }
+            }
+        }
+    }
+
     fn skip_whitespaces(&mut self) {
         loop {
             match self.peek() {
@@ -400,6 +419,7 @@ impl Parser {
                 TokenValue::If => Some(self.parse_if()),
                 TokenValue::Return => Some(self.parse_return()),
                 TokenValue::OpenBrace => Some(self.parse_block()),
+                TokenValue::Use => Some(self.parse_use()),
                 tok => {
                     eprintln!("Entering expression with token: {tok:?}");
 
