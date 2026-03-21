@@ -290,7 +290,7 @@ impl Lexer {
 
                 match comparator {
                     '<' => (TokenValue::LessOrEquals, offset + 1),
-                    '>' => (TokenValue::GraeterOrEquals, offset + 1),
+                    '>' => (TokenValue::GreaterOrEquals, offset + 1),
                     _ => unreachable!(),
                 }
             }
@@ -356,6 +356,17 @@ impl Lexer {
         }
     }
 
+    fn lex_ampersand(&mut self, position: usize) -> (TokenValue, usize) {
+        match self.peek_symbol() {
+            Some((offset, '&')) => {
+                self.next_character();
+
+                (TokenValue::LogicalAnd, offset + 1)
+            }
+            _ => (TokenValue::Ampersand, position + 1)
+        }
+    }
+
     /// Main code: Returns a next token in the code.
     pub fn next_token(&mut self) -> LexerResult {
         let (position, character) = self.next_character().ok_or(LexerError::EOF)?;
@@ -378,6 +389,7 @@ impl Lexer {
             '{' => (TokenValue::OpenBrace, position + 1),
             '}' => (TokenValue::CloseBrace, position + 1),
             '.' => self.lex_dot(position),
+            '&' => self.lex_ampersand(position),
             ',' => (TokenValue::Comma, position + 1),
             ':' => (TokenValue::Colon, position + 1),
             ';' => (TokenValue::Semicolon, position + 1),

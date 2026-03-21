@@ -6,6 +6,8 @@ use crate::token::TokenValue;
 pub(crate) static KEYWORDS: LazyLock<HashMap<&'static str, crate::TokenValue>> = LazyLock::new(|| {
     HashMap::from([
         ("func", TokenValue::Func),
+        ("if", TokenValue::If),
+        ("else", TokenValue::Else),
         ("for", TokenValue::For),
         ("while", TokenValue::While),
         ("return", TokenValue::Return),

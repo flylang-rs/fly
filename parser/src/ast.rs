@@ -22,6 +22,14 @@ pub enum Expression {
     BitShiftLeft(Box<Expression>, Box<Expression>),
     BitShiftRight(Box<Expression>, Box<Expression>),
 
+    // Comparison operators
+
+    Equals(Box<Expression>, Box<Expression>),
+    Greater(Box<Expression>, Box<Expression>),
+    GreaterOrEquals(Box<Expression>, Box<Expression>),
+    Less(Box<Expression>, Box<Expression>),
+    LessOrEquals(Box<Expression>, Box<Expression>),
+
     // Unary operations
 
     Not(Box<Expression>),
@@ -59,6 +67,12 @@ pub enum Statement {
         name: Spanned<String>,
         arguments: Vec<Expression>,
         body: Box<Statement>
+    },
+
+    If {
+        condition: Box<Expression>,
+        body: Box<Statement>,
+        else_body: Option<Box<Statement>>
     },
 
     Return {

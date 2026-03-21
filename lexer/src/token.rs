@@ -60,27 +60,29 @@ pub enum TokenValue {
     Equals,          // ==
     NotEquals,       // !=
     LessOrEquals,    // <=
-    GraeterOrEquals, // >=
+    GreaterOrEquals, // >=
 
     LogicalAnd, // &&
     LogicalOr,  // ||
 
     // Keywords
-    Func,
-    For,
-    While,
-    Return,
-    Public,
-    Use,
-    Null,
-    Record,
-    SelfReference,
-    SelfRecord,
-    Static,
-    Override,
-    Operator,
     Destructor,
     Drop,
+    Else,
+    For,
+    Func,
+    If,
+    Null,
+    Operator,
+    Override,
+    Public,
+    Record,
+    Return,
+    SelfRecord,
+    SelfReference,
+    Static,
+    Use,
+    While,
 }
 
 #[derive(Debug, Clone)]

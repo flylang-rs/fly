@@ -213,7 +213,7 @@ impl Parser {
             }) => {
                 let rhs = self.parse_expression(9); // unary minus has high BP
                 ast::Expression::Neg(Box::new(rhs))
-            },
+            }
             // ['a', 'r', 'r', 'a', 'y']
             Some(Token {
                 value: TokenValue::OpenBracket,
@@ -221,7 +221,7 @@ impl Parser {
             }) => {
                 let inner = self.parse_array_inner();
                 ast::Expression::Array(inner)
-            },
+            }
             // (Open Paren, ...
             Some(Token {
                 value: TokenValue::OpenParen,
@@ -278,6 +278,11 @@ impl Parser {
                 | TokenValue::RoundingDownDiv
                 | TokenValue::RoundingUpDiv
                 | TokenValue::Percent => (3, 4),
+                TokenValue::Equals
+                | TokenValue::Less
+                | TokenValue::LessOrEquals
+                | TokenValue::Greater
+                | TokenValue::GreaterOrEquals => (5, 6),
                 _ => break, // not an infix operator
             };
 
@@ -306,6 +311,15 @@ impl Parser {
                     ast::DivisionKind::RoundingDown,
                 ),
                 TokenValue::Percent => ast::Expression::Mod(Box::new(lhs), Box::new(rhs)),
+                TokenValue::Equals => ast::Expression::Equals(Box::new(lhs), Box::new(rhs)),
+                TokenValue::Less => ast::Expression::Less(Box::new(lhs), Box::new(rhs)),
+                TokenValue::Greater => ast::Expression::Greater(Box::new(lhs), Box::new(rhs)),
+                TokenValue::LessOrEquals => {
+                    ast::Expression::LessOrEquals(Box::new(lhs), Box::new(rhs))
+                }
+                TokenValue::GreaterOrEquals => {
+                    ast::Expression::GreaterOrEquals(Box::new(lhs), Box::new(rhs))
+                }
                 _ => unreachable!(
                     "Maybe you've added a binding power rule, but forgot how to handle them, add new operators."
                 ),
@@ -320,7 +334,35 @@ impl Parser {
 
         let value = self.parse_expression(0);
 
-        ast::Statement::Return { value: Box::new(value) }
+        ast::Statement::Return {
+            value: Box::new(value),
+        }
+    }
+
+    fn parse_if(&mut self) -> ast::Statement {
+        self.next_token();
+
+        let condition = self.parse_expression(0);
+
+        let body = self.parse_block();
+
+        let mut else_body: Option<ast::Statement> = None;
+
+        if let Some(&TokenValue::Else) = self.peek() {
+            self.next_token();
+
+            if let Some(&TokenValue::If) = self.peek() {
+                else_body = Some(self.parse_if());
+            } else {
+                else_body = Some(self.parse_block());
+            }
+        }
+
+        ast::Statement::If {
+            condition: Box::new(condition),
+            body: Box::new(body),
+            else_body: else_body.map(|x| Box::new(x)),
+        }
     }
 
     fn skip_whitespaces(&mut self) {
@@ -340,6 +382,7 @@ impl Parser {
         loop {
             return match self.peek()? {
                 TokenValue::Func => Some(self.parse_func()),
+                TokenValue::If => Some(self.parse_if()),
                 TokenValue::Return => Some(self.parse_return()),
                 TokenValue::OpenBrace => Some(self.parse_block()),
                 tok => {

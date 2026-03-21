@@ -1,0 +1,11 @@
+number = 49
+
+if number == 49 {
+    print("Forty-nine looks like fortune!")
+} else if number < 49 {
+    print("It's too early!")
+} else if number > 49 {
+    print("It's too late!")
+} else {
+    print("Intapreta guna sei wut")
+}
