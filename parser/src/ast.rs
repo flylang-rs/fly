@@ -1,5 +1,5 @@
-use core::fmt::Display;
 use core::fmt::Debug;
+use core::fmt::Display;
 
 use flylang_common::Address;
 use flylang_common::spanned::Spanned;
@@ -7,7 +7,6 @@ use flylang_common::spanned::Spanned;
 #[derive(Debug, Clone)]
 pub enum Expression {
     // Binary operations
-
     Add(Box<Expression>, Box<Expression>),
     Sub(Box<Expression>, Box<Expression>),
     Mul(Box<Expression>, Box<Expression>),
@@ -23,7 +22,6 @@ pub enum Expression {
     BitShiftRight(Box<Expression>, Box<Expression>),
 
     // Comparison operators
-
     Equals(Box<Expression>, Box<Expression>),
     Greater(Box<Expression>, Box<Expression>),
     GreaterOrEquals(Box<Expression>, Box<Expression>),
@@ -31,12 +29,10 @@ pub enum Expression {
     LessOrEquals(Box<Expression>, Box<Expression>),
 
     // Unary operations
-
     Not(Box<Expression>),
     Neg(Box<Expression>),
 
     // Language items
-
     Identifier(Spanned<String>),
     Number(Spanned<String>),
     String(Spanned<String>),
@@ -46,13 +42,13 @@ pub enum Expression {
 
     Call {
         callee: Box<Expression>,
-        parameters: Vec<Expression>
+        parameters: Vec<Expression>,
     },
 
     Assignment {
         name: Box<Expression>,
-        value: Box<Expression>
-    }
+        value: Box<Expression>,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -60,23 +56,23 @@ pub enum Statement {
     VariableDefinition {
         name: Spanned<String>,
         type_annotation: Box<Expression>,
-        value: Box<Expression>
+        value: Box<Expression>,
     },
 
     Function {
         name: Spanned<String>,
         arguments: Vec<Expression>,
-        body: Box<Statement>
+        body: Box<Statement>,
     },
 
     If {
         condition: Box<Expression>,
         body: Box<Statement>,
-        else_body: Option<Box<Statement>>
+        else_body: Option<Box<Statement>>,
     },
 
     Return {
-        value: Box<Expression>
+        value: Box<Expression>,
     },
 
     Expr(Expression),
@@ -86,5 +82,5 @@ pub enum Statement {
 pub enum DivisionKind {
     Neutral,
     RoundingUp,
-    RoundingDown
+    RoundingDown,
 }

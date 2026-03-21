@@ -311,7 +311,10 @@ impl Parser {
                     Box::new(rhs),
                     ast::DivisionKind::RoundingDown,
                 ),
-                TokenValue::Assign => ast::Expression::Assignment { name: Box::new(lhs), value: Box::new(rhs) },
+                TokenValue::Assign => ast::Expression::Assignment {
+                    name: Box::new(lhs),
+                    value: Box::new(rhs),
+                },
                 TokenValue::Percent => ast::Expression::Mod(Box::new(lhs), Box::new(rhs)),
                 TokenValue::Equals => ast::Expression::Equals(Box::new(lhs), Box::new(rhs)),
                 TokenValue::Less => ast::Expression::Less(Box::new(lhs), Box::new(rhs)),

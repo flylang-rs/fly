@@ -349,10 +349,10 @@ impl Lexer {
 
                         (TokenValue::RangeInclusive, offset + 1)
                     }
-                    _ => (TokenValue::Range, offset + 1)
-               }
+                    _ => (TokenValue::Range, offset + 1),
+                }
             }
-            _ => (TokenValue::Dot, position + 1)
+            _ => (TokenValue::Dot, position + 1),
         }
     }
 
@@ -363,7 +363,7 @@ impl Lexer {
 
                 (TokenValue::LogicalAnd, offset + 1)
             }
-            _ => (TokenValue::Ampersand, position + 1)
+            _ => (TokenValue::Ampersand, position + 1),
         }
     }
 

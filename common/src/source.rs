@@ -4,7 +4,7 @@ pub struct Source {
     pub filepath: String,
     pub code: String,
 
-    line_starts: Vec<usize>,  // byte offset of the first char on each line
+    line_starts: Vec<usize>, // byte offset of the first char on each line
 }
 
 impl Source {
@@ -21,12 +21,19 @@ impl Source {
             )
             .collect();
 
-        Self { filepath, code, line_starts }
+        Self {
+            filepath,
+            code,
+            line_starts,
+        }
     }
 
     /// Returns (line, column), both 1-indexed.
     pub fn location(&self, byte_offset: usize) -> (usize, usize) {
-        let line_idx = self.line_starts.partition_point(|&start| start <= byte_offset) - 1;
+        let line_idx = self
+            .line_starts
+            .partition_point(|&start| start <= byte_offset)
+            - 1;
         let col = byte_offset - self.line_starts[line_idx];
         (line_idx + 1, col + 1)
     }
@@ -34,7 +41,8 @@ impl Source {
     /// Returns the full text of a given line (1-indexed), without the newline.
     pub fn line_text(&self, line: usize) -> &str {
         let start = self.line_starts[line - 1];
-        let end = self.line_starts
+        let end = self
+            .line_starts
             .get(line)
             .copied()
             .unwrap_or(self.code.len());

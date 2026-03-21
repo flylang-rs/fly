@@ -1,7 +1,11 @@
 use std::sync::Arc;
 
 use flylang_common::source::Source;
-use flylang_lexer::{self, error::LexerError, token::{Token, TokenValue}};
+use flylang_lexer::{
+    self,
+    error::LexerError,
+    token::{Token, TokenValue},
+};
 use flylang_parser::{Parser, state::ParserState};
 
 fn run_file(source: Source) {
@@ -15,7 +19,7 @@ fn run_file(source: Source) {
                 if token.value == TokenValue::Newline {
                     println!();
                 }
-        
+
                 println!("Token: {:?} @ {:?}", token.value, token.address.span);
                 tokens.push(token);
             }

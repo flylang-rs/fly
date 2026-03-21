@@ -10,6 +10,9 @@ pub struct Spanned<T> {
 
 impl<T: Debug> Debug for Spanned<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_tuple("Spanned").field(&self.value).field(&self.address.span).finish()
+        f.debug_tuple("Spanned")
+            .field(&self.value)
+            .field(&self.address.span)
+            .finish()
     }
 }

@@ -30,10 +30,10 @@ pub(super) fn code_to_tokens(code: &str) -> Result<Tester, LexerError> {
         match lexer.next_token() {
             Err(LexerError::EOF) => {
                 break;
-            },
+            }
             token_result => {
                 vec.push(token_result?);
-            },
+            }
         }
     }
 

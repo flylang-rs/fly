@@ -41,8 +41,8 @@ pub enum TokenValue {
 
     // There come more complex tokens that consist out of two and more symbols.
     ArrowForward, // ->
-    
-    Range, // ..
+
+    Range,          // ..
     RangeInclusive, // ..=
 
     RoundingUpDiv,   // /+
@@ -101,11 +101,8 @@ impl Token {
             Token {
                 value: TokenValue::Identifier(id),
                 address,
-            } => Some(Spanned {
-                value: id,
-                address,
-            }),
-            _ => None
+            } => Some(Spanned { value: id, address }),
+            _ => None,
         }
     }
 }
