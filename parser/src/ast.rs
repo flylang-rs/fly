@@ -1,7 +1,5 @@
 use core::fmt::Debug;
-use core::fmt::Display;
 
-use flylang_common::Address;
 use flylang_common::spanned::Spanned;
 
 #[derive(Debug, Clone)]

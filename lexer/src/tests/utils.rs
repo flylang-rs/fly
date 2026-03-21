@@ -3,7 +3,6 @@ use core::ops::Range;
 use flylang_common::source::Source;
 
 use crate::{
-    LexerResult,
     error::LexerError,
     token::{Token, TokenValue},
 };
