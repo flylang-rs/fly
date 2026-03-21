@@ -47,6 +47,11 @@ pub enum Expression {
         name: Box<Expression>,
         value: Box<Expression>,
     },
+
+    PropertyAccess {
+        origin: Box<Expression>,
+        property: Box<Expression>
+    }
 }
 
 #[derive(Debug, Clone)]

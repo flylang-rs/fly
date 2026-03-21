@@ -231,7 +231,7 @@ impl Parser {
                 self.expect(TokenValue::CloseParen);
                 inner
             }
-
+            None => todo!("EOF while parsing expression! Handle error gracefully!"),
             value => todo!("Got unexpected token: {value:?}"),
         };
 
@@ -243,7 +243,7 @@ impl Parser {
 
             // Check for function call
             if op == TokenValue::OpenParen {
-                // Magic number: 20 is a highest binding power.
+                // Magic number: 20 is a high binding power.
                 // By using it, token list [foo, (, x, ), +, 1] will be unrolled into
                 // | foo
                 // | `- (x)
@@ -273,17 +273,21 @@ impl Parser {
 
             let (left_bp, right_bp) = match op {
                 TokenValue::Assign => (1, 2),
-                TokenValue::Plus | TokenValue::Minus => (3, 4),
+                TokenValue::Plus
+                | TokenValue::PlusAssign
+                | TokenValue::Minus
+                | TokenValue::MinusAssign => (4, 5),
                 TokenValue::Asterisk
                 | TokenValue::Slash
                 | TokenValue::RoundingDownDiv
                 | TokenValue::RoundingUpDiv
-                | TokenValue::Percent => (5, 6),
+                | TokenValue::Percent => (6, 7),
                 TokenValue::Equals
                 | TokenValue::Less
                 | TokenValue::LessOrEquals
                 | TokenValue::Greater
-                | TokenValue::GreaterOrEquals => (7, 8),
+                | TokenValue::GreaterOrEquals => (8, 9),
+                TokenValue::Dot => (31, 32),
                 _ => break, // not an infix operator
             };
 
@@ -324,6 +328,12 @@ impl Parser {
                 }
                 TokenValue::GreaterOrEquals => {
                     ast::Expression::GreaterOrEquals(Box::new(lhs), Box::new(rhs))
+                }
+                TokenValue::Dot => {
+                    ast::Expression::PropertyAccess {
+                        origin: Box::new(lhs),
+                        property: Box::new(rhs)
+                    }
                 }
                 _ => unreachable!(
                     "Maybe you've added a binding power rule, but forgot how to handle them, add new operators."

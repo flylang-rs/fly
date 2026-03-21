@@ -111,7 +111,7 @@ use(my_object) {
 # Note: If an object will be assigned in outside of the scope,
 # it won't be destroyed.
 
-obj1 = null
+obj1 = nil
 obj2 = "Hi!"
 
 use(obj2) {

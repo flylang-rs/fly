@@ -1,0 +1,15 @@
+# Modules
+
+use wings;
+
+
+# Properties
+
+wings.flap()
+
+
+# Scopes
+
+use(a = "Opa, I have birds too! And mine are better, 'cause they have mics!") {
+    print(a)
+}
