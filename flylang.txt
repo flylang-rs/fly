@@ -26,10 +26,10 @@ c: int = a * b
 
 # Multiple assignation
 
-a, b = 1, 2  # Ok!
-a = 1, 2     # Error!
+[a, b] = [1, 2]  # Ok!
+a = [1, 2]     # Error!
 
-a, b = b, a  # Ok! It will swap two variables.
+[a, b] = [b, a]  # Ok! It will swap two variables.
 
 
 

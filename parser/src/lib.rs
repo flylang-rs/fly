@@ -272,17 +272,18 @@ impl Parser {
             }
 
             let (left_bp, right_bp) = match op {
-                TokenValue::Plus | TokenValue::Minus => (1, 2),
+                TokenValue::Assign => (1, 2),
+                TokenValue::Plus | TokenValue::Minus => (3, 4),
                 TokenValue::Asterisk
                 | TokenValue::Slash
                 | TokenValue::RoundingDownDiv
                 | TokenValue::RoundingUpDiv
-                | TokenValue::Percent => (3, 4),
+                | TokenValue::Percent => (5, 6),
                 TokenValue::Equals
                 | TokenValue::Less
                 | TokenValue::LessOrEquals
                 | TokenValue::Greater
-                | TokenValue::GreaterOrEquals => (5, 6),
+                | TokenValue::GreaterOrEquals => (7, 8),
                 _ => break, // not an infix operator
             };
 
@@ -310,6 +311,7 @@ impl Parser {
                     Box::new(rhs),
                     ast::DivisionKind::RoundingDown,
                 ),
+                TokenValue::Assign => ast::Expression::Assignment { name: Box::new(lhs), value: Box::new(rhs) },
                 TokenValue::Percent => ast::Expression::Mod(Box::new(lhs), Box::new(rhs)),
                 TokenValue::Equals => ast::Expression::Equals(Box::new(lhs), Box::new(rhs)),
                 TokenValue::Less => ast::Expression::Less(Box::new(lhs), Box::new(rhs)),
@@ -397,15 +399,11 @@ impl Parser {
                         let value = self.parse_expression(0);
 
                         match lhs {
-                            ast::Expression::Identifier(name) => Some(ast::Statement::Assignment {
-                                name,
-                                value: Box::new(value),
-                            }),
-                            ast::Expression::Array(targets) => {
-                                Some(ast::Statement::MultipleAssignment {
-                                    targets,
-                                    values: Box::new(value),
-                                })
+                            id @ ast::Expression::Identifier(_) => {
+                                Some(ast::Statement::Expr(ast::Expression::Assignment {
+                                    name: Box::new(id),
+                                    value: Box::new(value),
+                                }))
                             }
                             _ => panic!("invalid assignment target"),
                         }

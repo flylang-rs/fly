@@ -1,0 +1,3 @@
+func log(x, base = E) {
+    # ...
+}

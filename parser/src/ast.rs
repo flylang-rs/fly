@@ -47,21 +47,16 @@ pub enum Expression {
     Call {
         callee: Box<Expression>,
         parameters: Vec<Expression>
+    },
+
+    Assignment {
+        name: Box<Expression>,
+        value: Box<Expression>
     }
 }
 
 #[derive(Debug, Clone)]
 pub enum Statement {
-    Assignment {
-        name: Spanned<String>,
-        value: Box<Expression>
-    },
-
-    MultipleAssignment {
-        targets: Vec<Expression>,
-        values: Box<Expression>
-    },
-
     VariableDefinition {
         name: Spanned<String>,
         type_annotation: Box<Expression>,
