@@ -51,6 +51,11 @@ pub enum Expression {
     PropertyAccess {
         origin: Box<Expression>,
         property: Box<Expression>
+    },
+
+    IndexedAccess {
+        origin: Box<Expression>,
+        index: Box<Expression>
     }
 }
 

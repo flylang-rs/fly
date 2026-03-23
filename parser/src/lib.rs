@@ -32,6 +32,11 @@ impl Parser {
         self.tokens.peek().map(|t| &t.value)
     }
 
+    fn peek_address(&mut self) -> Option<Address> {
+        self.skip_comments();
+        self.tokens.peek().map(|x| x.address.clone())
+    }
+
     pub fn next_token(&mut self) -> Option<Token> {
         loop {
             let token = self.tokens.peek()?;
@@ -212,6 +217,7 @@ impl Parser {
                 ..
             }) => {
                 let rhs = self.parse_expression(9); // unary minus has high BP
+
                 ast::Expression::Neg(Box::new(rhs))
             }
             // ['a', 'r', 'r', 'a', 'y']
@@ -287,6 +293,7 @@ impl Parser {
                 | TokenValue::LessOrEquals
                 | TokenValue::Greater
                 | TokenValue::GreaterOrEquals => (8, 9),
+                TokenValue::OpenBracket => (31, 0),
                 TokenValue::Dot => (31, 32),
                 _ => break, // not an infix operator
             };
@@ -332,6 +339,11 @@ impl Parser {
                 TokenValue::Dot => ast::Expression::PropertyAccess {
                     origin: Box::new(lhs),
                     property: Box::new(rhs),
+                },
+                TokenValue::OpenBracket => {
+                    self.expect(TokenValue::CloseBracket);
+
+                    ast::Expression::IndexedAccess { origin: Box::new(lhs), index: Box::new(rhs) }
                 },
                 _ => unreachable!(
                     "Maybe you've added a binding power rule, but forgot how to handle them, add new operators."
