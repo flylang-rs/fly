@@ -118,11 +118,11 @@ impl Parser {
 
         let body = self.parse_block()?;
 
-        Ok(ast::Statement::Function {
+        Ok(ast::Statement::Function(ast::Function {
             name,
             arguments,
             body: Box::new(body),
-        })
+        }))
     }
 
     // Maybe it should be in lexer.
@@ -271,7 +271,11 @@ impl Parser {
                 inner
             }
             None => todo!("EOF while parsing expression! Handle error gracefully!"),
-            value => return Err(ParserError::UnexpectedTokenInExpression { token: value.unwrap() }),
+            value => {
+                return Err(ParserError::UnexpectedTokenInExpression {
+                    token: value.unwrap(),
+                });
+            }
         };
 
         loop {
@@ -427,11 +431,11 @@ impl Parser {
             }
         }
 
-        Ok(ast::Statement::If {
+        Ok(ast::Statement::If(ast::If {
             condition: Box::new(condition),
             body: Box::new(body),
-            else_body: else_body.map(|x| Box::new(x)),
-        })
+            else_body: else_body.map(Box::new),
+        }))
     }
 
     fn parse_use(&mut self) -> ParserResult<ast::Statement> {
@@ -479,14 +483,16 @@ impl Parser {
                 TokenValue::OpenBrace => Ok(self.parse_block()?),
                 TokenValue::Use => Ok(self.parse_use()?),
                 tok => {
-                    eprintln!("Entering expression with token: {tok:?}");
+                    // eprintln!("Entering expression with token: {tok:?}");
 
                     // Parse the left side speculatively as an expression
                     let lhs = self.parse_expression(0)?;
 
                     // Now decide what kind of statement this is
                     if self.peek() == Some(&TokenValue::Assign) {
-                        unreachable!("There was an old code that used to work with assignments. Now, it's moved to expressions parser.");
+                        unreachable!(
+                            "There was an old code that used to work with assignments. Now, it's moved to expressions parser."
+                        );
                         // self.next_token();
                         // let val  = self.parse_expression(0);
 
