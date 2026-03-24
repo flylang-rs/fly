@@ -84,14 +84,18 @@ impl Parser {
     }
 
     fn parse_block(&mut self) -> ast::Statement {
-        self.expect(TokenValue::OpenBrace);
+        let token_addr = self.expect(TokenValue::OpenBrace).address;
+
         self.skip_whitespaces();
 
         let statements = self.parse(ParserState::InBlock);
 
-        self.expect(TokenValue::CloseBrace);
+        let end_token_addr = self.expect(TokenValue::CloseBrace).address;
 
-        ast::Statement::Expr(ast::Expression::Block(statements))
+        ast::Statement::Expr(Spanned {
+            value: ast::ExprKind::Block(statements),
+            address: token_addr.merge(&end_token_addr),
+        })
     }
 
     fn parse_func(&mut self) -> ast::Statement {
@@ -109,7 +113,7 @@ impl Parser {
 
         self.expect(TokenValue::OpenParen);
 
-        let arguments = self.parse_argument_list();
+        let (arguments, addr) = self.parse_argument_list();
 
         let body = self.parse_block();
 
@@ -131,20 +135,24 @@ impl Parser {
                 address.source.filepath, line, col
             );
         } else {
-            ast::Expression::Number(Spanned {
-                value: number_repr,
+            Spanned {
+                value: ast::ExprKind::Number(number_repr),
                 address,
-            })
+            }
         }
     }
 
-    fn parse_argument_list(&mut self) -> Vec<ast::Expression> {
+    fn parse_argument_list(&mut self) -> (Vec<ast::Expression>, Address) {
         let mut args = Vec::new();
+
+        let start_address = self.peek_address().unwrap();
 
         if self.peek() == Some(&TokenValue::CloseParen) {
             self.next_token();
-            return args;
+            return (args, start_address.merge(&self.peek_address().unwrap()));
         }
+
+        let end_address: Address;
 
         loop {
             args.push(self.parse_expression(0));
@@ -154,22 +162,24 @@ impl Parser {
                     self.next_token();
                 }
                 Some(TokenValue::CloseParen) => {
-                    self.next_token();
+                    end_address = self.next_token().unwrap().address;
                     break;
                 }
                 other => panic!("expected `,` or `)` in argument list, got {:?}", other),
             }
         }
 
-        args
+        (args, start_address.merge(&end_address))
     }
 
-    fn parse_array_inner(&mut self) -> Vec<ast::Expression> {
+    fn parse_array_inner(&mut self) -> (Vec<ast::Expression>, Address) {
         let mut args = Vec::new();
+
+        let start_addr = self.peek_address().unwrap();
 
         if self.peek() == Some(&TokenValue::CloseBracket) {
             self.next_token();
-            return args;
+            return (args, start_addr.merge(&self.peek_address().unwrap()));
         }
 
         loop {
@@ -187,13 +197,17 @@ impl Parser {
             }
         }
 
-        args
+        (args, start_addr.merge(&self.peek_address().unwrap()))
     }
 
     // Parse an expression.
     // Instead of using recursive descend we use Pratt's parsing method.
     fn parse_expression(&mut self, min_binding_power: usize) -> ast::Expression {
         self.skip_whitespaces();
+
+        let start_addr = self
+            .peek_address()
+            .expect("EOF during getting current address");
 
         let mut lhs = match self.next_token() {
             // Number
@@ -205,28 +219,45 @@ impl Parser {
             Some(Token {
                 value: TokenValue::Identifier(nr),
                 address,
-            }) => ast::Expression::Identifier(Spanned { value: nr, address }),
+            }) => Spanned {
+                value: ast::ExprKind::Identifier(nr),
+                address,
+            },
             // "String"
             Some(Token {
                 value: TokenValue::String(nr),
                 address,
-            }) => ast::Expression::String(Spanned { value: nr, address }),
+            }) => Spanned {
+                value: ast::ExprKind::String(nr),
+                address,
+            },
             // -Unary minus
             Some(Token {
                 value: TokenValue::Minus,
-                ..
+                address: minus_addr,
             }) => {
                 let rhs = self.parse_expression(9); // unary minus has high BP
 
-                ast::Expression::Neg(Box::new(rhs))
+                let merged = minus_addr.merge(&rhs.address);
+
+                Spanned {
+                    value: ast::ExprKind::Neg(Box::new(rhs)),
+                    address: merged,
+                }
             }
             // ['a', 'r', 'r', 'a', 'y']
             Some(Token {
                 value: TokenValue::OpenBracket,
-                ..
+                address: bstart,
             }) => {
-                let inner = self.parse_array_inner();
-                ast::Expression::Array(inner)
+                let (inner, in_addr) = self.parse_array_inner();
+
+                let merged = bstart.merge(&in_addr);
+
+                Spanned {
+                    value: ast::ExprKind::Array(inner),
+                    address: merged,
+                }
             }
             // (Open Paren, ...
             Some(Token {
@@ -267,11 +298,14 @@ impl Parser {
                 }
 
                 self.next_token(); // consume `(`
-                let args = self.parse_argument_list();
+                let (args, args_addr) = self.parse_argument_list();
 
-                lhs = ast::Expression::Call {
-                    callee: Box::new(lhs),
-                    parameters: args,
+                lhs = Spanned {
+                    value: ast::ExprKind::Call {
+                        callee: Box::new(lhs),
+                        parameters: args,
+                    },
+                    address: args_addr,
                 };
 
                 continue; // don't fall through to infix handling
@@ -305,50 +339,58 @@ impl Parser {
             self.next_token(); // consume the operator
             let rhs = self.parse_expression(right_bp);
 
-            lhs = match op {
-                TokenValue::Plus => ast::Expression::Add(Box::new(lhs), Box::new(rhs)),
-                TokenValue::Minus => ast::Expression::Sub(Box::new(lhs), Box::new(rhs)),
-                TokenValue::Asterisk => ast::Expression::Mul(Box::new(lhs), Box::new(rhs)),
-                TokenValue::Slash => {
-                    ast::Expression::Div(Box::new(lhs), Box::new(rhs), ast::DivisionKind::Neutral)
-                }
-                TokenValue::RoundingUpDiv => ast::Expression::Div(
-                    Box::new(lhs),
-                    Box::new(rhs),
-                    ast::DivisionKind::RoundingUp,
-                ),
-                TokenValue::RoundingDownDiv => ast::Expression::Div(
-                    Box::new(lhs),
-                    Box::new(rhs),
-                    ast::DivisionKind::RoundingDown,
-                ),
-                TokenValue::Assign => ast::Expression::Assignment {
-                    name: Box::new(lhs),
-                    value: Box::new(rhs),
-                },
-                TokenValue::Percent => ast::Expression::Mod(Box::new(lhs), Box::new(rhs)),
-                TokenValue::Equals => ast::Expression::Equals(Box::new(lhs), Box::new(rhs)),
-                TokenValue::Less => ast::Expression::Less(Box::new(lhs), Box::new(rhs)),
-                TokenValue::Greater => ast::Expression::Greater(Box::new(lhs), Box::new(rhs)),
-                TokenValue::LessOrEquals => {
-                    ast::Expression::LessOrEquals(Box::new(lhs), Box::new(rhs))
-                }
-                TokenValue::GreaterOrEquals => {
-                    ast::Expression::GreaterOrEquals(Box::new(lhs), Box::new(rhs))
-                }
-                TokenValue::Dot => ast::Expression::PropertyAccess {
-                    origin: Box::new(lhs),
-                    property: Box::new(rhs),
-                },
-                TokenValue::OpenBracket => {
-                    self.expect(TokenValue::CloseBracket);
+            let merged = lhs.address.clone().merge(&rhs.address);
 
-                    ast::Expression::IndexedAccess { origin: Box::new(lhs), index: Box::new(rhs) }
+            lhs = Spanned {
+                value: match op {
+                    TokenValue::Plus => ast::ExprKind::Add(Box::new(lhs), Box::new(rhs)),
+                    TokenValue::Minus => ast::ExprKind::Sub(Box::new(lhs), Box::new(rhs)),
+                    TokenValue::Asterisk => ast::ExprKind::Mul(Box::new(lhs), Box::new(rhs)),
+                    TokenValue::Slash => {
+                        ast::ExprKind::Div(Box::new(lhs), Box::new(rhs), ast::DivisionKind::Neutral)
+                    }
+                    TokenValue::RoundingUpDiv => ast::ExprKind::Div(
+                        Box::new(lhs),
+                        Box::new(rhs),
+                        ast::DivisionKind::RoundingUp,
+                    ),
+                    TokenValue::RoundingDownDiv => ast::ExprKind::Div(
+                        Box::new(lhs),
+                        Box::new(rhs),
+                        ast::DivisionKind::RoundingDown,
+                    ),
+                    TokenValue::Assign => ast::ExprKind::Assignment {
+                        name: Box::new(lhs),
+                        value: Box::new(rhs),
+                    },
+                    TokenValue::Percent => ast::ExprKind::Mod(Box::new(lhs), Box::new(rhs)),
+                    TokenValue::Equals => ast::ExprKind::Equals(Box::new(lhs), Box::new(rhs)),
+                    TokenValue::Less => ast::ExprKind::Less(Box::new(lhs), Box::new(rhs)),
+                    TokenValue::Greater => ast::ExprKind::Greater(Box::new(lhs), Box::new(rhs)),
+                    TokenValue::LessOrEquals => {
+                        ast::ExprKind::LessOrEquals(Box::new(lhs), Box::new(rhs))
+                    }
+                    TokenValue::GreaterOrEquals => {
+                        ast::ExprKind::GreaterOrEquals(Box::new(lhs), Box::new(rhs))
+                    }
+                    TokenValue::Dot => ast::ExprKind::PropertyAccess {
+                        origin: Box::new(lhs),
+                        property: Box::new(rhs),
+                    },
+                    TokenValue::OpenBracket => {
+                        self.expect(TokenValue::CloseBracket);
+
+                        ast::ExprKind::IndexedAccess {
+                            origin: Box::new(lhs),
+                            index: Box::new(rhs),
+                        }
+                    }
+                    _ => unreachable!(
+                        "Maybe you've added a binding power rule, but forgot how to handle them, add new operators."
+                    ),
                 },
-                _ => unreachable!(
-                    "Maybe you've added a binding power rule, but forgot how to handle them, add new operators."
-                ),
-            };
+                address: merged,
+            }
         }
 
         lhs
@@ -404,9 +446,11 @@ impl Parser {
                 }
             }
             _ => {
-                let path= self.parse_expression(0);
+                let path = self.parse_expression(0);
 
-                ast::Statement::ModuleUsageDeclaration { path: Box::new(path) }
+                ast::Statement::ModuleUsageDeclaration {
+                    path: Box::new(path),
+                }
             }
         }
     }
@@ -444,12 +488,17 @@ impl Parser {
                         let value = self.parse_expression(0);
 
                         match lhs {
-                            id @ ast::Expression::Identifier(_) => {
-                                Some(ast::Statement::Expr(ast::Expression::Assignment {
-                                    name: Box::new(id),
+                            ref name_v @ Spanned {
+                                value: _,
+                                ref address,
+                            } => Some(ast::Statement::Expr(Spanned {
+                                address: address.clone(),
+                                value: ast::ExprKind::Assignment {
+                                    name: Box::new(name_v.clone()),
                                     value: Box::new(value),
-                                }))
+                                }
                             }
+                            )),
                             _ => panic!("invalid assignment target"),
                         }
                     } else {

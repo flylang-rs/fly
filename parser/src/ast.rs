@@ -2,8 +2,10 @@ use core::fmt::Debug;
 
 use flylang_common::spanned::Spanned;
 
+pub type Expression = Spanned<ExprKind>;
+
 #[derive(Debug, Clone)]
-pub enum Expression {
+pub enum ExprKind {
     // Binary operations
     Add(Box<Expression>, Box<Expression>),
     Sub(Box<Expression>, Box<Expression>),
@@ -31,9 +33,9 @@ pub enum Expression {
     Neg(Box<Expression>),
 
     // Language items
-    Identifier(Spanned<String>),
-    Number(Spanned<String>),
-    String(Spanned<String>),
+    Identifier(String),
+    Number(String),
+    String(String),
 
     Block(Vec<Statement>),
     Array(Vec<Expression>),
