@@ -2,10 +2,13 @@ use flylang_common::{Address, spanned::Spanned};
 use flylang_lexer::token::{Token, TokenValue};
 use std::iter::Peekable;
 
-use crate::state::ParserState;
+use crate::{ast::ExprKind, error::ParserError, state::ParserState};
 
 pub mod ast;
+pub mod error;
 pub mod state;
+
+pub type ParserResult<T> = Result<T, ParserError>;
 
 pub struct Parser {
     tokens: Peekable<std::vec::IntoIter<Token>>,
@@ -63,7 +66,7 @@ impl Parser {
         }
     }
 
-    pub fn parse(&mut self, state: ParserState) -> Vec<ast::Statement> {
+    pub fn parse(&mut self, state: ParserState) -> ParserResult<Vec<ast::Statement>> {
         let mut stmts = Vec::new();
 
         loop {
@@ -75,30 +78,28 @@ impl Parser {
                 _ => {}
             }
 
-            if let Some(stmt) = self.parse_statement() {
-                stmts.push(stmt);
-            }
+            stmts.push(self.parse_statement()?);
         }
 
-        stmts
+        Ok(stmts)
     }
 
-    fn parse_block(&mut self) -> ast::Statement {
+    fn parse_block(&mut self) -> ParserResult<ast::Statement> {
         let token_addr = self.expect(TokenValue::OpenBrace).address;
 
         self.skip_whitespaces();
 
-        let statements = self.parse(ParserState::InBlock);
+        let statements = self.parse(ParserState::InBlock)?;
 
         let end_token_addr = self.expect(TokenValue::CloseBrace).address;
 
-        ast::Statement::Expr(Spanned {
+        Ok(ast::Statement::Expr(Spanned {
             value: ast::ExprKind::Block(statements),
             address: token_addr.merge(&end_token_addr),
-        })
+        }))
     }
 
-    fn parse_func(&mut self) -> ast::Statement {
+    fn parse_func(&mut self) -> ParserResult<ast::Statement> {
         self.expect(TokenValue::Func);
 
         let name = self.next_token().unwrap();
@@ -113,15 +114,15 @@ impl Parser {
 
         self.expect(TokenValue::OpenParen);
 
-        let (arguments, addr) = self.parse_argument_list();
+        let (arguments, addr) = self.parse_argument_list()?;
 
-        let body = self.parse_block();
+        let body = self.parse_block()?;
 
-        ast::Statement::Function {
+        Ok(ast::Statement::Function {
             name,
             arguments,
             body: Box::new(body),
-        }
+        })
     }
 
     // Maybe it should be in lexer.
@@ -142,20 +143,21 @@ impl Parser {
         }
     }
 
-    fn parse_argument_list(&mut self) -> (Vec<ast::Expression>, Address) {
+    fn parse_argument_list(&mut self) -> ParserResult<(Vec<ast::Expression>, Address)> {
         let mut args = Vec::new();
 
         let start_address = self.peek_address().unwrap();
 
         if self.peek() == Some(&TokenValue::CloseParen) {
             self.next_token();
-            return (args, start_address.merge(&self.peek_address().unwrap()));
+
+            return Ok((args, start_address.merge(&self.peek_address().unwrap())));
         }
 
         let end_address: Address;
 
         loop {
-            args.push(self.parse_expression(0));
+            args.push(self.parse_expression(0)?);
 
             match self.peek() {
                 Some(TokenValue::Comma) => {
@@ -169,21 +171,21 @@ impl Parser {
             }
         }
 
-        (args, start_address.merge(&end_address))
+        Ok((args, start_address.merge(&end_address)))
     }
 
-    fn parse_array_inner(&mut self) -> (Vec<ast::Expression>, Address) {
+    fn parse_array_inner(&mut self) -> ParserResult<(Vec<ast::Expression>, Address)> {
         let mut args = Vec::new();
 
         let start_addr = self.peek_address().unwrap();
 
         if self.peek() == Some(&TokenValue::CloseBracket) {
             self.next_token();
-            return (args, start_addr.merge(&self.peek_address().unwrap()));
+            return Ok((args, start_addr.merge(&self.peek_address().unwrap())));
         }
 
         loop {
-            args.push(self.parse_expression(0));
+            args.push(self.parse_expression(0)?);
 
             match self.peek() {
                 Some(TokenValue::Comma) => {
@@ -197,17 +199,17 @@ impl Parser {
             }
         }
 
-        (args, start_addr.merge(&self.peek_address().unwrap()))
+        Ok((args, start_addr.merge(&self.peek_address().unwrap())))
     }
 
     // Parse an expression.
     // Instead of using recursive descend we use Pratt's parsing method.
-    fn parse_expression(&mut self, min_binding_power: usize) -> ast::Expression {
+    fn parse_expression(&mut self, min_binding_power: usize) -> ParserResult<ast::Expression> {
         self.skip_whitespaces();
 
         let start_addr = self
             .peek_address()
-            .expect("EOF during getting current address");
+            .ok_or_else(|| ParserError::UnexpectedEOF)?;
 
         let mut lhs = match self.next_token() {
             // Number
@@ -236,7 +238,7 @@ impl Parser {
                 value: TokenValue::Minus,
                 address: minus_addr,
             }) => {
-                let rhs = self.parse_expression(9); // unary minus has high BP
+                let rhs = self.parse_expression(9)?; // unary minus has high BP
 
                 let merged = minus_addr.merge(&rhs.address);
 
@@ -250,7 +252,7 @@ impl Parser {
                 value: TokenValue::OpenBracket,
                 address: bstart,
             }) => {
-                let (inner, in_addr) = self.parse_array_inner();
+                let (inner, in_addr) = self.parse_array_inner()?;
 
                 let merged = bstart.merge(&in_addr);
 
@@ -264,12 +266,12 @@ impl Parser {
                 value: TokenValue::OpenParen,
                 ..
             }) => {
-                let inner = self.parse_expression(0);
+                let inner = self.parse_expression(0)?;
                 self.expect(TokenValue::CloseParen);
                 inner
             }
             None => todo!("EOF while parsing expression! Handle error gracefully!"),
-            value => todo!("Got unexpected token: {value:?}"),
+            value => return Err(ParserError::UnexpectedTokenInExpression { token: value.unwrap() }),
         };
 
         loop {
@@ -298,7 +300,7 @@ impl Parser {
                 }
 
                 self.next_token(); // consume `(`
-                let (args, args_addr) = self.parse_argument_list();
+                let (args, args_addr) = self.parse_argument_list()?;
 
                 lhs = Spanned {
                     value: ast::ExprKind::Call {
@@ -337,7 +339,7 @@ impl Parser {
             }
 
             self.next_token(); // consume the operator
-            let rhs = self.parse_expression(right_bp);
+            let rhs = self.parse_expression(right_bp)?;
 
             let merged = lhs.address.clone().merge(&rhs.address);
 
@@ -393,25 +395,25 @@ impl Parser {
             }
         }
 
-        lhs
+        Ok(lhs)
     }
 
-    fn parse_return(&mut self) -> ast::Statement {
+    fn parse_return(&mut self) -> ParserResult<ast::Statement> {
         self.next_token();
 
-        let value = self.parse_expression(0);
+        let value = self.parse_expression(0)?;
 
-        ast::Statement::Return {
+        Ok(ast::Statement::Return {
             value: Box::new(value),
-        }
+        })
     }
 
-    fn parse_if(&mut self) -> ast::Statement {
+    fn parse_if(&mut self) -> ParserResult<ast::Statement> {
         self.next_token();
 
-        let condition = self.parse_expression(0);
+        let condition = self.parse_expression(0)?;
 
-        let body = self.parse_block();
+        let body = self.parse_block()?;
 
         let mut else_body: Option<ast::Statement> = None;
 
@@ -419,38 +421,38 @@ impl Parser {
             self.next_token();
 
             if let Some(&TokenValue::If) = self.peek() {
-                else_body = Some(self.parse_if());
+                else_body = Some(self.parse_if()?);
             } else {
-                else_body = Some(self.parse_block());
+                else_body = Some(self.parse_block()?);
             }
         }
 
-        ast::Statement::If {
+        Ok(ast::Statement::If {
             condition: Box::new(condition),
             body: Box::new(body),
             else_body: else_body.map(|x| Box::new(x)),
-        }
+        })
     }
 
-    fn parse_use(&mut self) -> ast::Statement {
+    fn parse_use(&mut self) -> ParserResult<ast::Statement> {
         self.next_token();
 
         match self.peek() {
             Some(TokenValue::OpenParen) => {
-                let held_value = self.parse_expression(0);
-                let body = self.parse_block();
+                let held_value = self.parse_expression(0)?;
+                let body = self.parse_block()?;
 
-                ast::Statement::Scope {
+                Ok(ast::Statement::Scope {
                     held_value: Box::new(held_value),
                     body: Box::new(body),
-                }
+                })
             }
             _ => {
-                let path = self.parse_expression(0);
+                let path = self.parse_expression(0)?;
 
-                ast::Statement::ModuleUsageDeclaration {
+                Ok(ast::Statement::ModuleUsageDeclaration {
                     path: Box::new(path),
-                }
+                })
             }
         }
     }
@@ -466,44 +468,44 @@ impl Parser {
         }
     }
 
-    fn parse_statement(&mut self) -> Option<ast::Statement> {
+    fn parse_statement(&mut self) -> ParserResult<ast::Statement> {
         self.skip_whitespaces();
 
         loop {
-            return match self.peek()? {
-                TokenValue::Func => Some(self.parse_func()),
-                TokenValue::If => Some(self.parse_if()),
-                TokenValue::Return => Some(self.parse_return()),
-                TokenValue::OpenBrace => Some(self.parse_block()),
-                TokenValue::Use => Some(self.parse_use()),
+            return match self.peek().ok_or_else(|| ParserError::UnexpectedEOF)? {
+                TokenValue::Func => Ok(self.parse_func()?),
+                TokenValue::If => Ok(self.parse_if()?),
+                TokenValue::Return => Ok(self.parse_return()?),
+                TokenValue::OpenBrace => Ok(self.parse_block()?),
+                TokenValue::Use => Ok(self.parse_use()?),
                 tok => {
                     eprintln!("Entering expression with token: {tok:?}");
 
                     // Parse the left side speculatively as an expression
-                    let lhs = self.parse_expression(0);
+                    let lhs = self.parse_expression(0)?;
 
                     // Now decide what kind of statement this is
                     if self.peek() == Some(&TokenValue::Assign) {
-                        self.next_token();
-                        let value = self.parse_expression(0);
+                        unreachable!("There was an old code that used to work with assignments. Now, it's moved to expressions parser.");
+                        // self.next_token();
+                        // let val  = self.parse_expression(0);
 
-                        match lhs {
-                            ref name_v @ Spanned {
-                                value: _,
-                                ref address,
-                            } => Some(ast::Statement::Expr(Spanned {
-                                address: address.clone(),
-                                value: ast::ExprKind::Assignment {
-                                    name: Box::new(name_v.clone()),
-                                    value: Box::new(value),
-                                }
-                            }
-                            )),
-                            _ => panic!("invalid assignment target"),
-                        }
-                    } else {
-                        Some(ast::Statement::Expr(lhs))
+                        // eprintln!("Value: {:#?}", lhs.value);
+
+                        // match &lhs.value {
+                        //     ExprKind::Identifier(_) => Some(ast::Statement::Expr(Spanned {
+                        //         address: lhs.address.clone(),
+                        //         value: ast::ExprKind::Assignment {
+                        //                 name: Box::new(lhs.clone()),
+                        //                 value: Box::new(val),
+                        //             }
+                        //         }
+                        //     )),
+                        //     _ => panic!("invalid assignment target"),
+                        // }
                     }
+
+                    Ok(ast::Statement::Expr(lhs))
                 }
             };
         }

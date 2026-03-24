@@ -44,13 +44,17 @@ fn run_file(source: Source) {
     println!("----- AST -----");
     println!();
 
-    for (n, i) in ast.iter().enumerate() {
-        println!("[{n}]: {:#?}", i);
+    match ast {
+        Ok(ast) => {
+            for (n, i) in ast.iter().enumerate() {
+                println!("[{n}]: {:#?}", i);
+            }
+        },
+        Err(e) => {
+            eprintln!("ParserError: {e:#?}");
+            std::process::exit(1);
+        }
     }
-
-    // while let Some(a) = parser.next_token() {
-    //     println!("{:#?}", a.value);
-    // }
 }
 
 fn main() -> std::io::Result<()> {
