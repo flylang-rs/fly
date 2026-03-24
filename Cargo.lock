@@ -62,12 +62,21 @@ dependencies = [
 name = "flylang-ast-analyzer"
 version = "0.1.0"
 dependencies = [
+ "flylang-diagnostics",
  "flylang-parser",
 ]
 
 [[package]]
 name = "flylang-common"
 version = "0.1.0"
+
+[[package]]
+name = "flylang-diagnostics"
+version = "0.1.0"
+dependencies = [
+ "flylang-common",
+ "flylang-parser",
+]
 
 [[package]]
 name = "flylang-lexer"

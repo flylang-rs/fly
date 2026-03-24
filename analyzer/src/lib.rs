@@ -1,11 +1,30 @@
+use flylang_diagnostics::Diagnostics;
 use flylang_parser::ast::{ExprKind, Expression, Function, Statement};
 
 pub struct Analyzer<'a> {
     ast: &'a [Statement],
+    error_count: usize,
+    warning_count: usize,
 }
 
 impl<'a> Analyzer<'a> {
-    fn analyze(&'a self) {
+    pub fn new(ast: &'a [Statement]) -> Self {
+        Self {
+            ast,
+            error_count: 0,
+            warning_count: 0
+        }
+    }
+
+    pub fn error_count(&self) -> usize {
+        self.error_count
+    }
+
+    pub fn warning_count(&self) -> usize {
+        self.error_count
+    }
+
+    pub fn analyze(&'a mut self) {
         for i in self.ast {
             match i {
                 Statement::Expr(ex) => self.analyze_expression(ex),
@@ -17,12 +36,12 @@ impl<'a> Analyzer<'a> {
         }
     }
 
-    fn analyze_function(&self, _func: &Function) {
+    fn analyze_function(&mut self, _func: &Function) {
         // IDK what to analyze here yet.
         // ...
     }
 
-    fn analyze_expression(&self, expression: &Expression) {
+    fn analyze_expression(&mut self, expression: &Expression) {
         match &expression.value {
             ExprKind::Assignment { name, .. } => {
                 // LHS should be an identifier (abc), indexed access (abc[2]), property access (fly.with.me) for single-target operations
@@ -41,10 +60,9 @@ impl<'a> Analyzer<'a> {
                         | ExprKind::IndexedAccess { .. }
                         | ExprKind::PropertyAccess { .. }
                 ) {
-                    panic!(
-                        "This kind of expression is not allowed as LHS. (at {:?})",
-                        name.address
-                    );
+                    Diagnostics{}.throw("This kind of expression is not allowed as LHS.", &name.address);
+
+                    self.error_count += 1;
                 }
             }
             kind => {
@@ -55,5 +73,7 @@ impl<'a> Analyzer<'a> {
 }
 
 pub fn analyze(ast: &[Statement]) {
-    Analyzer { ast }.analyze()
+    let mut analyzer = Analyzer::new(ast);
+    
+    analyzer.analyze()
 }
