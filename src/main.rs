@@ -7,6 +7,7 @@ use flylang_lexer::{
     token::{Token, TokenValue},
 };
 use flylang_parser::{Parser, state::ParserState};
+use flylang_ast_analyzer::analyze;
 
 fn run_file(source: Source) {
     let mut lexer = flylang_lexer::Lexer::new(Arc::new(source));
@@ -44,17 +45,18 @@ fn run_file(source: Source) {
     println!("----- AST -----");
     println!();
 
-    match ast {
-        Ok(ast) => {
-            for (n, i) in ast.iter().enumerate() {
-                println!("[{n}]: {:#?}", i);
-            }
-        },
-        Err(e) => {
-            eprintln!("ParserError: {e:#?}");
-            std::process::exit(1);
-        }
+    if let Err(e) = ast {
+        eprintln!("ParserError: {e:#?}");
+        std::process::exit(1);
     }
+
+    let ast = ast.unwrap();
+
+    for (n, i) in ast.iter().enumerate() {
+        println!("[{n}]: {:#?}", i);
+    }
+
+    flylang_ast_analyzer::analyze(&ast);
 }
 
 fn main() -> std::io::Result<()> {

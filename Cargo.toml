@@ -10,3 +10,4 @@ members = ["analyzer","common","lexer", "parser"]
 flylang-common = { path = "common/" }
 flylang-lexer = { path = "lexer/" }
 flylang-parser = { path = "parser/" }
+flylang-ast-analyzer = { path = "analyzer/" }
