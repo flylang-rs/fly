@@ -253,7 +253,7 @@ Ok(
             138..139,
         ),
         (
-            GraeterOrEquals,
+            GreaterOrEquals,
             140..142,
         ),
         (

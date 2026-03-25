@@ -186,12 +186,28 @@ impl Lexer {
             10
         };
 
+        let mut is_a_floating_point_nr = false;
+
         loop {
             match self.peek_symbol() {
                 Some((offset, ch)) if Self::is_digit_for_radix(ch, radix) || ch == '_' => {
                     self.next_character_any();
                     number.push(ch);
                     end = offset + ch.len_utf8();
+                }
+                Some((offset, '.')) if radix == 10 && !is_a_floating_point_nr => {
+                	// If we didn't set the fp number flag, set it, so lexer won't parse
+                	// commencing dots anymore.
+                	// I mean: the code "3.14159.26" will be lexed into
+                	// "3.14159" and "26"
+                	// It's actually okay for lexer, but not for parser,
+                	// it will handle this gracefully.
+                	is_a_floating_point_nr = true;
+                	
+                	self.next_character_any();
+                	number.push('.');
+                	// `.` is an ASCII character and its size in Unicode is always 1
+                	end = offset + 1;
                 }
                 Some((offset, ch)) if ch.is_alphabetic() => {
                     return Err(LexerError::InvalidNumberError {
