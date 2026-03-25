@@ -60,7 +60,7 @@ impl<'a> Analyzer<'a> {
                         | ExprKind::IndexedAccess { .. }
                         | ExprKind::PropertyAccess { .. }
                 ) {
-                    Diagnostics{}.throw("This kind of expression is not allowed as LHS.", &name.address);
+                    Diagnostics{}.error("This kind of expression is not allowed as LHS.", &name.address);
 
                     self.error_count += 1;
                 }
