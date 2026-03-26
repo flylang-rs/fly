@@ -67,7 +67,7 @@ impl<'a> Analyzer<'a> {
                         | ExprKind::PropertyAccess { .. }
                 ) {
                     self.diag.error(
-                        "This kind of expression is not allowed as LHS.",
+                        "This kind of expression is not allowed as LHS",
                         &name.address,
                         &[
                             Note::new(name.address.clone(), "there")
@@ -108,9 +108,45 @@ impl<'a> Analyzer<'a> {
                                 }),
                             )],
                         );
+
+                        self.warning_count += 1;
+                    }
+                    
+                    // We can trick the parser to try assigning to nothing by doing multiple assignment like this:
+                    // [] = ...
+                    //
+                    // But it's just a trap, placed here.
+                    if lhs_arr.is_empty() {
+                        self.diag.error(
+                            &format!("Cannot assign to nothing"),
+                            &name.address,
+                            &[
+                                Note::new(name.address.clone(), "absolutely nothing"),
+                            ],
+                            &[]
+                        );
+                        
+                        self.error_count += 1;
+
+                        // Return here, so it won't fall through next check.
+                        return;
                     }
 
-                    println!("Both arrays!");
+                    // If multiple assignment doesn't have the same amount of elements on both sides
+                    if lhs_arr.len() != rhs_arr.len() {
+                        // It's obviously an error.
+                        self.diag.error(
+                            &format!("Different amount of elements from both sides in multiple assignment ({} vs {})", lhs_arr.len(), rhs_arr.len()),
+                            &name.address,
+                            &[
+                                Note::new(name.address.clone(), &format!("{} elements here", lhs_arr.len())),
+                                Note::new(value.address.clone(), &format!("{} elements there", rhs_arr.len())),
+                            ],
+                            &[]
+                        );
+
+                        self.error_count += 1;
+                    }
                 }
             }
             kind => {

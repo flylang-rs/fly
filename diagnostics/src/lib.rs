@@ -96,7 +96,9 @@ impl Diagnostics {
             );
         }
 
-        eprintln!("     |");
+        if !helps.is_empty() {
+            eprintln!("     |");
+        }
 
         for (i, n) in helps.iter().enumerate() {
             eprintln!(

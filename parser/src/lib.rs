@@ -2,7 +2,7 @@ use flylang_common::{Address, spanned::Spanned};
 use flylang_lexer::token::{Token, TokenValue};
 use std::iter::Peekable;
 
-use crate::{ast::ExprKind, error::ParserError, state::ParserState};
+use crate::{error::ParserError, state::ParserState};
 
 pub mod ast;
 pub mod error;
@@ -114,7 +114,7 @@ impl Parser {
 
         self.expect(TokenValue::OpenParen);
 
-        let (arguments, addr) = self.parse_argument_list()?;
+        let (arguments, _) = self.parse_argument_list()?;
 
         let body = self.parse_block()?;
 
@@ -181,8 +181,10 @@ impl Parser {
         let end_addr: Address;
 
         if self.peek() == Some(&TokenValue::CloseBracket) {
-            self.next_token();
-            return Ok((args, start_addr.merge(&self.peek_address().unwrap())));
+            // Consume the token and get its address.
+            let addr = self.next_token().map(|x| x.address).unwrap_or_else(|| self.peek_address().unwrap());
+
+            return Ok((args, start_addr.merge(&addr)));
         }
 
         loop {
@@ -193,6 +195,7 @@ impl Parser {
                     self.next_token();
                 }
                 Some(TokenValue::CloseBracket) => {
+                    // Consume the token and get its address.
                     let token_addr = self.next_token().map(|x| x.address);
 
                     end_addr = token_addr.unwrap_or_else(|| self.peek_address().unwrap());
@@ -486,7 +489,7 @@ impl Parser {
                 TokenValue::Return => Ok(self.parse_return()?),
                 TokenValue::OpenBrace => Ok(self.parse_block()?),
                 TokenValue::Use => Ok(self.parse_use()?),
-                tok => {
+                _ /* tok */ => {
                     // eprintln!("Entering expression with token: {tok:?}");
 
                     // Parse the left side speculatively as an expression
