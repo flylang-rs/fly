@@ -178,6 +178,7 @@ impl Parser {
         let mut args = Vec::new();
 
         let start_addr = self.peek_address().unwrap();
+        let end_addr: Address;
 
         if self.peek() == Some(&TokenValue::CloseBracket) {
             self.next_token();
@@ -192,14 +193,17 @@ impl Parser {
                     self.next_token();
                 }
                 Some(TokenValue::CloseBracket) => {
-                    self.next_token();
+                    let token_addr = self.next_token().map(|x| x.address);
+
+                    end_addr = token_addr.unwrap_or_else(|| self.peek_address().unwrap());
+                    
                     break;
                 }
                 other => panic!("expected `,` or `]` in argument list, got {:?}", other),
             }
         }
 
-        Ok((args, start_addr.merge(&self.peek_address().unwrap())))
+        Ok((args, start_addr.merge(&end_addr)))
     }
 
     // Parse an expression.
