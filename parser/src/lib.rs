@@ -149,9 +149,16 @@ impl Parser {
         let start_address = self.peek_address().unwrap();
 
         if self.peek() == Some(&TokenValue::CloseParen) {
-            self.next_token();
+            let close = self.next_token();
 
-            return Ok((args, start_address.merge(&self.peek_address().unwrap())));
+            return Ok((
+                args,
+                start_address.merge(
+                    &close
+                        .map(|x| x.address)
+                        .unwrap_or_else(|| self.peek_address().unwrap())
+                ),
+            ));
         }
 
         let end_address: Address;
@@ -182,9 +189,16 @@ impl Parser {
 
         if self.peek() == Some(&TokenValue::CloseBracket) {
             // Consume the token and get its address.
-            let addr = self.next_token().map(|x| x.address).unwrap_or_else(|| self.peek_address().unwrap());
+            let close = self.next_token();
 
-            return Ok((args, start_addr.merge(&addr)));
+            return Ok((
+                args,
+                start_addr.merge(
+                    &close
+                        .map(|x| x.address)
+                        .unwrap_or_else(|| self.peek_address().unwrap()),
+                ),
+            ));
         }
 
         loop {
@@ -199,7 +213,7 @@ impl Parser {
                     let token_addr = self.next_token().map(|x| x.address);
 
                     end_addr = token_addr.unwrap_or_else(|| self.peek_address().unwrap());
-                    
+
                     break;
                 }
                 other => panic!("expected `,` or `]` in argument list, got {:?}", other),
@@ -274,8 +288,13 @@ impl Parser {
                 ..
             }) => {
                 let inner = self.parse_expression(0)?;
-                self.expect(TokenValue::CloseParen);
-                inner
+                let close = self.expect(TokenValue::CloseParen);
+                let merged = start_addr.merge(&close.address);
+
+                Spanned {
+                    value: inner.value,
+                    address: merged,
+                }
             }
             None => todo!("EOF while parsing expression! Handle error gracefully!"),
             value => {

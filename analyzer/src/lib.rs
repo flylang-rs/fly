@@ -1,7 +1,7 @@
 use flylang_common::spanned::Spanned;
 use flylang_diagnostics::{
     Diagnostics,
-    additions::{Help, Note},
+    additions::{Help, Note, TextEdit},
 };
 use flylang_parser::ast::{ExprKind, Expression, Function, Statement};
 
@@ -69,10 +69,8 @@ impl<'a> Analyzer<'a> {
                     self.diag.error(
                         "This kind of expression is not allowed as LHS",
                         &name.address,
-                        &[
-                            Note::new(name.address.clone(), "there")
-                        ],
-                        &[]
+                        &[Note::new(name.address.clone(), "there")],
+                        &[],
                     );
 
                     self.error_count += 1;
@@ -97,21 +95,18 @@ impl<'a> Analyzer<'a> {
                                 Note::new(name.address.clone(), "one element here"),
                                 Note::new(value.address.clone(), "one element there"),
                             ],
-                            &[Help::new(
-                                "reduce it",
-                                Statement::Expr(Spanned {
-                                    value: ExprKind::Assignment {
-                                        name: Box::new(lhs_arr[0].clone()),
-                                        value: Box::new(rhs_arr[0].clone()),
-                                    },
-                                    address: expression.address.clone(),
-                                }),
-                            )],
+                            &[Help::new("reduce it", vec![
+                                // Just remove those brackets
+                                TextEdit::delete(name.address.span.start..name.address.span.start+1),
+                                TextEdit::delete(name.address.span.end-1..name.address.span.end),
+                                TextEdit::delete(value.address.span.start..value.address.span.start+1),
+                                TextEdit::delete(value.address.span.end-1..value.address.span.end),
+                            ])],
                         );
 
                         self.warning_count += 1;
                     }
-                    
+
                     // We can trick the parser to try assigning to nothing by doing multiple assignment like this:
                     // [] = ...
                     //
@@ -120,12 +115,10 @@ impl<'a> Analyzer<'a> {
                         self.diag.error(
                             &format!("Cannot assign to nothing"),
                             &name.address,
-                            &[
-                                Note::new(name.address.clone(), "absolutely nothing"),
-                            ],
-                            &[]
+                            &[Note::new(name.address.clone(), "absolutely nothing")],
+                            &[],
                         );
-                        
+
                         self.error_count += 1;
 
                         // Return here, so it won't fall through next check.

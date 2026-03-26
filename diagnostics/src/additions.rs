@@ -1,3 +1,5 @@
+use core::ops::Range;
+
 use flylang_common::Address;
 use flylang_parser::ast::{ExprKind, Statement};
 
@@ -12,34 +14,35 @@ impl<'a> Note<'a> {
     }
 }
 
-pub struct Help<'a> {
-    pub(crate) message: &'a str,
-    pub(crate) new_ast: Statement,
+#[derive(Debug, Clone)]
+pub struct TextEdit {
+    pub span: Range<usize>,
+    pub replacement: Option<String>,
 }
 
-impl<'a> Help<'a> {
-    pub fn new(message: &'a str, new_ast: Statement) -> Self {
-        Self { message, new_ast }
-    }
-
-    fn build_code_inner(&self, ast: Statement) -> String {
-        match ast {
-            Statement::Expr(spanned) => match spanned.value {
-                ExprKind::Assignment { name, value } => {
-                    return self.build_code_inner(Statement::Expr(*name))
-                        + " = "
-                        + &self.build_code_inner(Statement::Expr(*value));
-                }
-                ExprKind::Identifier(id) => return id,
-                ExprKind::Number(nr) => return nr,
-                ExprKind::String(string) => return string,
-                _ => todo!("Implement code building for other expression kinds for diagnostics."),
-            },
-            _ => todo!("Implement code building for other types for diagnostics."),
+impl TextEdit {
+    pub fn new(span: Range<usize>, replacement: String) -> Self {
+        Self {
+            span,
+            replacement: Some(replacement)
         }
     }
 
-    pub fn build_code(&self) -> String {
-        self.build_code_inner(self.new_ast.clone())
+    pub fn delete(span: Range<usize>) -> Self {
+        Self {
+            span,
+            replacement: None
+        }
+    }
+}
+
+pub struct Help<'a> {
+    pub(crate) message: &'a str,
+    pub(crate) edits: Vec<TextEdit>
+}
+
+impl<'a> Help<'a> {
+    pub fn new(message: &'a str, edits: Vec<TextEdit>) -> Self {
+        Self { message, edits }
     }
 }
