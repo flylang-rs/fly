@@ -2,7 +2,7 @@ use flylang_common::{Address, spanned::Spanned};
 use flylang_lexer::token::{Token, TokenValue};
 use std::iter::Peekable;
 
-use crate::{ast::ExprKind, error::ParserError, state::ParserState};
+use crate::{error::ParserError, state::ParserState};
 
 pub mod ast;
 pub mod error;
@@ -114,15 +114,15 @@ impl Parser {
 
         self.expect(TokenValue::OpenParen);
 
-        let (arguments, addr) = self.parse_argument_list()?;
+        let (arguments, _) = self.parse_argument_list()?;
 
         let body = self.parse_block()?;
 
-        Ok(ast::Statement::Function {
+        Ok(ast::Statement::Function(ast::Function {
             name,
             arguments,
             body: Box::new(body),
-        })
+        }))
     }
 
     // Maybe it should be in lexer.
@@ -149,9 +149,16 @@ impl Parser {
         let start_address = self.peek_address().unwrap();
 
         if self.peek() == Some(&TokenValue::CloseParen) {
-            self.next_token();
+            let close = self.next_token();
 
-            return Ok((args, start_address.merge(&self.peek_address().unwrap())));
+            return Ok((
+                args,
+                start_address.merge(
+                    &close
+                        .map(|x| x.address)
+                        .unwrap_or_else(|| self.peek_address().unwrap())
+                ),
+            ));
         }
 
         let end_address: Address;
@@ -178,10 +185,20 @@ impl Parser {
         let mut args = Vec::new();
 
         let start_addr = self.peek_address().unwrap();
+        let end_addr: Address;
 
         if self.peek() == Some(&TokenValue::CloseBracket) {
-            self.next_token();
-            return Ok((args, start_addr.merge(&self.peek_address().unwrap())));
+            // Consume the token and get its address.
+            let close = self.next_token();
+
+            return Ok((
+                args,
+                start_addr.merge(
+                    &close
+                        .map(|x| x.address)
+                        .unwrap_or_else(|| self.peek_address().unwrap()),
+                ),
+            ));
         }
 
         loop {
@@ -192,14 +209,18 @@ impl Parser {
                     self.next_token();
                 }
                 Some(TokenValue::CloseBracket) => {
-                    self.next_token();
+                    // Consume the token and get its address.
+                    let token_addr = self.next_token().map(|x| x.address);
+
+                    end_addr = token_addr.unwrap_or_else(|| self.peek_address().unwrap());
+
                     break;
                 }
                 other => panic!("expected `,` or `]` in argument list, got {:?}", other),
             }
         }
 
-        Ok((args, start_addr.merge(&self.peek_address().unwrap())))
+        Ok((args, start_addr.merge(&end_addr)))
     }
 
     // Parse an expression.
@@ -267,11 +288,20 @@ impl Parser {
                 ..
             }) => {
                 let inner = self.parse_expression(0)?;
-                self.expect(TokenValue::CloseParen);
-                inner
+                let close = self.expect(TokenValue::CloseParen);
+                let merged = start_addr.merge(&close.address);
+
+                Spanned {
+                    value: inner.value,
+                    address: merged,
+                }
             }
             None => todo!("EOF while parsing expression! Handle error gracefully!"),
-            value => return Err(ParserError::UnexpectedTokenInExpression { token: value.unwrap() }),
+            value => {
+                return Err(ParserError::UnexpectedTokenInExpression {
+                    token: value.unwrap(),
+                });
+            }
         };
 
         loop {
@@ -427,11 +457,11 @@ impl Parser {
             }
         }
 
-        Ok(ast::Statement::If {
+        Ok(ast::Statement::If(ast::If {
             condition: Box::new(condition),
             body: Box::new(body),
-            else_body: else_body.map(|x| Box::new(x)),
-        })
+            else_body: else_body.map(Box::new),
+        }))
     }
 
     fn parse_use(&mut self) -> ParserResult<ast::Statement> {
@@ -478,15 +508,17 @@ impl Parser {
                 TokenValue::Return => Ok(self.parse_return()?),
                 TokenValue::OpenBrace => Ok(self.parse_block()?),
                 TokenValue::Use => Ok(self.parse_use()?),
-                tok => {
-                    eprintln!("Entering expression with token: {tok:?}");
+                _ /* tok */ => {
+                    // eprintln!("Entering expression with token: {tok:?}");
 
                     // Parse the left side speculatively as an expression
                     let lhs = self.parse_expression(0)?;
 
                     // Now decide what kind of statement this is
                     if self.peek() == Some(&TokenValue::Assign) {
-                        unreachable!("There was an old code that used to work with assignments. Now, it's moved to expressions parser.");
+                        unreachable!(
+                            "There was an old code that used to work with assignments. Now, it's moved to expressions parser."
+                        );
                         // self.next_token();
                         // let val  = self.parse_expression(0);
 

@@ -63,23 +63,10 @@ pub enum ExprKind {
 
 #[derive(Debug, Clone)]
 pub enum Statement {
-    VariableDefinition {
-        name: Spanned<String>,
-        type_annotation: Box<Expression>,
-        value: Box<Expression>,
-    },
+    VariableDefinition(VariableDefinition),
 
-    Function {
-        name: Spanned<String>,
-        arguments: Vec<Expression>,
-        body: Box<Statement>,
-    },
-
-    If {
-        condition: Box<Expression>,
-        body: Box<Statement>,
-        else_body: Option<Box<Statement>>,
-    },
+    Function(Function),
+    If(If),
 
     ModuleUsageDeclaration {
         path: Box<Expression>
@@ -95,6 +82,27 @@ pub enum Statement {
     },
 
     Expr(Expression),
+}
+
+#[derive(Debug, Clone)]
+pub struct Function {
+    pub name: Spanned<String>,
+    pub arguments: Vec<Expression>,
+    pub body: Box<Statement>,
+}
+
+#[derive(Debug, Clone)]
+pub struct If {
+    pub condition: Box<Expression>,
+    pub body: Box<Statement>,
+    pub else_body: Option<Box<Statement>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct VariableDefinition {
+    pub name: Spanned<String>,
+    pub type_annotation: Box<Expression>,
+    pub value: Box<Expression>,
 }
 
 #[derive(Debug, Copy, Clone)]

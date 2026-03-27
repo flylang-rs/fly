@@ -49,4 +49,9 @@ impl Source {
 
         self.code[start..end].trim_end_matches('\n')
     }
+
+    /// Oh gosh...
+    pub fn line_start(&self, line: usize) -> usize {
+        *self.line_starts.get(line).unwrap()
+    }
 }
