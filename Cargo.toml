@@ -4,10 +4,11 @@ version = "0.1.0"
 edition = "2024"
 
 [workspace]
-members = ["analyzer","common", "diagnostics","lexer", "parser"]
+members = ["analyzer","common", "diagnostics","lexer", "parser", "tree-traversal-executor"]
 
 [dependencies]
 flylang-common = { path = "common/" }
 flylang-lexer = { path = "lexer/" }
 flylang-parser = { path = "parser/" }
 flylang-ast-analyzer = { path = "analyzer/" }
+flylang-tte = { path = "tree-traversal-executor/" }

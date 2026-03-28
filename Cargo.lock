@@ -62,6 +62,7 @@ dependencies = [
  "flylang-common",
  "flylang-lexer",
  "flylang-parser",
+ "flylang-tte",
 ]
 
 [[package]]
@@ -103,6 +104,10 @@ dependencies = [
  "flylang-lexer",
  "insta",
 ]
+
+[[package]]
+name = "flylang-tte"
+version = "0.1.0"
 
 [[package]]
 name = "getrandom"
