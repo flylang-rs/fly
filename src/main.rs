@@ -7,7 +7,6 @@ use flylang_lexer::{
     token::{Token, TokenValue},
 };
 use flylang_parser::{Parser, state::ParserState};
-use flylang_ast_analyzer::analyze;
 
 fn run_file(source: Source) {
     let mut lexer = flylang_lexer::Lexer::new(Arc::new(source));

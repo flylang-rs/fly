@@ -1,4 +1,3 @@
-use flylang_common::spanned::Spanned;
 use flylang_diagnostics::{
     Diagnostics,
     additions::{Help, Note, TextEdit},

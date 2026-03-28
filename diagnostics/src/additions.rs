@@ -1,7 +1,6 @@
 use core::ops::Range;
 
 use flylang_common::Address;
-use flylang_parser::ast::{ExprKind, Statement};
 
 pub struct Note<'a> {
     pub(crate) position: Address,
