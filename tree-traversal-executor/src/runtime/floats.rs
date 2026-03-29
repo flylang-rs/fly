@@ -1,4 +1,4 @@
-use crate::{object::Value, realm::Realm, runtime::RustInteropFn};
+use crate::{common_operation, object::Value, realm::Realm, runtime::RustInteropFn};
 
 pub static EXPORT: &[(&str, RustInteropFn)] = &[
     ("float::operator+float", floats_add),
@@ -10,146 +10,25 @@ pub static EXPORT: &[(&str, RustInteropFn)] = &[
     ("float::operator/float", floats_div),
     ("float::operator/integer", float_div_integer),
     ("float::operator/-float", floats_div_rdown),
+    ("float::operator/-integer", float_div_integer_rdown),
     ("float::operator/+float", floats_div_rup),
+    ("float::operator/+integer", float_div_integer_rup),
 ];
 
-pub fn floats_add(_realm: &mut Realm, args: &[Value]) -> Value {
-    let lhs = &args[0];
-    let rhs = &args[1];
+common_operation!(floats_add, Float, Float, Float, |x: &f64, y: &f64| x + y);
+common_operation!(float_add_integer, Float, Integer, Float, |x: &f64, y: &i128| x + (*y as f64));
 
-    // TODO: Results
+common_operation!(floats_sub, Float, Float, Float, |x: &f64, y: &f64| x - y);
+common_operation!(float_sub_integer, Float, Integer, Float, |x: &f64, y: &i128| x - (*y as f64));
 
-    if let Value::Float(x) = lhs && let Value::Float(y) = rhs {
-        return Value::Float(x + y);
-    }
+common_operation!(floats_mul, Float, Float, Float, |x: &f64, y: &f64| x * y);
+common_operation!(float_mul_integer, Float, Integer, Float, |x: &f64, y: &i128| x * (*y as f64));
 
-    todo!("Make it return `result<float, error>`")
-}
+common_operation!(floats_div, Float, Float, Float, |x: &f64, y: &f64| x / y);
+common_operation!(float_div_integer, Float, Integer, Float, |x: &f64, y: &i128| x / (*y as f64));
 
-pub fn float_add_integer(_realm: &mut Realm, args: &[Value]) -> Value {
-    let lhs = &args[0];
-    let rhs = &args[1];
+common_operation!(floats_div_rdown, Float, Float, Float, |x: &f64, y: &f64| (x / y).floor() as i64 as _);
+common_operation!(float_div_integer_rdown, Float, Integer, Float, |x: &f64, y: &i128| (x / (*y as f64)).floor() as i64 as _);
 
-    // TODO: Results
-
-    if let Value::Float(x) = lhs && let Value::Integer(y) = rhs {
-        let y = *y as f64;
-
-        return Value::Float(x + y);
-    }
-
-    todo!("Make it return `result<float, error>`")
-}
-
-pub fn floats_sub(_realm: &mut Realm, args: &[Value]) -> Value {
-    let lhs = &args[0];
-    let rhs = &args[1];
-
-    // TODO: Results
-
-    if let Value::Float(x) = lhs && let Value::Float(y) = rhs {
-        return Value::Float(x - y);
-    }
-
-    todo!("Make it return `result<float, error>`")
-}
-
-pub fn float_sub_integer(_realm: &mut Realm, args: &[Value]) -> Value {
-    let lhs = &args[0];
-    let rhs = &args[1];
-
-    // TODO: Results
-
-    if let Value::Float(x) = lhs && let Value::Integer(y) = rhs {
-        let y = *y as f64;
-
-        return Value::Float(x - y);
-    }
-
-    todo!("Make it return `result<float, error>`")
-}
-
-pub fn floats_mul(_realm: &mut Realm, args: &[Value]) -> Value {
-    let lhs = &args[0];
-    let rhs = &args[1];
-
-    // TODO: Results
-
-    if let Value::Float(x) = lhs && let Value::Float(y) = rhs {
-        return Value::Float(x * y);
-    }
-
-    todo!("Make it return `result<float, error>`")
-}
-
-pub fn float_mul_integer(_realm: &mut Realm, args: &[Value]) -> Value {
-    let lhs = &args[0];
-    let rhs = &args[1];
-
-    // TODO: Results
-
-    if let Value::Float(x) = lhs && let Value::Integer(y) = rhs {
-        let y = *y as f64;
-
-        return Value::Float(x * y);
-    }
-
-    todo!("Make it return `result<float, error>`")
-}
-
-pub fn floats_div(_realm: &mut Realm, args: &[Value]) -> Value {
-    let lhs = &args[0];
-    let rhs = &args[1];
-
-    // TODO: Results
-
-    if let Value::Float(x) = lhs && let Value::Float(y) = rhs {
-        // FIXME: I don't know is it okay to do that.
-        return Value::Float(x / y);
-    }
-
-    todo!("Make it return `result<float, error>`")
-}
-
-pub fn float_div_integer(_realm: &mut Realm, args: &[Value]) -> Value {
-    let lhs = &args[0];
-    let rhs = &args[1];
-
-    // TODO: Results
-
-    if let Value::Float(x) = lhs && let Value::Integer(y) = rhs {
-        let y = *y as f64;
-
-        return Value::Float(x / y);
-    }
-
-    todo!("Make it return `result<float, error>`")
-}
-
-
-pub fn floats_div_rdown(_realm: &mut Realm, args: &[Value]) -> Value {
-    let lhs = &args[0];
-    let rhs = &args[1];
-
-    // TODO: Results
-
-    if let Value::Float(x) = lhs && let Value::Float(y) = rhs {
-        // FIXME: I don't know is it okay to do that.
-        return Value::Integer(((x / y).floor() as i64) as _);
-    }
-
-    todo!("Make it return `result<float, error>`")
-}
-
-pub fn floats_div_rup(_realm: &mut Realm, args: &[Value]) -> Value {
-    let lhs = &args[0];
-    let rhs = &args[1];
-
-    // TODO: Results
-
-    if let Value::Float(x) = lhs && let Value::Float(y) = rhs {
-        return Value::Float(((x / y).ceil() as i64) as _);
-    }
-
-    todo!("Make it return `result<float, error>`")
-}
+common_operation!(floats_div_rup, Float, Float, Float, |x: &f64, y: &f64| (x / y).ceil() as i64 as _);
+common_operation!(float_div_integer_rup, Float, Integer, Float, |x: &f64, y: &i128| (x / (*y as f64)).ceil() as i64 as _);

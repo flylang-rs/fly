@@ -46,7 +46,6 @@ fn exec_inner(realm: SharedRealm, ast: &[Statement]) -> Value {
 
 fn exec_single_statement(realm: SharedRealm, statement: &Statement) -> Option<Value> {
     match statement {
-        Statement::VariableDefinition(variable_definition) => todo!(),
         Statement::Function(function) => {
             let name = &function.name.value;
 
@@ -75,6 +74,7 @@ fn exec_single_statement(realm: SharedRealm, statement: &Statement) -> Option<Va
             return evaluate_expression(realm, value, false);
         }
         Statement::Expr(expr) => evaluate_expression(realm, expr, false),
+        st => todo!("Unexpected statement: {:?}", st)
     }
 }
 
@@ -108,7 +108,7 @@ fn evaluate_expression(
 
             let method_name = format!("{l_type}::operator+{r_type}");
 
-            let method = realm.try_write().unwrap().lookup(&method_name);
+            let method = realm.read().unwrap().lookup(&method_name);
 
             if let Some(method) = method {
                 call_func(realm, method, &[lhs, rhs])
@@ -127,7 +127,7 @@ fn evaluate_expression(
 
             let method_name = format!("{l_type}::operator-{r_type}");
 
-            let method = realm.try_write().unwrap().lookup(&method_name);
+            let method = realm.read().unwrap().lookup(&method_name);
 
             if let Some(method) = method {
                 call_func(realm, method, &[lhs, rhs])
@@ -146,7 +146,7 @@ fn evaluate_expression(
 
             let method_name = format!("{l_type}::operator*{r_type}");
 
-            let method = realm.try_write().unwrap().lookup(&method_name);
+            let method = realm.read().unwrap().lookup(&method_name);
 
             if let Some(method) = method {
                 call_func(realm, method, &[lhs, rhs])
@@ -171,7 +171,7 @@ fn evaluate_expression(
 
             let method_name = format!("{l_type}::operator{op}{r_type}");
 
-            let method = realm.try_write().unwrap().lookup(&method_name);
+            let method = realm.read().unwrap().lookup(&method_name);
 
             if let Some(method) = method {
                 call_func(realm, method, &[lhs, rhs])
@@ -179,7 +179,25 @@ fn evaluate_expression(
                 panic!("Incompatible types for operation `{op}`: `{l_type:?}` and `{r_type:?}`")
             }
         }
-        ExprKind::Mod(lhs, rhs) => todo!(),
+        ExprKind::Mod(lhs, rhs) => {
+            let lhs = evaluate_expression(Arc::clone(&realm), lhs, true)
+                .expect("Cannot be evaluated (lhs)");
+            let rhs = evaluate_expression(Arc::clone(&realm), rhs, true)
+                .expect("Cannot be evaluated (rhs)");
+
+            let l_type = types::value_to_internal_type(&lhs).unwrap();
+            let r_type = types::value_to_internal_type(&rhs).unwrap();
+
+            let method_name = format!("{l_type}::operator%{r_type}");
+
+            let method = realm.read().unwrap().lookup(&method_name);
+
+            if let Some(method) = method {
+                call_func(realm, method, &[lhs, rhs])
+            } else {
+                panic!("Incompatible types for operation `%`: `{l_type:?}` and `{r_type:?}`")
+            }
+        },
         ExprKind::And(lhs, rhs) => todo!(),
         ExprKind::Or(lhs, rhs) => todo!(),
         ExprKind::BitAnd(spanned, spanned1) => todo!(),
@@ -231,7 +249,7 @@ fn evaluate_expression(
                 callee.value
             ));
 
-            let func = realm.try_write().unwrap().lookup(func_name);
+            let func = realm.write().unwrap().lookup(func_name);
 
             if func.is_none() {
                 panic!("Undefined function: {func_name:#?}");
