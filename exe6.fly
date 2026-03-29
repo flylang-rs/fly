@@ -1,0 +1,5 @@
+func say_hi(name) {
+    return "Hello, " + name + "!"
+}
+
+print(say_hi("Eris"), say_hi("everybody"))

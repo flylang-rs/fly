@@ -20,8 +20,10 @@ pub fn execute(ast: Vec<Statement>) -> Value {
     let mut world = Realm::new();
 
     let natives = core::iter::empty()
+        .chain(runtime::floats::EXPORT.iter())
         .chain(runtime::integers::EXPORT.iter())
-        .chain(runtime::floats::EXPORT.iter());
+        .chain(runtime::print::EXPORT.iter())
+        .chain(runtime::strings::EXPORT.iter());
 
     // Import native functions into the world.
     for (name, func) in natives {

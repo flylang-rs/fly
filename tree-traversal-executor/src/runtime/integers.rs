@@ -11,6 +11,9 @@ pub static EXPORT: &[(&str, RustInteropFn)] = &[
     ("integer::operator*float", integer_mul_float),
     ("integer::operator/-integer", integers_div_rdown),
     ("integer::operator/+integer", integers_div_rup),
+
+    // To string
+    ("integer::to_string", integer_to_string),
 ];
 
 common_operation!(integers_add, Integer, Integer, Integer, |x: &i128, y: &i128| x + y);
@@ -28,3 +31,11 @@ common_operation!(integers_div_rup, Integer, Integer, Integer, |x: &i128, y: &i1
 
     (x / y) + if remainder != 0 { 1 } else { 0 }
 });
+
+fn integer_to_string(_realm: &mut Realm, args: &[Value]) -> Value {
+    let Value::Integer(i) = args[0] else {
+        panic!("It's not an integer, it's {:?}", args[0]);
+    };
+
+    Value::String(i.to_string().into())
+}

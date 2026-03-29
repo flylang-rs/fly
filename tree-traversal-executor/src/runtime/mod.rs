@@ -1,7 +1,9 @@
 use crate::{object::Value, realm::Realm};
 
-pub mod integers;
 pub mod floats;
+pub mod integers;
+pub mod print;
+pub mod strings;
 
 pub type RustInteropFn = fn(&mut Realm, &[Value]) -> Value;
 
