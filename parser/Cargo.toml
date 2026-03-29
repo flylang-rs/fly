@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 flylang-lexer = { path = "../lexer" }
 flylang-common = { path = "../common" }
+flylang-diagnostics = { path = "../diagnostics" }
 
 [dev-dependencies]
 insta = "1.46.3"

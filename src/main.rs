@@ -56,6 +56,10 @@ fn run_file(source: Source) {
     }
 
     flylang_ast_analyzer::analyze(&ast);
+
+    let result = flylang_tte::execute(ast);
+
+    println!("Program finished with result: {result:?}");
 }
 
 fn main() -> std::io::Result<()> {

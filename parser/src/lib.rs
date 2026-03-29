@@ -1,4 +1,5 @@
 use flylang_common::{Address, spanned::Spanned};
+use flylang_diagnostics::additions::Note;
 use flylang_lexer::token::{Token, TokenValue};
 use std::iter::Peekable;
 
@@ -127,14 +128,18 @@ impl Parser {
 
     // Maybe it should be in lexer.
     fn check_number(&mut self, number_repr: String, address: Address) -> ast::Expression {
-        if let Err(_) = number_repr.parse::<usize>() {
-            // Error
-            let (line, col) = address.source.location(address.span.start);
-
-            panic!(
-                "Failed to parse a number: {number_repr} ({}:{}:{})",
-                address.source.filepath, line, col
+        if let Err(_) = number_repr.parse::<f64>() {
+            flylang_diagnostics::Diagnostics {}.error(
+                &format!("Failed to parse a number: {number_repr:?}"),
+                &address,
+                &[
+                    Note::new(address.clone(), "here")
+                ],
+                &[],
             );
+            // FIXME: Maube a better way to diagnose errors while parsing?
+            std::process::exit(1);
+
         } else {
             Spanned {
                 value: ast::ExprKind::Number(number_repr),
@@ -156,7 +161,7 @@ impl Parser {
                 start_address.merge(
                     &close
                         .map(|x| x.address)
-                        .unwrap_or_else(|| self.peek_address().unwrap())
+                        .unwrap_or_else(|| self.peek_address().unwrap()),
                 ),
             ));
         }
@@ -359,7 +364,7 @@ impl Parser {
                 | TokenValue::LessOrEquals
                 | TokenValue::Greater
                 | TokenValue::GreaterOrEquals => (8, 9),
-                TokenValue::OpenBracket => (31, 0),
+                TokenValue::OpenBracket => (31, 0), // suspicious: review and remove it asap
                 TokenValue::Dot => (31, 32),
                 _ => break, // not an infix operator
             };

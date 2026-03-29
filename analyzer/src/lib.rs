@@ -84,9 +84,6 @@ impl<'a> Analyzer<'a> {
                     // with only one target which is redunant and can be reduced:
                     // [a] = [4]    # ->  a = 4
                     if lhs_arr.len() == 1 && rhs_arr.len() == 1 {
-                        // self.diag.warning("Redundant multiple assignment", &name.address);
-                        // self.diag.warning("Redundant multiple assignment", &value.address);
-
                         self.diag.warning(
                             "Redundant multiple assignment",
                             &name.address,

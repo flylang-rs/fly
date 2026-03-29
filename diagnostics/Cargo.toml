@@ -6,6 +6,5 @@ edition = "2024"
 [dependencies]
 diff = "0.1.13"
 flylang-common = { path = "../common" }
-flylang-parser = { path = "../parser" }
 owo-colors = { version = "4.3.0", features = ["supports-colors"] }
 

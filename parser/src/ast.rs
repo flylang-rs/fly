@@ -61,6 +61,24 @@ pub enum ExprKind {
     }
 }
 
+impl ExprKind {
+    pub fn as_id(&self) -> Option<&str> {
+        if let ExprKind::Identifier(id) = self {
+            Some(id.as_str())
+        } else {
+            None
+        }
+    }
+
+    pub fn as_number(&self) -> Option<&str> {
+        if let ExprKind::Number(nr) = self {
+            Some(nr.as_str())
+        } else {
+            None
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum Statement {
     VariableDefinition(VariableDefinition),
