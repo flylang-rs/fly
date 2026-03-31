@@ -11,6 +11,7 @@ flylang-common = { path = "common/" }
 flylang-lexer = { path = "lexer/" }
 flylang-parser = { path = "parser/" }
 flylang-ast-analyzer = { path = "analyzer/" }
+flylang-diagnostics = { path = "diagnostics/" }
 flylang-tte = { path = "tree-traversal-executor/" }
 
 log = "0.4.29"

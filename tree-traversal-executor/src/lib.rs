@@ -23,6 +23,7 @@ pub fn execute(ast: Vec<Statement>) -> ControlFlow {
     // Import native functions from modules.
     // Chain 'em all!
     let natives = core::iter::empty()
+        .chain(runtime::booleans::EXPORT.iter())
         .chain(runtime::floats::EXPORT.iter())
         .chain(runtime::integers::EXPORT.iter())
         .chain(runtime::print::EXPORT.iter())
@@ -131,13 +132,41 @@ fn binary_op_helper(
     let method = realm.read().unwrap().lookup(&method_name);
 
     if let Some(method) = method {
-        if let ControlFlow::Value(va) = call_func(realm, method, &[lhs_val, rhs_val]) {
+        if let ControlFlow::Return(va) = call_func(realm, method, &[lhs_val, rhs_val]) {
             return Some(va);
         } else {
-            panic!("Failed to get a value from function call.");
+            panic!("Failed to get a return value from function call.");
         }
     } else {
         panic!("Incompatible types for operation `{op}`: `{l_type}` and `{r_type}`")
+    }
+}
+
+fn unary_op_helper(
+    realm: SharedRealm,
+    op: &str,
+    expr: &Expression,
+) -> Option<Value> {
+    let expr_val = evaluate_expression(Arc::clone(&realm), expr, true);
+
+    let ControlFlow::Value(expr_val) = expr_val else {
+        panic!("A value should be returned, got: {expr_val:?}");
+    };
+
+    let ty = types::value_to_internal_type(&expr_val).unwrap();
+
+    let method_name = format!("{ty}::operator{op}");
+
+    let method = realm.read().unwrap().lookup(&method_name);
+
+    if let Some(method) = method {
+        if let ControlFlow::Return(va) = call_func(realm, method, &[expr_val]) {
+            return Some(va);
+        } else {
+            panic!("Failed to get a return value from function call.");
+        }
+    } else {
+        panic!("Incompatible type for operation `{op}`: `{ty}`")
     }
 }
 
@@ -216,7 +245,9 @@ fn evaluate_expression(
         ExprKind::LessOrEquals(lhs, rhs) => {
             ControlFlow::Value(binary_op_helper(realm, "<=", lhs, rhs).unwrap())
         }
-        ExprKind::Not(spanned) => todo!(),
+        ExprKind::Not(val) => {
+            ControlFlow::Value(unary_op_helper(realm, "!", val).unwrap())
+        },
         ExprKind::Neg(spanned) => todo!(),
         ExprKind::Identifier(id) => {
             let value = realm.read().unwrap().lookup(id.as_str());
@@ -276,6 +307,10 @@ fn evaluate_expression(
             call_func(realm, func, &args)
         }
         ExprKind::Assignment { name, value } => {
+            // FIXME: It can only assign to plain vaiables, but can't assign by array index or object path:
+            // `myvar = 4` - works
+            // `myvar[0] = 4` - DOESN'T work
+            // `myvar.a.b.c = 4` - DOESN'T work
             let lhs = name.value.as_id().unwrap();
             let rhs = evaluate_expression(Arc::clone(&realm), value, true);
 
@@ -297,6 +332,19 @@ fn evaluate_expression(
         }
         ExprKind::PropertyAccess { origin, property } => todo!(),
         ExprKind::IndexedAccess { origin, index } => todo!(),
+
+        ExprKind::AddAssign(lhs, rhs) => todo!(),
+        ExprKind::SubAssign(lhs, rhs) => todo!(),
+        ExprKind::MulAssign(lhs, rhs) => todo!(),
+        ExprKind::DivAssign(lhs, rhs, division_kind) => todo!(),
+        ExprKind::ModAssign(lhs, rhs) => todo!(),
+
+        ExprKind::True => {
+            ControlFlow::Value(Value::Bool(true))
+        },
+        ExprKind::False => {
+            ControlFlow::Value(Value::Bool(false))
+        },
     }
 }
 
@@ -306,7 +354,7 @@ fn call_func(realm: SharedRealm, func: Value, args: &[Value]) -> ControlFlow {
     if let Value::Native(native) = func {
         let new_realm = Realm::dive(realm);
 
-        return ControlFlow::Value(native(Arc::new(RwLock::new(new_realm)), args));
+        return native(Arc::new(RwLock::new(new_realm)), args);
     }
 
     if let Value::Function(func) = func {

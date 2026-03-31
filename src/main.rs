@@ -1,12 +1,13 @@
 use std::sync::Arc;
 
 use flylang_common::source::Source;
+use flylang_diagnostics::additions::Note;
 use flylang_lexer::{
     self,
     error::LexerError,
     token::{Token, TokenValue},
 };
-use flylang_parser::{Parser, state::ParserState};
+use flylang_parser::{Parser, error::ParserError, state::ParserState};
 use log::debug;
 
 fn run_file(source: Source) {
@@ -46,7 +47,18 @@ fn run_file(source: Source) {
     println!();
 
     if let Err(e) = ast {
-        eprintln!("ParserError: {e:#?}");
+        match e {
+            ParserError::UnexpectedEOF => {
+                flylang_diagnostics::Diagnostics{}.error("Unexpected EOF", parser.eof_address(), &[], &[]);
+            },
+            ParserError::UnexpectedTokenInExpression { token } => {
+                flylang_diagnostics::Diagnostics{}.error("Unexpected token", &token.address, &[
+                    Note::new(token.address.clone(), "here")
+                ], &[]);
+            },
+        }
+        
+        // eprintln!("ParserError: {e:#?}");
         std::process::exit(1);
     }
 

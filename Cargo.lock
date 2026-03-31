@@ -149,6 +149,7 @@ dependencies = [
  "env_logger",
  "flylang-ast-analyzer",
  "flylang-common",
+ "flylang-diagnostics",
  "flylang-lexer",
  "flylang-parser",
  "flylang-tte",

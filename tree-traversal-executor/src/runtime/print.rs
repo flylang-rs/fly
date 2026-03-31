@@ -6,7 +6,7 @@ pub static EXPORT: &[(&str, RustInteropFn)] = &[
     ("print", inner_print),
 ];
 
-fn inner_print(realm: SharedRealm, args: &[Value]) -> Value {
+fn inner_print(realm: SharedRealm, args: &[Value]) -> ControlFlow {
     let len = args.len();
 
     for (n, i) in args.iter().enumerate() {
@@ -36,5 +36,5 @@ fn inner_print(realm: SharedRealm, args: &[Value]) -> Value {
 
     println!();
 
-    Value::Nil
+    ControlFlow::Nothing
 }

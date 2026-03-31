@@ -13,12 +13,16 @@ pub type ParserResult<T> = Result<T, ParserError>;
 
 pub struct Parser {
     tokens: Peekable<std::vec::IntoIter<Token>>,
+    eof_addr: Address, // for diagnostics
 }
 
 impl Parser {
     pub fn new(tokens: Vec<Token>) -> Self {
+        let eof_addr = tokens.last().map(|x| x.address.clone()).unwrap();
+
         Self {
             tokens: tokens.into_iter().peekable(),
+            eof_addr,
         }
     }
 
@@ -65,6 +69,10 @@ impl Parser {
                 panic!("expected {:?}, got end of input", expected);
             }
         }
+    }
+
+    pub fn eof_address(&self) -> &Address {
+        &self.eof_addr
     }
 
     pub fn parse(&mut self, state: ParserState) -> ParserResult<Vec<ast::Statement>> {
@@ -132,14 +140,11 @@ impl Parser {
             flylang_diagnostics::Diagnostics {}.error(
                 &format!("Failed to parse a number: {number_repr:?}"),
                 &address,
-                &[
-                    Note::new(address.clone(), "here")
-                ],
+                &[Note::new(address.clone(), "here")],
                 &[],
             );
             // FIXME: Maube a better way to diagnose errors while parsing?
             std::process::exit(1);
-
         } else {
             Spanned {
                 value: ast::ExprKind::Number(number_repr),
@@ -259,17 +264,47 @@ impl Parser {
                 value: ast::ExprKind::String(nr),
                 address,
             },
+            // true
+            Some(Token {
+                value: TokenValue::True,
+                address,
+            }) => Spanned {
+                value: ast::ExprKind::True,
+                address,
+            },
+            // false
+            Some(Token {
+                value: TokenValue::False,
+                address,
+            }) => Spanned {
+                value: ast::ExprKind::False,
+                address,
+            },
             // -Unary minus
             Some(Token {
                 value: TokenValue::Minus,
                 address: minus_addr,
             }) => {
-                let rhs = self.parse_expression(9)?; // unary minus has high BP
+                let rhs = self.parse_expression(15)?; // unary minus has high BP
 
                 let merged = minus_addr.merge(&rhs.address);
 
                 Spanned {
                     value: ast::ExprKind::Neg(Box::new(rhs)),
+                    address: merged,
+                }
+            }
+            // -Unary minus
+            Some(Token {
+                value: TokenValue::Bang,
+                address: bang_addr,
+            }) => {
+                let rhs = self.parse_expression(15)?; // bang has high BP as minus
+
+                let merged = bang_addr.merge(&rhs.address);
+
+                Spanned {
+                    value: ast::ExprKind::Not(Box::new(rhs)),
                     address: merged,
                 }
             }
@@ -381,11 +416,15 @@ impl Parser {
             lhs = Spanned {
                 value: match op {
                     TokenValue::Plus => ast::ExprKind::Add(Box::new(lhs), Box::new(rhs)),
+                    TokenValue::PlusAssign => ast::ExprKind::AddAssign(Box::new(lhs), Box::new(rhs)),
                     TokenValue::Minus => ast::ExprKind::Sub(Box::new(lhs), Box::new(rhs)),
+                    TokenValue::MinusAssign => ast::ExprKind::SubAssign(Box::new(lhs), Box::new(rhs)),
                     TokenValue::Asterisk => ast::ExprKind::Mul(Box::new(lhs), Box::new(rhs)),
+                    TokenValue::MulAssign => ast::ExprKind::MulAssign(Box::new(lhs), Box::new(rhs)),
                     TokenValue::Slash => {
                         ast::ExprKind::Div(Box::new(lhs), Box::new(rhs), ast::DivisionKind::Neutral)
                     }
+                    TokenValue::DivAssign => ast::ExprKind::DivAssign(Box::new(lhs), Box::new(rhs), ast::DivisionKind::Neutral),
                     TokenValue::RoundingUpDiv => ast::ExprKind::Div(
                         Box::new(lhs),
                         Box::new(rhs),
@@ -469,6 +508,19 @@ impl Parser {
         }))
     }
 
+    fn parse_while(&mut self) -> ParserResult<ast::Statement> {
+        self.next_token();
+
+        let condition = self.parse_expression(0)?;
+
+        let body = self.parse_block()?;
+
+        Ok(ast::Statement::While(ast::While {
+            condition: Box::new(condition),
+            body: Box::new(body),
+        }))
+    }
+
     fn parse_use(&mut self) -> ParserResult<ast::Statement> {
         self.next_token();
 
@@ -510,6 +562,7 @@ impl Parser {
             return match self.peek().ok_or_else(|| ParserError::UnexpectedEOF)? {
                 TokenValue::Func => Ok(self.parse_func()?),
                 TokenValue::If => Ok(self.parse_if()?),
+                TokenValue::While => Ok(self.parse_while()?),
                 TokenValue::Return => Ok(self.parse_return()?),
                 TokenValue::OpenBrace => Ok(self.parse_block()?),
                 TokenValue::Use => Ok(self.parse_use()?),

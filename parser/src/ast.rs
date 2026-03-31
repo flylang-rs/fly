@@ -13,6 +13,12 @@ pub enum ExprKind {
     Div(Box<Expression>, Box<Expression>, DivisionKind),
     Mod(Box<Expression>, Box<Expression>),
 
+    AddAssign(Box<Expression>, Box<Expression>),
+    SubAssign(Box<Expression>, Box<Expression>),
+    MulAssign(Box<Expression>, Box<Expression>),
+    DivAssign(Box<Expression>, Box<Expression>, DivisionKind),
+    ModAssign(Box<Expression>, Box<Expression>),
+
     And(Box<Expression>, Box<Expression>),
     Or(Box<Expression>, Box<Expression>),
 
@@ -39,6 +45,9 @@ pub enum ExprKind {
 
     Block(Vec<Statement>),
     Array(Vec<Expression>),
+
+    True,
+    False,
 
     Call {
         callee: Box<Expression>,
@@ -85,6 +94,7 @@ pub enum Statement {
 
     Function(Function),
     If(If),
+    While(While),
 
     ModuleUsageDeclaration {
         path: Box<Expression>
@@ -114,6 +124,12 @@ pub struct If {
     pub condition: Box<Expression>,
     pub body: Box<Statement>,
     pub else_body: Option<Box<Statement>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct While {
+    pub condition: Box<Expression>,
+    pub body: Box<Statement>,
 }
 
 #[derive(Debug, Clone)]

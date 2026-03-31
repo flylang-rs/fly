@@ -298,6 +298,42 @@ impl Lexer {
         }
     }
 
+    /// Lexes `+` and `+=`
+    fn lex_plus(&mut self, start: usize) -> (TokenValue, usize) {
+        match self.peek_symbol() {
+            Some((offset, '=')) => {
+                self.next_character_any();
+
+                (TokenValue::PlusAssign, offset + 1)
+            }
+            _ => (TokenValue::Plus, start + 1),
+        }
+    }
+
+    /// Lexes `-` and `-=`
+    fn lex_minus(&mut self, start: usize) -> (TokenValue, usize) {
+        match self.peek_symbol() {
+            Some((offset, '=')) => {
+                self.next_character_any();
+
+                (TokenValue::MinusAssign, offset + 1)
+            }
+            _ => (TokenValue::Minus, start + 1),
+        }
+    }
+
+    /// Lexes `*` and `*=`
+    fn lex_asterisk(&mut self, start: usize) -> (TokenValue, usize) {
+        match self.peek_symbol() {
+            Some((offset, '=')) => {
+                self.next_character_any();
+
+                (TokenValue::MulAssign, offset + 1)
+            }
+            _ => (TokenValue::Asterisk, start + 1),
+        }
+    }
+    
     /// Lexes only greater or less comparisons (`<`, `>`, `<=`, `>=`)
     fn lex_comparison(&mut self, start: usize, comparator: char) -> (TokenValue, usize) {
         match self.peek_symbol() {
@@ -393,10 +429,10 @@ impl Lexer {
             '#' => self.lex_comment(position),
             '!' => self.lex_bang(position),
             '=' => self.lex_equality_sign(position),
-            '+' => (TokenValue::Plus, position + 1),
-            '-' => (TokenValue::Minus, position + 1),
+            '+' => self.lex_plus(position),
+            '-' => self.lex_minus(position),
             '/' => self.lex_division(position),
-            '*' => (TokenValue::Asterisk, position + 1),
+            '*' => self.lex_asterisk(position),
             '\\' => (TokenValue::Backslash, position + 1),
             '(' => (TokenValue::OpenParen, position + 1),
             ')' => (TokenValue::CloseParen, position + 1),
