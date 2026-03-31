@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use crate::{function::Function, realm::Realm};
+use crate::{SharedRealm, function::Function};
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -10,5 +10,5 @@ pub enum Value {
     String(Arc<String>),
     Array(Arc<Mutex<Vec<Value>>>),
     Function(Arc<Function>),
-    Native(fn(&mut Realm, &[Value]) -> Value),
+    Native(fn(SharedRealm, &[Value]) -> Value),
 }

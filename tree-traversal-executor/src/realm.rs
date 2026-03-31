@@ -1,12 +1,12 @@
 use std::{collections::HashMap, sync::{Arc, RwLock}};
 
-use crate::object::Value;
+use crate::{SharedRealm, object::Value};
 
 /// Realm (Context or Environment) is a place where runtime objects are stored.
 
 #[derive(Debug, Clone)]
 pub struct Realm {
-    pub values: HashMap<String, Value>,
+    values: HashMap<String, Value>,
     pub parent: Option<Arc<RwLock<Realm>>>
 }
 
@@ -15,6 +15,14 @@ impl Realm {
         Self {
             values: HashMap::new(),
             parent: None
+        }
+    }
+
+    /// Enter new level of realm, recursing deeper.
+    pub fn dive(shared_realm: SharedRealm) -> Self {
+        Self {
+            values: HashMap::new(),
+            parent: Some(shared_realm),
         }
     }
 

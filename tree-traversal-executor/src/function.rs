@@ -11,6 +11,7 @@ pub struct Function {
     pub closure_realm: Arc<RwLock<Realm>>, // captured at definition time
 }
 
+// It will avoid stack overflowing
 impl core::fmt::Debug for Function {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Function")

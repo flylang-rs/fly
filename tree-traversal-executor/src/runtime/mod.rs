@@ -1,16 +1,16 @@
-use crate::{object::Value, realm::Realm};
+use crate::{SharedRealm, object::Value};
 
 pub mod floats;
 pub mod integers;
 pub mod print;
 pub mod strings;
 
-pub type RustInteropFn = fn(&mut Realm, &[Value]) -> Value;
+pub type RustInteropFn = fn(SharedRealm, &[Value]) -> Value;
 
 #[macro_export]
 macro_rules! common_operation {
     ($name:ident, $ty1:ident, $ty2:ident, $res_ty:ident, $conv:expr) => {
-        pub fn $name(_realm: &mut Realm, args: &[Value]) -> Value {
+        pub fn $name(_realm: $crate::SharedRealm, args: &[Value]) -> Value {
             let lhs = &args[0];
             let rhs = &args[1];
 

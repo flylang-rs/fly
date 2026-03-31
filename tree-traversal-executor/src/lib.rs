@@ -1,13 +1,12 @@
-use std::{
-    collections::HashMap,
-    sync::{Arc, RwLock},
-};
+use std::sync::{Arc, RwLock};
 
 use flylang_common::spanned::Spanned;
 use flylang_parser::ast::{DivisionKind, ExprKind, Expression, Statement};
+use log::debug;
 
-use crate::{function::Function, object::Value, realm::Realm};
+use crate::{control_flow::ControlFlow, function::Function, object::Value, realm::Realm};
 
+pub mod control_flow;
 pub mod function;
 pub mod object;
 pub mod realm;
@@ -16,9 +15,13 @@ pub mod types;
 
 pub type SharedRealm = Arc<RwLock<Realm>>;
 
-pub fn execute(ast: Vec<Statement>) -> Value {
+/// Entry point of out executor, it accepts a list of statements gave by parser.
+/// Since it accepts any kind of statement including expressions, it will return a value.
+pub fn execute(ast: Vec<Statement>) -> ControlFlow {
     let mut world = Realm::new();
 
+    // Import native functions from modules.
+    // Chain 'em all!
     let natives = core::iter::empty()
         .chain(runtime::floats::EXPORT.iter())
         .chain(runtime::integers::EXPORT.iter())
@@ -27,26 +30,37 @@ pub fn execute(ast: Vec<Statement>) -> Value {
 
     // Import native functions into the world.
     for (name, func) in natives {
-        world.values_mut().insert(
-            name.to_string(),
-            Value::Native(*func),
-        );    
+        world
+            .values_mut()
+            .insert(name.to_string(), Value::Native(*func));
     }
 
     exec_inner(Arc::new(RwLock::new(world)), &ast)
 }
 
-fn exec_inner(realm: SharedRealm, ast: &[Statement]) -> Value {
+/// Trampoline for executor: operate with given realm and the parsed code
+fn exec_inner(realm: SharedRealm, ast: &[Statement]) -> ControlFlow {
     for i in ast {
-        if let Some(val) = exec_single_statement(Arc::clone(&realm), i) {
-            return val;
+        let stmt = exec_single_statement(Arc::clone(&realm), i);
+
+        match stmt {
+            Some(ControlFlow::Nothing) => continue,
+            Some(v) => return v,
+            None => continue,
         }
     }
 
-    Value::Nil
+    debug!("Nothing returned");
+
+    ControlFlow::Value(Value::Nil)
 }
 
-fn exec_single_statement(realm: SharedRealm, statement: &Statement) -> Option<Value> {
+/// Execute the single statement.
+/// Not all statements are expressions so they can't return a value.
+/// This is why I make it return `Option<Value>`.
+///
+/// `return nil` will return `Some(Value::Nil)`
+fn exec_single_statement(realm: SharedRealm, statement: &Statement) -> Option<ControlFlow> {
     match statement {
         Statement::Function(function) => {
             let name = &function.name.value;
@@ -73,10 +87,57 @@ fn exec_single_statement(realm: SharedRealm, statement: &Statement) -> Option<Va
         Statement::ModuleUsageDeclaration { path } => todo!(),
         Statement::Scope { held_value, body } => todo!(),
         Statement::Return { value } => {
-            return evaluate_expression(realm, value, false);
+            let value = evaluate_expression(realm, value, false);
+
+            debug!("Return: {value:?}");
+
+            Some(value)
         }
-        Statement::Expr(expr) => evaluate_expression(realm, expr, false),
-        st => todo!("Unexpected statement: {:?}", st)
+        Statement::Expr(expr) => {
+            debug!("Evalulating: {expr:?}");
+
+            let expr = evaluate_expression(realm, expr, false);
+
+            debug!("Expression: {expr:?}");
+
+            Some(expr)
+        },
+        st => todo!("Unexpected statement: {:?}", st),
+    }
+}
+
+fn binary_op_helper(
+    realm: SharedRealm,
+    op: &str,
+    lhs: &Expression,
+    rhs: &Expression,
+) -> Option<Value> {
+    let lhs_val = evaluate_expression(Arc::clone(&realm), lhs, true);
+    let rhs_val = evaluate_expression(Arc::clone(&realm), rhs, true);
+
+    let ControlFlow::Value(lhs_val) = lhs_val else {
+        panic!("A value should be returned by LHS, got: {lhs_val:?}");
+    };
+
+    let ControlFlow::Value(rhs_val) = rhs_val else {
+        panic!("A value should be returned by RHS, got: {rhs_val:?}");
+    };
+
+    let l_type = types::value_to_internal_type(&lhs_val).unwrap();
+    let r_type = types::value_to_internal_type(&rhs_val).unwrap();
+
+    let method_name = format!("{l_type}::operator{op}{r_type}");
+
+    let method = realm.read().unwrap().lookup(&method_name);
+
+    if let Some(method) = method {
+        if let ControlFlow::Value(va) = call_func(realm, method, &[lhs_val, rhs_val]) {
+            return Some(va);
+        } else {
+            panic!("Failed to get a value from function call.");
+        }
+    } else {
+        panic!("Incompatible types for operation `{op}`: `{l_type}` and `{r_type}`")
     }
 }
 
@@ -95,122 +156,66 @@ fn evaluate_expression(
     realm: SharedRealm,
     expr: &Expression,
     is_subexpression: bool,
-) -> Option<Value> {
+) -> ControlFlow {
     let Spanned { value, address } = expr;
+
+    debug!("Eval: {expr:?}");
 
     match value {
         ExprKind::Add(lhs, rhs) => {
-            let lhs = evaluate_expression(Arc::clone(&realm), lhs, true)
-                .expect("Cannot be evaluated (lhs)");
-            let rhs = evaluate_expression(Arc::clone(&realm), rhs, true)
-                .expect("Cannot be evaluated (rhs)");
-
-            let l_type = types::value_to_internal_type(&lhs).unwrap();
-            let r_type = types::value_to_internal_type(&rhs).unwrap();
-
-            let method_name = format!("{l_type}::operator+{r_type}");
-
-            let method = realm.read().unwrap().lookup(&method_name);
-
-            if let Some(method) = method {
-                call_func(realm, method, &[lhs, rhs])
-            } else {
-                panic!("Incompatible types for operation `+`: `{l_type:?}` and `{r_type:?}`")
-            }
+            ControlFlow::Value(binary_op_helper(realm, "+", lhs, rhs).unwrap())
         }
         ExprKind::Sub(lhs, rhs) => {
-            let lhs = evaluate_expression(Arc::clone(&realm), lhs, true)
-                .expect("Cannot be evaluated (lhs)");
-            let rhs = evaluate_expression(Arc::clone(&realm), rhs, true)
-                .expect("Cannot be evaluated (rhs)");
-
-            let l_type = types::value_to_internal_type(&lhs).unwrap();
-            let r_type = types::value_to_internal_type(&rhs).unwrap();
-
-            let method_name = format!("{l_type}::operator-{r_type}");
-
-            let method = realm.read().unwrap().lookup(&method_name);
-
-            if let Some(method) = method {
-                call_func(realm, method, &[lhs, rhs])
-            } else {
-                panic!("Incompatible types for operation `-`: `{l_type:?}` and `{r_type:?}`")
-            }
+            ControlFlow::Value(binary_op_helper(realm, "-", lhs, rhs).unwrap())
         }
         ExprKind::Mul(lhs, rhs) => {
-            let lhs = evaluate_expression(Arc::clone(&realm), lhs, true)
-                .expect("Cannot be evaluated (lhs)");
-            let rhs = evaluate_expression(Arc::clone(&realm), rhs, true)
-                .expect("Cannot be evaluated (rhs)");
-
-            let l_type = types::value_to_internal_type(&lhs).unwrap();
-            let r_type = types::value_to_internal_type(&rhs).unwrap();
-
-            let method_name = format!("{l_type}::operator*{r_type}");
-
-            let method = realm.read().unwrap().lookup(&method_name);
-
-            if let Some(method) = method {
-                call_func(realm, method, &[lhs, rhs])
-            } else {
-                panic!("Incompatible types for operation `*`: `{l_type:?}` and `{r_type:?}`")
-            }
+            ControlFlow::Value(binary_op_helper(realm, "*", lhs, rhs).unwrap())
         }
         ExprKind::Div(lhs, rhs, division_kind) => {
-            let lhs = evaluate_expression(Arc::clone(&realm), lhs, true)
-                .expect("Cannot be evaluated (lhs)");
-            let rhs = evaluate_expression(Arc::clone(&realm), rhs, true)
-                .expect("Cannot be evaluated (rhs)");
-
-            let l_type = types::value_to_internal_type(&lhs).unwrap();
-            let r_type = types::value_to_internal_type(&rhs).unwrap();
-
             let op = match division_kind {
                 DivisionKind::Neutral => "/",
                 DivisionKind::RoundingUp => "/+",
                 DivisionKind::RoundingDown => "/-",
             };
 
-            let method_name = format!("{l_type}::operator{op}{r_type}");
-
-            let method = realm.read().unwrap().lookup(&method_name);
-
-            if let Some(method) = method {
-                call_func(realm, method, &[lhs, rhs])
-            } else {
-                panic!("Incompatible types for operation `{op}`: `{l_type:?}` and `{r_type:?}`")
-            }
+            ControlFlow::Value(binary_op_helper(realm, op, lhs, rhs).unwrap())
         }
         ExprKind::Mod(lhs, rhs) => {
-            let lhs = evaluate_expression(Arc::clone(&realm), lhs, true)
-                .expect("Cannot be evaluated (lhs)");
-            let rhs = evaluate_expression(Arc::clone(&realm), rhs, true)
-                .expect("Cannot be evaluated (rhs)");
-
-            let l_type = types::value_to_internal_type(&lhs).unwrap();
-            let r_type = types::value_to_internal_type(&rhs).unwrap();
-
-            let method_name = format!("{l_type}::operator%{r_type}");
-
-            let method = realm.read().unwrap().lookup(&method_name);
-
-            if let Some(method) = method {
-                call_func(realm, method, &[lhs, rhs])
-            } else {
-                panic!("Incompatible types for operation `%`: `{l_type:?}` and `{r_type:?}`")
-            }
-        },
-        ExprKind::And(lhs, rhs) => todo!(),
-        ExprKind::Or(lhs, rhs) => todo!(),
-        ExprKind::BitAnd(spanned, spanned1) => todo!(),
-        ExprKind::BitOr(spanned, spanned1) => todo!(),
-        ExprKind::BitShiftLeft(spanned, spanned1) => todo!(),
-        ExprKind::BitShiftRight(spanned, spanned1) => todo!(),
-        ExprKind::Equals(spanned, spanned1) => todo!(),
-        ExprKind::Greater(spanned, spanned1) => todo!(),
-        ExprKind::GreaterOrEquals(spanned, spanned1) => todo!(),
-        ExprKind::Less(spanned, spanned1) => todo!(),
-        ExprKind::LessOrEquals(spanned, spanned1) => todo!(),
+            ControlFlow::Value(binary_op_helper(realm, "%", lhs, rhs).unwrap())
+        }
+        ExprKind::And(lhs, rhs) => {
+            ControlFlow::Value(binary_op_helper(realm, "&&", lhs, rhs).unwrap())
+        }
+        ExprKind::Or(lhs, rhs) => {
+            ControlFlow::Value(binary_op_helper(realm, "||", lhs, rhs).unwrap())
+        }
+        ExprKind::BitAnd(lhs, rhs) => {
+            ControlFlow::Value(binary_op_helper(realm, "&", lhs, rhs).unwrap())
+        }
+        ExprKind::BitOr(lhs, rhs) => {
+            ControlFlow::Value(binary_op_helper(realm, "|", lhs, rhs).unwrap())
+        }
+        ExprKind::BitShiftLeft(lhs, rhs) => {
+            ControlFlow::Value(binary_op_helper(realm, "<<", lhs, rhs).unwrap())
+        }
+        ExprKind::BitShiftRight(lhs, rhs) => {
+            ControlFlow::Value(binary_op_helper(realm, ">>", lhs, rhs).unwrap())
+        }
+        ExprKind::Equals(lhs, rhs) => {
+            ControlFlow::Value(binary_op_helper(realm, "==", lhs, rhs).unwrap())
+        }
+        ExprKind::Greater(lhs, rhs) => {
+            ControlFlow::Value(binary_op_helper(realm, ">", lhs, rhs).unwrap())
+        }
+        ExprKind::GreaterOrEquals(lhs, rhs) => {
+            ControlFlow::Value(binary_op_helper(realm, ">=", lhs, rhs).unwrap())
+        }
+        ExprKind::Less(lhs, rhs) => {
+            ControlFlow::Value(binary_op_helper(realm, "<", lhs, rhs).unwrap())
+        }
+        ExprKind::LessOrEquals(lhs, rhs) => {
+            ControlFlow::Value(binary_op_helper(realm, "<=", lhs, rhs).unwrap())
+        }
         ExprKind::Not(spanned) => todo!(),
         ExprKind::Neg(spanned) => todo!(),
         ExprKind::Identifier(id) => {
@@ -220,7 +225,7 @@ fn evaluate_expression(
                 panic!("Name `{id}` is not defined.");
             }
 
-            value
+            ControlFlow::Value(value.unwrap())
         }
         ExprKind::Number(nr) => {
             let is_float = nr.contains('.');
@@ -231,42 +236,52 @@ fn evaluate_expression(
                 Value::Integer(nr.parse::<i128>().unwrap())
             };
 
-            Some(val)
+            ControlFlow::Value(val)
         }
-        ExprKind::String(st) => Some(Value::String(Arc::new(st.clone()))),
+        ExprKind::String(st) => ControlFlow::Value(Value::String(Arc::new(st.clone()))),
         ExprKind::Block(ast) => {
-            // let new_realm = Realm {
-            //     values: HashMap::new(),
-            //     parent: Some(realm),
-            // };
+            let inner_realm = Arc::new(RwLock::new(Realm::dive(Arc::clone(&realm))));
+            let block_result = exec_inner(inner_realm, ast);
 
-            // Some(exec_inner(Arc::new(RwLock::new(new_realm)), ast))
-
-            Some(exec_inner(Arc::clone(&realm), ast))
+            match block_result {
+                ControlFlow::Return(_) => block_result,
+                ControlFlow::Value(v) => ControlFlow::Value(v),
+                ControlFlow::Nothing => ControlFlow::Nothing,
+                other => other,
+            }
         }
         ExprKind::Array(spanneds) => todo!(),
         ExprKind::Call { callee, parameters } => {
-            let func_name = callee.value.as_id().expect(&format!(
-                "The value (callee name) is not an identifier! ({:?})",
-                callee.value
-            ));
+            let func = evaluate_expression(Arc::clone(&realm), callee, true);
 
-            let func = realm.write().unwrap().lookup(func_name);
-
-            if func.is_none() {
-                panic!("Undefined function: {func_name:#?}");
-            }
+            let ControlFlow::Value(func) = func else {
+                panic!("Expected a function as value, got: {func:?}");
+            };
 
             let args: Vec<Value> = parameters
                 .iter()
-                .map(|x| evaluate_expression(Arc::clone(&realm), x, true).unwrap_or(Value::Nil))
+                .map(|x| {
+                    let expr = evaluate_expression(Arc::clone(&realm), x, true);
+
+                    if let ControlFlow::Value(va) = expr {
+                        va
+                    } else {
+                        panic!("Expected value, got: {expr:?}");
+                    }
+                })
                 .collect();
 
-            call_func(realm, func.unwrap(), &args)
+                debug!("Calling func with args: {:?}", args);
+
+            call_func(realm, func, &args)
         }
         ExprKind::Assignment { name, value } => {
             let lhs = name.value.as_id().unwrap();
-            let rhs = evaluate_expression(Arc::clone(&realm), value, true).unwrap();
+            let rhs = evaluate_expression(Arc::clone(&realm), value, true);
+
+            let ControlFlow::Value(rhs) = rhs else {
+                panic!("Expected an RHS as value, got: {rhs:?}");
+            };
 
             realm
                 .write()
@@ -274,7 +289,11 @@ fn evaluate_expression(
                 .values_mut()
                 .insert(lhs.to_owned(), rhs.clone());
 
-            if is_subexpression { Some(rhs) } else { None }
+            if is_subexpression {
+                ControlFlow::Value(rhs)
+            } else {
+                ControlFlow::Nothing
+            }
         }
         ExprKind::PropertyAccess { origin, property } => todo!(),
         ExprKind::IndexedAccess { origin, index } => todo!(),
@@ -283,17 +302,16 @@ fn evaluate_expression(
 
 // Performs a function call.
 // Supported both native and regular functions.
-fn call_func(realm: SharedRealm, func: Value, args: &[Value]) -> Option<Value> {
-    let mut new_realm = Realm {
-        values: HashMap::new(),
-        parent: Some(realm),
-    };
-
+fn call_func(realm: SharedRealm, func: Value, args: &[Value]) -> ControlFlow {
     if let Value::Native(native) = func {
-        return Some(native(&mut new_realm, args));
+        let new_realm = Realm::dive(realm);
+
+        return ControlFlow::Value(native(Arc::new(RwLock::new(new_realm)), args));
     }
 
     if let Value::Function(func) = func {
+        let mut new_realm = Realm::dive(Arc::clone(&func.closure_realm));
+
         let parameters = &func.params;
 
         if parameters.len() != args.len() {
@@ -302,14 +320,20 @@ fn call_func(realm: SharedRealm, func: Value, args: &[Value]) -> Option<Value> {
 
         // Arguments are just temporary variables
 
-        new_realm.values = func.closure_realm.read().unwrap().values().clone();
-
         for (par, arg) in parameters.iter().zip(args) {
             new_realm.values_mut().insert(par.clone(), arg.clone());
         }
 
-        return exec_single_statement(Arc::new(RwLock::new(new_realm)), &func.body);
+        let result = exec_single_statement(Arc::new(RwLock::new(new_realm)), &func.body)
+            .unwrap_or(ControlFlow::Nothing);
+
+        debug!(
+            "Executing func with params {:?} returned {:?}",
+            func.params, result
+        );
+
+        return result;
     }
 
-    None
+    ControlFlow::Nothing
 }

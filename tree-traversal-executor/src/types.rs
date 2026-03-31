@@ -1,5 +1,3 @@
-use flylang_parser::ast::ExprKind;
-
 use crate::object::Value;
 
 pub const TYPE_ARRAY: &str = "array";
@@ -18,7 +16,7 @@ pub fn value_to_internal_type(val: &Value) -> Option<&str> {
         Value::String(_) => Some(TYPE_STRING),
         Value::Array(_) => Some(TYPE_ARRAY),
         Value::Function(_) => Some(TYPE_FUNCTION),
-        Value::Native(_) => Some(TYPE_NIL),
+        Value::Native(_) => Some(TYPE_NATIVE),
         // unk => panic!("Cannot convert {unk:?} to internal type."),
     }
 }

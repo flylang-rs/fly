@@ -1,4 +1,4 @@
-use crate::{runtime::RustInteropFn, Realm, Value};
+use crate::{runtime::RustInteropFn, SharedRealm, Value};
 
 use crate::common_operation;
 
@@ -32,7 +32,7 @@ common_operation!(integers_div_rup, Integer, Integer, Integer, |x: &i128, y: &i1
     (x / y) + if remainder != 0 { 1 } else { 0 }
 });
 
-fn integer_to_string(_realm: &mut Realm, args: &[Value]) -> Value {
+fn integer_to_string(_realm: SharedRealm, args: &[Value]) -> Value {
     let Value::Integer(i) = args[0] else {
         panic!("It's not an integer, it's {:?}", args[0]);
     };

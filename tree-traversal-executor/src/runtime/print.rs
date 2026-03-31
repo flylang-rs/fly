@@ -1,12 +1,12 @@
-use std::sync::RwLock;
+use std::sync::{Arc, RwLock};
 
-use crate::{call_func, object::Value, realm::Realm, runtime::RustInteropFn, types};
+use crate::{SharedRealm, call_func, control_flow::ControlFlow, object::Value, runtime::RustInteropFn, types};
 
 pub static EXPORT: &[(&str, RustInteropFn)] = &[
     ("print", inner_print),
 ];
 
-fn inner_print(realm: &mut Realm, args: &[Value]) -> Value {
+fn inner_print(realm: SharedRealm, args: &[Value]) -> Value {
     let len = args.len();
 
     for (n, i) in args.iter().enumerate() {
@@ -14,13 +14,13 @@ fn inner_print(realm: &mut Realm, args: &[Value]) -> Value {
 
         let method_name = format!("{ty}::to_string");
         
-        let method = realm.lookup(&method_name);
+        let method = realm.read().unwrap().lookup(&method_name);
         
         if let Some(method) = method {
             // FIXME: Fix that clone!
-            let string_value = call_func(RwLock::new(realm.clone()).into(), method, &[i.clone()]);
+            let string_value = call_func(Arc::clone(&realm), method, &[i.clone()]);
 
-            let Some(Value::String(display_value)) = string_value else {
+            let ControlFlow::Value(Value::String(display_value)) = string_value else {
                 panic!("Failed `{}` to string conversion!", ty);
             };
 

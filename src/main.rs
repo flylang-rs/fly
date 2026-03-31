@@ -7,6 +7,7 @@ use flylang_lexer::{
     token::{Token, TokenValue},
 };
 use flylang_parser::{Parser, state::ParserState};
+use log::debug;
 
 fn run_file(source: Source) {
     let mut lexer = flylang_lexer::Lexer::new(Arc::new(source));
@@ -63,6 +64,8 @@ fn run_file(source: Source) {
 }
 
 fn main() -> std::io::Result<()> {
+    env_logger::init();
+
     let filepath = if let Some(arg) = std::env::args().nth(1) {
         arg
     } else {
