@@ -12,6 +12,7 @@ pub static EXPORT: &[(&str, RustInteropFn)] = &[
     ("integer::operator*float", integer_mul_float),
     ("integer::operator/-integer", integers_div_rdown),
     ("integer::operator/+integer", integers_div_rup),
+    ("integer::operator%integer", integers_mod),
 
     // Comparison
     ("integer::operator==integer", integers_eq),
@@ -39,6 +40,8 @@ common_operation_binary!(integers_div_rup, Integer, Integer, Integer, |x: &i128,
 
     (x / y) + if remainder != 0 { 1 } else { 0 }
 });
+
+common_operation_binary!(integers_mod, Integer, Integer, Integer, |x: &i128, y: &i128| x % y);
 
 
 common_operation_binary!(integers_eq, Integer, Integer, Bool, |x: &i128, y: &i128| x == y);

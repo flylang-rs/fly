@@ -1,0 +1,9 @@
+a = 4
+
+if a == 8 {
+    print("Ya-hoo is 8")
+} else if a == 9 {
+    print("Ya-hoo is 9")
+} else {
+    print("What the heck?")
+}

@@ -66,6 +66,8 @@ pub enum TokenValue {
     LogicalOr,  // ||
 
     // Keywords
+    Break,
+    Continue,
     Destructor,
     Drop,
     Else,

@@ -85,7 +85,45 @@ fn exec_single_statement(realm: SharedRealm, statement: &Statement) -> Option<Co
 
             None
         }
-        Statement::If(_) => todo!(),
+        Statement::If(stmt) => {
+            // if x < n { ...
+            //       ^^^^^
+            // Values are accessed outside the `if` body's scope, so passing `realm` is OK.
+            let cond = evaluate_expression(Arc::clone(&realm), &stmt.condition, false);
+
+            // Condition must be a value.
+            let ControlFlow::Value(cond) = cond else {
+                panic!("Expected condition to evaluate into a value, got {cond:?}")
+            };
+
+            // And it must be a boolean. We don't convert anything to boolean, ...
+            // ... so if an integer or string is passed into condition - it's a dev fault.
+            let Value::Bool(result) = cond else {
+                panic!("Expected condition to return a `boolean`, got {cond:?}")
+            };
+
+            debug!("If condition esult: {result:?}");
+
+            if result {
+                let Statement::Expr(block_value) = &*stmt.body else {
+                    panic!("Expected a block!")
+                };
+
+                if let ExprKind::Block(bk) = &block_value.value {
+                    return Some(exec_inner(Arc::clone(&realm), &bk));
+                } else {
+                    panic!("Expected a block!")
+                }
+
+                // ...
+            } else {
+                if let Some(else_body) = &stmt.else_body {
+                    exec_single_statement(realm, &else_body)
+                } else {
+                    Some(ControlFlow::Nothing)
+                }
+            }
+        },
         Statement::ModuleUsageDeclaration { path } => todo!(),
         Statement::Scope { held_value, body } => todo!(),
         Statement::Return { value } => {
@@ -155,6 +193,8 @@ fn exec_single_statement(realm: SharedRealm, statement: &Statement) -> Option<Co
 
             Some(ControlFlow::Nothing)
         },
+        Statement::Continue => Some(ControlFlow::Continue),
+        Statement::Break => Some(ControlFlow::Break),
         st => todo!("Unexpected statement: {:?}", st),
     }
 }

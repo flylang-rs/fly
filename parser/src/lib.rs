@@ -385,20 +385,20 @@ impl Parser {
 
             let (left_bp, right_bp) = match op {
                 TokenValue::Assign => (1, 2),
-                TokenValue::Plus
-                | TokenValue::PlusAssign
-                | TokenValue::Minus
-                | TokenValue::MinusAssign => (4, 5),
-                TokenValue::Asterisk
-                | TokenValue::Slash
-                | TokenValue::RoundingDownDiv
-                | TokenValue::RoundingUpDiv
-                | TokenValue::Percent => (6, 7),
                 TokenValue::Equals
                 | TokenValue::Less
                 | TokenValue::LessOrEquals
                 | TokenValue::Greater
-                | TokenValue::GreaterOrEquals => (8, 9),
+                | TokenValue::GreaterOrEquals => (3, 4),
+                TokenValue::Plus
+                | TokenValue::PlusAssign
+                | TokenValue::Minus
+                | TokenValue::MinusAssign => (5, 6),
+                TokenValue::Asterisk
+                | TokenValue::Slash
+                | TokenValue::RoundingDownDiv
+                | TokenValue::RoundingUpDiv
+                | TokenValue::Percent => (7, 8),
                 TokenValue::OpenBracket => (31, 0), // suspicious: review and remove it asap
                 TokenValue::Dot => (31, 32),
                 _ => break, // not an infix operator
@@ -555,6 +555,22 @@ impl Parser {
         }
     }
 
+    fn parse_break_or_continue(&mut self) -> ParserResult<ast::Statement> {
+        match self.peek() {
+            Some(TokenValue::Continue) => {
+                self.next_token();
+
+                Ok(ast::Statement::Continue)
+            },
+            Some(TokenValue::Break) => {
+                self.next_token();
+
+                Ok(ast::Statement::Break)
+            }
+            _ => unreachable!()
+        }
+    }
+
     fn parse_statement(&mut self) -> ParserResult<ast::Statement> {
         self.skip_whitespaces();
 
@@ -565,6 +581,7 @@ impl Parser {
                 TokenValue::While => Ok(self.parse_while()?),
                 TokenValue::Return => Ok(self.parse_return()?),
                 TokenValue::OpenBrace => Ok(self.parse_block()?),
+                TokenValue::Break | TokenValue::Continue => Ok(self.parse_break_or_continue()?),
                 TokenValue::Use => Ok(self.parse_use()?),
                 _ /* tok */ => {
                     // eprintln!("Entering expression with token: {tok:?}");

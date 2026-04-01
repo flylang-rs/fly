@@ -90,6 +90,9 @@ impl ExprKind {
 
 #[derive(Debug, Clone)]
 pub enum Statement {
+    Break,
+    Continue,
+
     VariableDefinition(VariableDefinition),
 
     Function(Function),
