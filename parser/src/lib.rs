@@ -448,6 +448,7 @@ impl Parser {
                     },
                     TokenValue::Percent => ast::ExprKind::Mod(Box::new(lhs), Box::new(rhs)),
                     TokenValue::Equals => ast::ExprKind::Equals(Box::new(lhs), Box::new(rhs)),
+                    // I thought it can be replaced by Not(Equals(...)), but it needs Spanned to be used.
                     TokenValue::NotEquals => ast::ExprKind::NotEquals(Box::new(lhs), Box::new(rhs)),
                     TokenValue::Less => ast::ExprKind::Less(Box::new(lhs), Box::new(rhs)),
                     TokenValue::Greater => ast::ExprKind::Greater(Box::new(lhs), Box::new(rhs)),

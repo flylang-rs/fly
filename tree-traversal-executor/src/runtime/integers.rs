@@ -1,7 +1,7 @@
 use crate::control_flow::ControlFlow;
 use crate::{runtime::RustInteropFn, SharedRealm, Value};
 
-use crate::common_operation_binary;
+use crate::{common_operation_binary, common_operation_unary};
 
 pub static EXPORT: &[(&str, RustInteropFn)] = &[
     ("integer::operator+integer", integers_add),
@@ -28,6 +28,9 @@ pub static EXPORT: &[(&str, RustInteropFn)] = &[
     ("integer::operator<integer", integers_lt),
     ("integer::operator>=integer", integers_gte),
     ("integer::operator<=integer", integers_lte),
+
+    // Unary operations
+    ("integer::operator-", integer_neg),
 
     // To string
     ("integer::to_string", integer_to_string),
@@ -66,6 +69,10 @@ common_operation_binary!(integers_gt, Integer, Integer, Bool, |x: &i128, y: &i12
 common_operation_binary!(integers_lt, Integer, Integer, Bool, |x: &i128, y: &i128| x < y);
 common_operation_binary!(integers_gte, Integer, Integer, Bool, |x: &i128, y: &i128| x >= y);
 common_operation_binary!(integers_lte, Integer, Integer, Bool, |x: &i128, y: &i128| x <= y);
+
+
+common_operation_unary!(integer_neg, Integer, Integer, |x: &i128| -x);
+
 
 fn integer_to_string(_realm: SharedRealm, args: &[Value]) -> ControlFlow {
     let Value::Integer(i) = args[0] else {

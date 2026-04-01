@@ -340,7 +340,9 @@ fn evaluate_expression(
         ExprKind::Not(val) => {
             ControlFlow::Value(unary_op_helper(realm, "!", val).unwrap())
         },
-        ExprKind::Neg(spanned) => todo!(),
+        ExprKind::Neg(val) => {
+            ControlFlow::Value(unary_op_helper(realm, "-", val).unwrap())
+        },
         ExprKind::Identifier(id) => {
             let value = realm.read().unwrap().lookup(id.as_str());
 

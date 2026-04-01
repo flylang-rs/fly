@@ -1,4 +1,4 @@
-use crate::{SharedRealm, common_operation_binary, control_flow::ControlFlow, object::Value, realm::Realm, runtime::RustInteropFn};
+use crate::{SharedRealm, common_operation_binary, common_operation_unary, control_flow::ControlFlow, object::Value, realm::Realm, runtime::RustInteropFn};
 
 pub static EXPORT: &[(&str, RustInteropFn)] = &[
     ("float::operator+float", floats_add),
@@ -21,6 +21,9 @@ pub static EXPORT: &[(&str, RustInteropFn)] = &[
     ("float::operator<float", floats_lt),
     ("float::operator>=float", floats_gte),
     ("float::operator<=float", floats_lte),
+
+    // Unary operations
+    ("float::operator-", float_neg),
 
     // To string
     ("float::to_string", float_to_string),
@@ -51,6 +54,9 @@ common_operation_binary!(floats_gt, Float, Float, Bool, |x: &f64, y: &f64| x > y
 common_operation_binary!(floats_lt, Float, Float, Bool, |x: &f64, y: &f64| x < y);
 common_operation_binary!(floats_gte, Float, Float, Bool, |x: &f64, y: &f64| x >= y);
 common_operation_binary!(floats_lte, Float, Float, Bool, |x: &f64, y: &f64| x <= y);
+
+
+common_operation_unary!(float_neg, Float, Float, |x: &f64| -x);
 
 
 fn float_to_string(_realm: SharedRealm, args: &[Value]) -> ControlFlow {
