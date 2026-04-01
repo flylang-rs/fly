@@ -10,9 +10,16 @@ pub static EXPORT: &[(&str, RustInteropFn)] = &[
     ("integer::operator-float", integer_sub_float),
     ("integer::operator*integer", integers_mul),
     ("integer::operator*float", integer_mul_float),
+    ("integer::operator/integer", integers_div),
     ("integer::operator/-integer", integers_div_rdown),
     ("integer::operator/+integer", integers_div_rup),
     ("integer::operator%integer", integers_mod),
+
+    // Binary operations
+    ("integer::operator&integer", integers_bit_and),
+    ("integer::operator|integer", integers_bit_or),
+    ("integer::operator<<integer", integers_bit_shift_left),
+    ("integer::operator>>integer", integers_bit_shift_right),
 
     // Comparison
     ("integer::operator==integer", integers_eq),
@@ -34,6 +41,8 @@ common_operation_binary!(integer_sub_float, Integer, Float, Float, |x: &i128, y:
 common_operation_binary!(integers_mul, Integer, Integer, Integer, |x: &i128, y: &i128| x * y);
 common_operation_binary!(integer_mul_float, Integer, Float, Float, |x: &i128, y: &f64| (*x as f64) * y);
 
+common_operation_binary!(integers_div, Integer, Integer, Float, |x: &i128, y: &i128| (*x as f64) / (*y as f64));
+
 common_operation_binary!(integers_div_rdown, Integer, Integer, Integer, |x: &i128, y: &i128| x / y);
 common_operation_binary!(integers_div_rup, Integer, Integer, Integer, |x: &i128, y: &i128| {
     let remainder = x % y;
@@ -42,6 +51,12 @@ common_operation_binary!(integers_div_rup, Integer, Integer, Integer, |x: &i128,
 });
 
 common_operation_binary!(integers_mod, Integer, Integer, Integer, |x: &i128, y: &i128| x % y);
+
+
+common_operation_binary!(integers_bit_and, Integer, Integer, Integer, |x: &i128, y: &i128| x & y);
+common_operation_binary!(integers_bit_or, Integer, Integer, Integer, |x: &i128, y: &i128| x | y);
+common_operation_binary!(integers_bit_shift_left, Integer, Integer, Integer, |x: &i128, y: &i128| x << y);
+common_operation_binary!(integers_bit_shift_right, Integer, Integer, Integer, |x: &i128, y: &i128| x >> y);
 
 
 common_operation_binary!(integers_eq, Integer, Integer, Bool, |x: &i128, y: &i128| x == y);

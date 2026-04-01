@@ -1,4 +1,4 @@
-use crate::{common_operation_binary, object::Value, realm::Realm, runtime::RustInteropFn};
+use crate::{SharedRealm, common_operation_binary, control_flow::ControlFlow, object::Value, realm::Realm, runtime::RustInteropFn};
 
 pub static EXPORT: &[(&str, RustInteropFn)] = &[
     ("float::operator+float", floats_add),
@@ -13,6 +13,9 @@ pub static EXPORT: &[(&str, RustInteropFn)] = &[
     ("float::operator/-integer", float_div_integer_rdown),
     ("float::operator/+float", floats_div_rup),
     ("float::operator/+integer", float_div_integer_rup),
+
+    // To string
+    ("float::to_string", float_to_string),
 ];
 
 common_operation_binary!(floats_add, Float, Float, Float, |x: &f64, y: &f64| x + y);
@@ -32,3 +35,12 @@ common_operation_binary!(float_div_integer_rdown, Float, Integer, Float, |x: &f6
 
 common_operation_binary!(floats_div_rup, Float, Float, Float, |x: &f64, y: &f64| (x / y).ceil() as i64 as _);
 common_operation_binary!(float_div_integer_rup, Float, Integer, Float, |x: &f64, y: &i128| (x / (*y as f64)).ceil() as i64 as _);
+
+
+fn float_to_string(_realm: SharedRealm, args: &[Value]) -> ControlFlow {
+    let Value::Float(i) = args[0] else {
+        panic!("It's not a float, it's {:?}", args[0]);
+    };
+
+    ControlFlow::Value(Value::String(i.to_string().into()))
+}
