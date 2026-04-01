@@ -285,7 +285,7 @@ impl Parser {
                 value: TokenValue::Minus,
                 address: minus_addr,
             }) => {
-                let rhs = self.parse_expression(15)?; // unary minus has high BP
+                let rhs = self.parse_expression(20)?; // unary minus has high BP
 
                 let merged = minus_addr.merge(&rhs.address);
 
@@ -299,7 +299,7 @@ impl Parser {
                 value: TokenValue::Bang,
                 address: bang_addr,
             }) => {
-                let rhs = self.parse_expression(15)?; // bang has high BP as minus
+                let rhs = self.parse_expression(20)?; // bang has high BP as minus
 
                 let merged = bang_addr.merge(&rhs.address);
 
@@ -385,20 +385,27 @@ impl Parser {
 
             let (left_bp, right_bp) = match op {
                 TokenValue::Assign => (1, 2),
+                TokenValue::LogicalAnd => (2, 3),
+                TokenValue::LogicalOr => (2, 3),
+                TokenValue::BitAnd => (3, 4),
+                TokenValue::BitOr => (3, 4),
+                TokenValue::BitShiftLeft => (4, 5),
+                TokenValue::BitShiftRight => (4, 5),
                 TokenValue::Equals
+                | TokenValue::NotEquals
                 | TokenValue::Less
                 | TokenValue::LessOrEquals
                 | TokenValue::Greater
-                | TokenValue::GreaterOrEquals => (3, 4),
+                | TokenValue::GreaterOrEquals => (5, 6),
                 TokenValue::Plus
                 | TokenValue::PlusAssign
                 | TokenValue::Minus
-                | TokenValue::MinusAssign => (5, 6),
+                | TokenValue::MinusAssign => (7, 8),
                 TokenValue::Asterisk
                 | TokenValue::Slash
                 | TokenValue::RoundingDownDiv
                 | TokenValue::RoundingUpDiv
-                | TokenValue::Percent => (7, 8),
+                | TokenValue::Percent => (9, 10),
                 TokenValue::OpenBracket => (31, 0), // suspicious: review and remove it asap
                 TokenValue::Dot => (31, 32),
                 _ => break, // not an infix operator
@@ -449,6 +456,12 @@ impl Parser {
                     TokenValue::GreaterOrEquals => {
                         ast::ExprKind::GreaterOrEquals(Box::new(lhs), Box::new(rhs))
                     }
+                    TokenValue::LogicalAnd => ast::ExprKind::And(Box::new(lhs), Box::new(rhs)),
+                    TokenValue::LogicalOr => ast::ExprKind::Or(Box::new(lhs), Box::new(rhs)),
+                    TokenValue::BitAnd => ast::ExprKind::BitAnd(Box::new(lhs), Box::new(rhs)),
+                    TokenValue::BitOr => ast::ExprKind::BitOr(Box::new(lhs), Box::new(rhs)),
+                    TokenValue::BitShiftLeft => ast::ExprKind::BitShiftLeft(Box::new(lhs), Box::new(rhs)),
+                    TokenValue::BitShiftRight => ast::ExprKind::BitShiftRight(Box::new(lhs), Box::new(rhs)),
                     TokenValue::Dot => ast::ExprKind::PropertyAccess {
                         origin: Box::new(lhs),
                         property: Box::new(rhs),
@@ -462,7 +475,8 @@ impl Parser {
                         }
                     }
                     _ => unreachable!(
-                        "Maybe you've added a binding power rule, but forgot how to handle them, add new operators."
+                        "Maybe you've added a binding power rule, but forgot how to handle them, add new operators. ({:?})",
+                        op
                     ),
                 },
                 address: merged,

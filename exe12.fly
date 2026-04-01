@@ -1,0 +1,13 @@
+x = 0
+
+func foo() {
+    x = 4
+
+    while x < 9 {
+        x = x + 1
+    }
+}
+
+print(x)
+foo()
+print(x)

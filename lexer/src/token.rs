@@ -28,6 +28,8 @@ pub enum TokenValue {
     BackSlash,
     BitAnd,
     BitOr,
+    BitShiftLeft,
+    BitShiftRight,
     Backslash,
     Dot,
     Comma,

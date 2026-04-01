@@ -51,25 +51,6 @@ impl Realm {
             }
         }
     }
-
-    // pub fn lookup_write(&mut self, term: &str, value: Value) -> bool {
-    //     // Search in parent Realm.
-    //     if let Some(parent) = self.parent.as_ref() {
-    //         if !parent.try_write().unwrap().lookup_write(term, value.clone()) {
-    //             return false;
-    //         }
-    //     }
-
-    //     // If value exist, 
-    //     if self.values.contains_key(term) {
-    //         return true;
-    //     }
-
-    //     // If an object with that name is not found in parent realms, make a new one in current realm.
-    //     self.values.insert(term.to_string(), value);
-
-    //     false
-    // }
 }
 
 // ...

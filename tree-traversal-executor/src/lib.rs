@@ -54,7 +54,7 @@ fn exec_inner(realm: SharedRealm, ast: &[Statement]) -> ControlFlow {
 
     debug!("Nothing returned");
 
-    ControlFlow::Value(Value::Nil)
+    ControlFlow::Nothing
 }
 
 /// Execute the single statement.
@@ -102,7 +102,7 @@ fn exec_single_statement(realm: SharedRealm, statement: &Statement) -> Option<Co
                 panic!("Expected condition to return a `boolean`, got {cond:?}")
             };
 
-            debug!("If condition esult: {result:?}");
+            debug!("If condition result: {result:?}");
 
             if result {
                 let Statement::Expr(block_value) = &*stmt.body else {
