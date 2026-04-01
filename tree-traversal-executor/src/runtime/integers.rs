@@ -23,6 +23,7 @@ pub static EXPORT: &[(&str, RustInteropFn)] = &[
 
     // Comparison
     ("integer::operator==integer", integers_eq),
+    ("integer::operator!=integer", integers_neq),
     ("integer::operator>integer", integers_gt),
     ("integer::operator<integer", integers_lt),
     ("integer::operator>=integer", integers_gte),
@@ -60,6 +61,7 @@ common_operation_binary!(integers_bit_shift_right, Integer, Integer, Integer, |x
 
 
 common_operation_binary!(integers_eq, Integer, Integer, Bool, |x: &i128, y: &i128| x == y);
+common_operation_binary!(integers_neq, Integer, Integer, Bool, |x: &i128, y: &i128| x != y);
 common_operation_binary!(integers_gt, Integer, Integer, Bool, |x: &i128, y: &i128| x > y);
 common_operation_binary!(integers_lt, Integer, Integer, Bool, |x: &i128, y: &i128| x < y);
 common_operation_binary!(integers_gte, Integer, Integer, Bool, |x: &i128, y: &i128| x >= y);

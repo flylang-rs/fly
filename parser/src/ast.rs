@@ -28,6 +28,7 @@ pub enum ExprKind {
     BitShiftRight(Box<Expression>, Box<Expression>),
 
     // Comparison operators
+    NotEquals(Box<Expression>, Box<Expression>),
     Equals(Box<Expression>, Box<Expression>),
     Greater(Box<Expression>, Box<Expression>),
     GreaterOrEquals(Box<Expression>, Box<Expression>),

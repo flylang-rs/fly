@@ -1,4 +1,4 @@
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc};
 
 use crate::{SharedRealm, call_func, control_flow::ControlFlow, object::Value, runtime::RustInteropFn, types};
 

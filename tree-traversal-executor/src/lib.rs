@@ -430,6 +430,10 @@ fn evaluate_expression(
         ExprKind::MulAssign(lhs, rhs) => todo!(),
         ExprKind::DivAssign(lhs, rhs, division_kind) => todo!(),
         ExprKind::ModAssign(lhs, rhs) => todo!(),
+        
+        ExprKind::NotEquals(lhs, rhs) => {
+            ControlFlow::Value(binary_op_helper(realm, "!=", lhs, rhs).unwrap())
+        },
 
         ExprKind::True => {
             ControlFlow::Value(Value::Bool(true))

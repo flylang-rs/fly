@@ -14,6 +14,14 @@ pub static EXPORT: &[(&str, RustInteropFn)] = &[
     ("float::operator/+float", floats_div_rup),
     ("float::operator/+integer", float_div_integer_rup),
 
+    // Comparison
+    ("float::operator==float", floats_eq),
+    ("float::operator!=float", floats_neq),
+    ("float::operator>float", floats_gt),
+    ("float::operator<float", floats_lt),
+    ("float::operator>=float", floats_gte),
+    ("float::operator<=float", floats_lte),
+
     // To string
     ("float::to_string", float_to_string),
 ];
@@ -35,6 +43,14 @@ common_operation_binary!(float_div_integer_rdown, Float, Integer, Float, |x: &f6
 
 common_operation_binary!(floats_div_rup, Float, Float, Float, |x: &f64, y: &f64| (x / y).ceil() as i64 as _);
 common_operation_binary!(float_div_integer_rup, Float, Integer, Float, |x: &f64, y: &i128| (x / (*y as f64)).ceil() as i64 as _);
+
+
+common_operation_binary!(floats_eq, Float, Float, Bool, |x: &f64, y: &f64| x == y);
+common_operation_binary!(floats_neq, Float, Float, Bool, |x: &f64, y: &f64| x != y);
+common_operation_binary!(floats_gt, Float, Float, Bool, |x: &f64, y: &f64| x > y);
+common_operation_binary!(floats_lt, Float, Float, Bool, |x: &f64, y: &f64| x < y);
+common_operation_binary!(floats_gte, Float, Float, Bool, |x: &f64, y: &f64| x >= y);
+common_operation_binary!(floats_lte, Float, Float, Bool, |x: &f64, y: &f64| x <= y);
 
 
 fn float_to_string(_realm: SharedRealm, args: &[Value]) -> ControlFlow {

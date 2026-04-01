@@ -448,6 +448,7 @@ impl Parser {
                     },
                     TokenValue::Percent => ast::ExprKind::Mod(Box::new(lhs), Box::new(rhs)),
                     TokenValue::Equals => ast::ExprKind::Equals(Box::new(lhs), Box::new(rhs)),
+                    TokenValue::NotEquals => ast::ExprKind::NotEquals(Box::new(lhs), Box::new(rhs)),
                     TokenValue::Less => ast::ExprKind::Less(Box::new(lhs), Box::new(rhs)),
                     TokenValue::Greater => ast::ExprKind::Greater(Box::new(lhs), Box::new(rhs)),
                     TokenValue::LessOrEquals => {
