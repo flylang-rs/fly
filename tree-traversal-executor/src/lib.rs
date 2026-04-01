@@ -1,7 +1,8 @@
+use core::time::Duration;
 use std::sync::{Arc, RwLock};
 
 use flylang_common::spanned::Spanned;
-use flylang_parser::ast::{DivisionKind, ExprKind, Expression, Statement};
+use flylang_parser::ast::{DivisionKind, ExprKind, Expression, Statement, While};
 use log::debug;
 
 use crate::{control_flow::ControlFlow, function::Function, object::Value, realm::Realm};
@@ -95,13 +96,64 @@ fn exec_single_statement(realm: SharedRealm, statement: &Statement) -> Option<Co
             Some(value)
         }
         Statement::Expr(expr) => {
-            debug!("Evalulating: {expr:?}");
+            debug!("Evaluating: {expr:?}");
 
             let expr = evaluate_expression(realm, expr, false);
 
             debug!("Expression: {expr:?}");
 
             Some(expr)
+        },
+        Statement::While(while_loop) => {
+            let While { condition, body } = while_loop;
+
+            loop {
+                // while x < n { ...
+                //       ^^^^^
+                // Values are accessed outside the while body's scope, so passing `realm` is OK.
+                let cond = evaluate_expression(Arc::clone(&realm), condition, false);
+
+                // Condition must be a value.
+                let ControlFlow::Value(cond) = cond else {
+                    panic!("Expected condition to evaluate into a value, got {cond:?}")
+                };
+
+                // And it must be a boolean. We don't convert anything to boolean, ...
+                // ... so if an integer or string is passed into condition - it's a dev fault.
+                let Value::Bool(result) = cond else {
+                    panic!("Expected condition to return a `boolean`, got {cond:?}")
+                };
+
+                // If condition doesn't fulfill, break outta here, easy!
+                if !result {
+                    break;
+                }
+
+                
+                // And it's only beginning of the circus.
+                // Usually `while` loops have a Block as their body.
+                // So I'll use `evaluate_expression` to execute it, realm creation will be handled automatically!
+
+                let Statement::Expr(block_value) = &**body else {
+                    panic!("Expected a block!")
+                };
+
+                if let ExprKind::Block(bk) = &block_value.value {
+                    let block_result = exec_inner(Arc::clone(&realm), &bk);
+
+                    match block_result {
+                        ControlFlow::Nothing => (),
+                        ControlFlow::Value(_) => (),
+                        ControlFlow::Return(_) => (),
+                        ControlFlow::Break => break,
+                        ControlFlow::Continue => continue,
+                    }
+                } else {
+                    panic!("Expected a block!")
+                }
+            }
+
+            Some(ControlFlow::Nothing)
         },
         st => todo!("Unexpected statement: {:?}", st),
     }

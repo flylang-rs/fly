@@ -6,5 +6,6 @@ edition = "2024"
 [dependencies]
 flylang-common = { path = "../common" }
 flylang-parser = { path = "../parser" }
+flylang-diagnostics = { path = "../diagnostics" }
 
 log = "0.4.29"

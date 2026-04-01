@@ -201,6 +201,7 @@ name = "flylang-tte"
 version = "0.1.0"
 dependencies = [
  "flylang-common",
+ "flylang-diagnostics",
  "flylang-parser",
  "log",
 ]
