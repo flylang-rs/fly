@@ -58,6 +58,8 @@ pub enum TokenValue {
     RoundingDownDivAssign, // /-=
     BitAndAssign,          // &=
     BitOrAssign,           // |=
+    PercentAssign,         // %=
+
 
     Equals,          // ==
     NotEquals,       // !=

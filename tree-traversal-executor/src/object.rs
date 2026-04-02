@@ -13,3 +13,10 @@ pub enum Value {
     Function(Arc<Function>),
     Native(RustInteropFn),
 }
+
+#[derive(Debug, Clone)]
+pub enum LValue {
+    Identifier(String),
+    Index { container: Value, index: Value },
+    Property { object: Value, name: String },
+}

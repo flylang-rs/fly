@@ -402,9 +402,14 @@ impl Parser {
                 | TokenValue::Minus
                 | TokenValue::MinusAssign => (7, 8),
                 TokenValue::Asterisk
+                | TokenValue::MulAssign
                 | TokenValue::Slash
+                | TokenValue::DivAssign
                 | TokenValue::RoundingDownDiv
                 | TokenValue::RoundingUpDiv
+                | TokenValue::RoundingDownDivAssign
+                | TokenValue::RoundingUpDivAssign
+                | TokenValue::PercentAssign
                 | TokenValue::Percent => (9, 10),
                 TokenValue::OpenBracket => (31, 0), // suspicious: review and remove it asap
                 TokenValue::Dot => (31, 32),
@@ -423,21 +428,39 @@ impl Parser {
             lhs = Spanned {
                 value: match op {
                     TokenValue::Plus => ast::ExprKind::Add(Box::new(lhs), Box::new(rhs)),
-                    TokenValue::PlusAssign => ast::ExprKind::AddAssign(Box::new(lhs), Box::new(rhs)),
+                    TokenValue::PlusAssign => {
+                        ast::ExprKind::AddAssign(Box::new(lhs), Box::new(rhs))
+                    }
                     TokenValue::Minus => ast::ExprKind::Sub(Box::new(lhs), Box::new(rhs)),
-                    TokenValue::MinusAssign => ast::ExprKind::SubAssign(Box::new(lhs), Box::new(rhs)),
+                    TokenValue::MinusAssign => {
+                        ast::ExprKind::SubAssign(Box::new(lhs), Box::new(rhs))
+                    }
                     TokenValue::Asterisk => ast::ExprKind::Mul(Box::new(lhs), Box::new(rhs)),
                     TokenValue::MulAssign => ast::ExprKind::MulAssign(Box::new(lhs), Box::new(rhs)),
                     TokenValue::Slash => {
                         ast::ExprKind::Div(Box::new(lhs), Box::new(rhs), ast::DivisionKind::Neutral)
                     }
-                    TokenValue::DivAssign => ast::ExprKind::DivAssign(Box::new(lhs), Box::new(rhs), ast::DivisionKind::Neutral),
+                    TokenValue::DivAssign => ast::ExprKind::DivAssign(
+                        Box::new(lhs),
+                        Box::new(rhs),
+                        ast::DivisionKind::Neutral,
+                    ),
                     TokenValue::RoundingUpDiv => ast::ExprKind::Div(
                         Box::new(lhs),
                         Box::new(rhs),
                         ast::DivisionKind::RoundingUp,
                     ),
+                    TokenValue::RoundingUpDivAssign => ast::ExprKind::DivAssign(
+                        Box::new(lhs),
+                        Box::new(rhs),
+                        ast::DivisionKind::RoundingUp,
+                    ),
                     TokenValue::RoundingDownDiv => ast::ExprKind::Div(
+                        Box::new(lhs),
+                        Box::new(rhs),
+                        ast::DivisionKind::RoundingDown,
+                    ),
+                    TokenValue::RoundingDownDivAssign => ast::ExprKind::DivAssign(
                         Box::new(lhs),
                         Box::new(rhs),
                         ast::DivisionKind::RoundingDown,
@@ -462,8 +485,12 @@ impl Parser {
                     TokenValue::LogicalOr => ast::ExprKind::Or(Box::new(lhs), Box::new(rhs)),
                     TokenValue::BitAnd => ast::ExprKind::BitAnd(Box::new(lhs), Box::new(rhs)),
                     TokenValue::BitOr => ast::ExprKind::BitOr(Box::new(lhs), Box::new(rhs)),
-                    TokenValue::BitShiftLeft => ast::ExprKind::BitShiftLeft(Box::new(lhs), Box::new(rhs)),
-                    TokenValue::BitShiftRight => ast::ExprKind::BitShiftRight(Box::new(lhs), Box::new(rhs)),
+                    TokenValue::BitShiftLeft => {
+                        ast::ExprKind::BitShiftLeft(Box::new(lhs), Box::new(rhs))
+                    }
+                    TokenValue::BitShiftRight => {
+                        ast::ExprKind::BitShiftRight(Box::new(lhs), Box::new(rhs))
+                    }
                     TokenValue::Dot => ast::ExprKind::PropertyAccess {
                         origin: Box::new(lhs),
                         property: Box::new(rhs),
@@ -577,13 +604,13 @@ impl Parser {
                 self.next_token();
 
                 Ok(ast::Statement::Continue)
-            },
+            }
             Some(TokenValue::Break) => {
                 self.next_token();
 
                 Ok(ast::Statement::Break)
             }
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 
