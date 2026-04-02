@@ -32,27 +32,30 @@ impl Diagnostics {
 
     fn apply_edits(source_line: &str, edits: &[TextEdit], line_start_offset: usize) -> String {
         let mut result = source_line.to_string();
-    
+
         // Apply edits in reverse order so offsets stay valid
         let mut edits_sorted = edits.to_vec();
         edits_sorted.sort_by(|a, b| b.span.start.cmp(&a.span.start));
-    
+
         for edit in &edits_sorted {
             let local_start = edit.span.start - line_start_offset;
-            let local_end   = edit.span.end - line_start_offset;
+            let local_end = edit.span.end - line_start_offset;
 
             let replacement = &edit.replacement.as_ref().map(|x| x.as_str()).unwrap_or("");
-    
+
             result.replace_range(local_start..local_end, replacement);
         }
-    
+
         result
     }
 
     /// Makes a (maube colored) diff for help sections in diagnostic.
     fn make_diff(source_line: &str, edits: &[TextEdit], line_start_offset: usize) -> String {
         let mut result = String::new();
-        let positions = diff::chars(source_line, &Self::apply_edits(source_line, edits, line_start_offset));
+        let positions = diff::chars(
+            source_line,
+            &Self::apply_edits(source_line, edits, line_start_offset),
+        );
 
         for i in &positions {
             let (ch, color) = match i {
@@ -127,7 +130,11 @@ impl Diagnostics {
                     .if_supports_color(Stream::Stderr, |x| x.bold()),
                 i + 1,
                 n.message.if_supports_color(Stream::Stderr, |x| x.bold()),
-                Self::transform_lines_to_diag_part(&Self::make_diff(code_line, &n.edits, src.line_start(location.0 - 1)))
+                Self::transform_lines_to_diag_part(&Self::make_diff(
+                    code_line,
+                    &n.edits,
+                    src.line_start(location.0 - 1)
+                ))
             );
         }
 

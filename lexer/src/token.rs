@@ -60,7 +60,6 @@ pub enum TokenValue {
     BitOrAssign,           // |=
     PercentAssign,         // %=
 
-
     Equals,          // ==
     NotEquals,       // !=
     LessOrEquals,    // <=

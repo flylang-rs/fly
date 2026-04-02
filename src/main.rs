@@ -8,7 +8,6 @@ use flylang_lexer::{
     token::{Token, TokenValue},
 };
 use flylang_parser::{Parser, error::ParserError, state::ParserState};
-use log::debug;
 
 fn run_file(source: Source) {
     let mut lexer = flylang_lexer::Lexer::new(Arc::new(source));
@@ -49,15 +48,23 @@ fn run_file(source: Source) {
     if let Err(e) = ast {
         match e {
             ParserError::UnexpectedEOF => {
-                flylang_diagnostics::Diagnostics{}.error("Unexpected EOF", parser.eof_address(), &[], &[]);
-            },
+                flylang_diagnostics::Diagnostics {}.error(
+                    "Unexpected EOF",
+                    parser.eof_address(),
+                    &[],
+                    &[],
+                );
+            }
             ParserError::UnexpectedTokenInExpression { token } => {
-                flylang_diagnostics::Diagnostics{}.error("Unexpected token", &token.address, &[
-                    Note::new(token.address.clone(), "here")
-                ], &[]);
-            },
+                flylang_diagnostics::Diagnostics {}.error(
+                    "Unexpected token",
+                    &token.address,
+                    &[Note::new(token.address.clone(), "here")],
+                    &[],
+                );
+            }
         }
-        
+
         // eprintln!("ParserError: {e:#?}");
         std::process::exit(1);
     }
@@ -76,7 +83,10 @@ fn run_file(source: Source) {
 }
 
 fn main() -> std::io::Result<()> {
-    env_logger::init();
+    env_logger::builder()
+        .default_format()
+        .format_timestamp_millis()
+        .init();
 
     let filepath = if let Some(arg) = std::env::args().nth(1) {
         arg

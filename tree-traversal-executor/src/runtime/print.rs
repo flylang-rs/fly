@@ -1,10 +1,10 @@
-use std::sync::{Arc};
+use std::sync::Arc;
 
-use crate::{SharedRealm, call_func, control_flow::ControlFlow, object::Value, runtime::RustInteropFn, types};
+use crate::{
+    SharedRealm, call_func, control_flow::ControlFlow, object::Value, runtime::RustInteropFn, types,
+};
 
-pub static EXPORT: &[(&str, RustInteropFn)] = &[
-    ("print", inner_print),
-];
+pub static EXPORT: &[(&str, RustInteropFn)] = &[("print", inner_print)];
 
 fn inner_print(realm: SharedRealm, args: &[Value]) -> ControlFlow {
     let len = args.len();
@@ -13,9 +13,9 @@ fn inner_print(realm: SharedRealm, args: &[Value]) -> ControlFlow {
         let ty = types::value_to_internal_type(&i).unwrap();
 
         let method_name = format!("{ty}::to_string");
-        
+
         let method = realm.read().unwrap().lookup(&method_name);
-        
+
         if let Some(method) = method {
             // FIXME: Fix that clone!
             let string_value = call_func(Arc::clone(&realm), method, &[i.clone()]);

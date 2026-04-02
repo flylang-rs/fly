@@ -62,13 +62,13 @@ pub enum ExprKind {
 
     PropertyAccess {
         origin: Box<Expression>,
-        property: Box<Expression>
+        property: Box<Expression>,
     },
 
     IndexedAccess {
         origin: Box<Expression>,
-        index: Box<Expression>
-    }
+        index: Box<Expression>,
+    },
 }
 
 impl ExprKind {
@@ -101,12 +101,12 @@ pub enum Statement {
     While(While),
 
     ModuleUsageDeclaration {
-        path: Box<Expression>
+        path: Box<Expression>,
     },
 
     Scope {
         held_value: Box<Expression>,
-        body: Box<Statement>
+        body: Box<Statement>,
     },
 
     Return {

@@ -1,4 +1,7 @@
-use std::{collections::HashMap, sync::{Arc, RwLock}};
+use std::{
+    collections::HashMap,
+    sync::{Arc, RwLock},
+};
 
 use crate::{SharedRealm, object::Value};
 
@@ -7,14 +10,14 @@ use crate::{SharedRealm, object::Value};
 #[derive(Debug, Clone)]
 pub struct Realm {
     values: HashMap<String, Value>,
-    pub parent: Option<Arc<RwLock<Realm>>>
+    pub parent: Option<Arc<RwLock<Realm>>>,
 }
 
 impl Realm {
     pub fn new() -> Self {
         Self {
             values: HashMap::new(),
-            parent: None
+            parent: None,
         }
     }
 

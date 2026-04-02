@@ -196,18 +196,18 @@ impl Lexer {
                     end = offset + ch.len_utf8();
                 }
                 Some((offset, '.')) if radix == 10 && !is_a_floating_point_nr => {
-                	// If we didn't set the fp number flag, set it, so lexer won't parse
-                	// commencing dots anymore.
-                	// I mean: the code "3.14159.26" will be lexed into
-                	// "3.14159" and "26"
-                	// It's actually okay for lexer, but not for parser,
-                	// it will handle this gracefully.
-                	is_a_floating_point_nr = true;
-                	
-                	self.next_character_any();
-                	number.push('.');
-                	// `.` is an ASCII character and its size in Unicode is always 1
-                	end = offset + 1;
+                    // If we didn't set the fp number flag, set it, so lexer won't parse
+                    // commencing dots anymore.
+                    // I mean: the code "3.14159.26" will be lexed into
+                    // "3.14159" and "26"
+                    // It's actually okay for lexer, but not for parser,
+                    // it will handle this gracefully.
+                    is_a_floating_point_nr = true;
+
+                    self.next_character_any();
+                    number.push('.');
+                    // `.` is an ASCII character and its size in Unicode is always 1
+                    end = offset + 1;
                 }
                 Some((offset, ch)) if ch.is_alphabetic() => {
                     return Err(LexerError::InvalidNumberError {
@@ -333,7 +333,7 @@ impl Lexer {
             _ => (TokenValue::Asterisk, start + 1),
         }
     }
-    
+
     /// Lexes only greater or less comparisons (`<`, `>`, `<=`, `>=`)
     fn lex_comparison(&mut self, start: usize, comparator: char) -> (TokenValue, usize) {
         match self.peek_symbol() {

@@ -23,21 +23,21 @@ impl TextEdit {
     pub fn new(span: Range<usize>, replacement: String) -> Self {
         Self {
             span,
-            replacement: Some(replacement)
+            replacement: Some(replacement),
         }
     }
 
     pub fn delete(span: Range<usize>) -> Self {
         Self {
             span,
-            replacement: None
+            replacement: None,
         }
     }
 }
 
 pub struct Help<'a> {
     pub(crate) message: &'a str,
-    pub(crate) edits: Vec<TextEdit>
+    pub(crate) edits: Vec<TextEdit>,
 }
 
 impl<'a> Help<'a> {

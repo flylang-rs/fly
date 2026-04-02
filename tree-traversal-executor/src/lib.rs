@@ -1,4 +1,3 @@
-use core::time::Duration;
 use std::sync::{Arc, RwLock};
 
 use flylang_common::spanned::Spanned;
@@ -223,12 +222,7 @@ fn binary_op_helper(
     binary_op_helper_values(realm, op, lhs_val, rhs_val)
 }
 
-fn binary_op_helper_values(
-    realm: SharedRealm,
-    op: &str,
-    lhs: Value,
-    rhs: Value,
-) -> Option<Value> {
+fn binary_op_helper_values(realm: SharedRealm, op: &str, lhs: Value, rhs: Value) -> Option<Value> {
     let l_type = types::value_to_internal_type(&lhs).unwrap();
     let r_type = types::value_to_internal_type(&rhs).unwrap();
 
@@ -337,7 +331,7 @@ fn assign(realm: SharedRealm, target: LValue, value: Value) {
             arr.lock().unwrap()[i as usize] = value;
         }
         LValue::Property { object, name } => {
-            todo!("Property assignment when you add objects")
+            todo!("Property assignment when I add objects")
         }
     }
 }
@@ -479,7 +473,7 @@ fn evaluate_expression(
                 other => other,
             }
         }
-        ExprKind::Array(spanneds) => todo!(),
+        ExprKind::Array(exprs) => todo!(),
         ExprKind::Call { callee, parameters } => {
             let func = evaluate_expression(Arc::clone(&realm), callee, true);
 
@@ -527,9 +521,15 @@ fn evaluate_expression(
         ExprKind::PropertyAccess { origin, property } => todo!(),
         ExprKind::IndexedAccess { origin, index } => todo!(),
 
-        ExprKind::AddAssign(lhs, rhs) => compound_assignment_helper(realm, "+", lhs, rhs, is_subexpression),
-        ExprKind::SubAssign(lhs, rhs) => compound_assignment_helper(realm, "-", lhs, rhs, is_subexpression),
-        ExprKind::MulAssign(lhs, rhs) => compound_assignment_helper(realm, "*", lhs, rhs, is_subexpression),
+        ExprKind::AddAssign(lhs, rhs) => {
+            compound_assignment_helper(realm, "+", lhs, rhs, is_subexpression)
+        }
+        ExprKind::SubAssign(lhs, rhs) => {
+            compound_assignment_helper(realm, "-", lhs, rhs, is_subexpression)
+        }
+        ExprKind::MulAssign(lhs, rhs) => {
+            compound_assignment_helper(realm, "*", lhs, rhs, is_subexpression)
+        }
         ExprKind::DivAssign(lhs, rhs, division_kind) => {
             let op = match division_kind {
                 DivisionKind::Neutral => "/",
@@ -538,8 +538,10 @@ fn evaluate_expression(
             };
 
             compound_assignment_helper(realm, op, lhs, rhs, is_subexpression)
-        },
-        ExprKind::ModAssign(lhs, rhs) => compound_assignment_helper(realm, "%", lhs, rhs, is_subexpression),
+        }
+        ExprKind::ModAssign(lhs, rhs) => {
+            compound_assignment_helper(realm, "%", lhs, rhs, is_subexpression)
+        }
 
         ExprKind::NotEquals(lhs, rhs) => {
             ControlFlow::Value(binary_op_helper(realm, "!=", lhs, rhs).unwrap())

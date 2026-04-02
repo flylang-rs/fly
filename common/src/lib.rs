@@ -15,7 +15,12 @@ pub struct Address {
 
 impl Address {
     pub fn merge(self, rhs: &Self) -> Self {
-        assert!(self.source.filepath == rhs.source.filepath, "Tried to add addresses from differenct sources! (`{}` and `{}`)", self.source.filepath, rhs.source.filepath);
+        assert!(
+            self.source.filepath == rhs.source.filepath,
+            "Tried to add addresses from differenct sources! (`{}` and `{}`)",
+            self.source.filepath,
+            rhs.source.filepath
+        );
 
         Self {
             source: self.source,

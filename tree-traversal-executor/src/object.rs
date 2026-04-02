@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use crate::{SharedRealm, control_flow::ControlFlow, function::Function, runtime::RustInteropFn};
+use crate::{function::Function, runtime::RustInteropFn};
 
 #[derive(Debug, Clone)]
 pub enum Value {
