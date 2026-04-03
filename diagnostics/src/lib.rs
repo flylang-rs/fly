@@ -41,7 +41,7 @@ impl Diagnostics {
             let local_start = edit.span.start - line_start_offset;
             let local_end = edit.span.end - line_start_offset;
 
-            let replacement = &edit.replacement.as_ref().map(|x| x.as_str()).unwrap_or("");
+            let replacement = &edit.replacement.as_deref().unwrap_or("");
 
             result.replace_range(local_start..local_end, replacement);
         }
