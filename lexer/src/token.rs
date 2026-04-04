@@ -42,7 +42,8 @@ pub enum TokenValue {
     Greater,
 
     // There come more complex tokens that consist out of two and more symbols.
-    ArrowForward, // ->
+    ArrowForward,  // ->
+    PathDelimiter, // ::
 
     Range,          // ..
     RangeInclusive, // ..=

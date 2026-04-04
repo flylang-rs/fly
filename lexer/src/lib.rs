@@ -419,6 +419,17 @@ impl Lexer {
         }
     }
 
+    fn lex_colon(&mut self, position: usize) -> (TokenValue, usize) {
+        match self.peek_symbol() {
+            Some((offset, ':')) => {
+                self.next_character();
+
+                (TokenValue::PathDelimiter, offset + 1)
+            }
+            _ => (TokenValue::Colon, position + 1)
+        }
+   }
+
     /// Main code: Returns a next token in the code.
     pub fn next_token(&mut self) -> LexerResult {
         let (position, character) = self.next_character().ok_or(LexerError::EOF)?;
@@ -443,7 +454,7 @@ impl Lexer {
             '.' => self.lex_dot(position),
             '&' => self.lex_ampersand(position),
             ',' => (TokenValue::Comma, position + 1),
-            ':' => (TokenValue::Colon, position + 1),
+            ':' => self.lex_colon(position),
             ';' => (TokenValue::Semicolon, position + 1),
             '%' => (TokenValue::Percent, position + 1),
             '\n' => (TokenValue::Newline, position + 1),
