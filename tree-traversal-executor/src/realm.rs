@@ -11,6 +11,7 @@ use crate::{SharedRealm, object::Value};
 pub struct Realm {
     values: HashMap<String, Value>,
     pub parent: Option<Arc<RwLock<Realm>>>,
+    pub module: Option<String>,
 }
 
 impl Realm {
@@ -18,14 +19,30 @@ impl Realm {
         Self {
             values: HashMap::new(),
             parent: None,
+            module: None,
+        }
+    }
+
+    pub fn for_module(parent: SharedRealm, module_name: String) -> Self {
+        Self {
+            values: HashMap::new(),
+            parent: Some(parent),
+            module: Some(module_name),
         }
     }
 
     /// Enter new level of realm, recursing deeper.
     pub fn dive(shared_realm: SharedRealm) -> Self {
-        Self {
+        /* Self {
             values: HashMap::new(),
             parent: Some(shared_realm),
+        } */
+
+        let parent = shared_realm.read().unwrap();
+        Self {
+            values: HashMap::new(),
+            parent: Some(Arc::clone(&shared_realm)),
+            module: parent.module.clone(),
         }
     }
 
@@ -42,17 +59,23 @@ impl Realm {
     }
 
     pub fn lookup(&self, term: &str) -> Option<Value> {
-        // Search in current Realm.
-        if let Some(val) = self.values.get(term) {
-            Some(val.clone())
-        } else {
-            // If not found, try searching in parent Realm.
-            if let Some(parent) = self.parent.as_ref() {
-                parent.try_read().unwrap().lookup(term)
-            } else {
-                None
+    	// If we're in a module and term is unqualified, try module-prefixed first
+    	if let Some(ref mod_name) = self.module {
+            if !term.contains("::") {
+                let qualified = format!("{mod_name}::{term}");
+                if let Some(val) = self.values.get(&qualified) {
+                    return Some(val.clone());
+                }
             }
         }
+        
+        // Search in current Realm.
+        if let Some(val) = self.values.get(term) {
+            return Some(val.clone());
+        }
+
+        // If not found, try searching in parent Realm.
+        self.parent.as_ref()?.try_read().unwrap().lookup(term)
     }
 }
 
