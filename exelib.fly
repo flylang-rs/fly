@@ -1,3 +1,5 @@
+d = 49
+
 func its_my_showtime() {
-	print("Hi-yaaaah!")
+	print("Hi-yaaaah!", d)
 }

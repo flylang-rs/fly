@@ -412,7 +412,7 @@ impl Parser {
                 | TokenValue::PercentAssign
                 | TokenValue::Percent => (9, 10),
                 TokenValue::OpenBracket => (31, 0), // suspicious: review and remove it asap
-                TokenValue::Dot => (31, 32),
+                TokenValue::Dot | TokenValue::PathDelimiter => (31, 32),
                 _ => break, // not an infix operator
             };
 
@@ -494,6 +494,10 @@ impl Parser {
                     TokenValue::Dot => ast::ExprKind::PropertyAccess {
                         origin: Box::new(lhs),
                         property: Box::new(rhs),
+                    },
+                    TokenValue::PathDelimiter => ast::ExprKind::Path {
+                        parent: Box::new(lhs),
+                        value: Box::new(rhs),
                     },
                     TokenValue::OpenBracket => {
                         self.expect(TokenValue::CloseBracket);

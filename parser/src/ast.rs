@@ -65,6 +65,11 @@ pub enum ExprKind {
         property: Box<Expression>,
     },
 
+    Path {
+        parent: Box<Expression>,
+        value: Box<Expression>,
+    },
+
     IndexedAccess {
         origin: Box<Expression>,
         index: Box<Expression>,

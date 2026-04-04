@@ -426,9 +426,9 @@ impl Lexer {
 
                 (TokenValue::PathDelimiter, offset + 1)
             }
-            _ => (TokenValue::Colon, position + 1)
+            _ => (TokenValue::Colon, position + 1),
         }
-   }
+    }
 
     /// Main code: Returns a next token in the code.
     pub fn next_token(&mut self) -> LexerResult {

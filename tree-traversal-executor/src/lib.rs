@@ -1,6 +1,6 @@
 use std::sync::{Arc, RwLock};
 
-use flylang_common::spanned::Spanned;
+use flylang_common::{source::Source, spanned::Spanned};
 use flylang_parser::ast::{DivisionKind, ExprKind, Expression, Statement, While};
 use log::debug;
 
@@ -15,6 +15,7 @@ pub mod control_flow;
 pub mod function;
 pub mod object;
 pub mod realm;
+pub mod runner;
 pub mod runtime;
 pub mod types;
 
@@ -59,6 +60,27 @@ fn exec_inner(realm: SharedRealm, ast: &[Statement]) -> ControlFlow {
     debug!("Nothing returned");
 
     ControlFlow::Nothing
+}
+
+fn import_module(realm: SharedRealm, path_segments: Vec<String>) {
+    eprintln!("{path_segments:?}");
+
+    if path_segments.len() > 1 {
+        todo!("Deeper import is not supported yet...");
+    }
+
+    let filename = path_segments[0].clone() + ".fly";
+    let code = match std::fs::read_to_string(&filename) {
+        Ok(f) => f,
+        Err(e) => {
+            eprintln!("Failed to open file `{filename}`: {e:?}");
+            std::process::exit(1);
+        }
+    };
+
+    // crate::runner::import_file(realm, Some(path_segments[0].clone()), Source::new(filename, code));
+
+    todo!()
 }
 
 /// Execute the single statement.
@@ -128,7 +150,11 @@ fn exec_single_statement(realm: SharedRealm, statement: &Statement) -> Option<Co
                 }
             }
         }
-        Statement::ModuleUsageDeclaration { path } => todo!(),
+        Statement::ModuleUsageDeclaration { path } => {
+            import_module(realm, path_segments_to_vec(path));
+
+            Some(ControlFlow::Nothing)
+        }
         Statement::Scope { held_value, body } => todo!(),
         Statement::Return { value } => {
             let value = evaluate_expression(realm, value, false);
@@ -204,6 +230,7 @@ fn exec_single_statement(realm: SharedRealm, statement: &Statement) -> Option<Co
 
 fn binary_op_helper(
     realm: SharedRealm,
+
     op: &str,
     lhs: &Expression,
     rhs: &Expression,
@@ -301,7 +328,7 @@ fn resolve_lvalue(realm: SharedRealm, expr: &Expression) -> LValue {
 
 fn read_lvalue(realm: SharedRealm, target: &LValue) -> Value {
     match target {
-        LValue::Identifier(name) => realm.read().unwrap().lookup(name).unwrap(),
+        LValue::Identifier(name) => realm.read().unwrap().lookup(name.as_str()).unwrap(),
         LValue::Index { container, index } => {
             let Value::Array(arr) = container else {
                 panic!()
@@ -338,6 +365,7 @@ fn assign(realm: SharedRealm, target: LValue, value: Value) {
 
 fn compound_assignment_helper(
     realm: SharedRealm,
+
     op: &str,
     name: &Expression,
     value: &Expression,
@@ -364,6 +392,32 @@ fn compound_assignment_helper(
     }
 }
 
+fn path_segments_to_vec(expr: &Expression) -> Vec<String> {
+    match &expr.value {
+        ExprKind::Path { parent, value } => {
+            let lhs = path_segments_to_vec(parent);
+            let rhs = path_segments_to_vec(value);
+
+            lhs.into_iter()
+                .chain(rhs.into_iter())
+                .collect::<Vec<String>>()
+        }
+        ExprKind::Identifier(name) => vec![name.clone()],
+        _ => panic!("Invalid path segment: {:?}", expr.value),
+    }
+}
+
+// Flattens path into a string that will be used in Realm's HashMap lookup.
+fn flatten_path(expr: &Expression) -> String {
+    match &expr.value {
+        ExprKind::Path { parent, value } => {
+            format!("{}::{}", flatten_path(parent), flatten_path(value))
+        }
+        ExprKind::Identifier(name) => name.clone(),
+        _ => panic!("Invalid path segment: {:?}", expr.value),
+    }
+}
+
 // I made `is_subexpression` to track are we in a root expression or not.
 // It will fix a bug when expression returned value early than expected
 //
@@ -377,6 +431,7 @@ fn compound_assignment_helper(
 // = 9
 fn evaluate_expression(
     realm: SharedRealm,
+
     expr: &Expression,
     is_subexpression: bool,
 ) -> ControlFlow {
@@ -499,10 +554,6 @@ fn evaluate_expression(
             call_func(realm, func, &args)
         }
         ExprKind::Assignment { name, value } => {
-            // FIXME: It can only assign to plain vaiables, but can't assign by array index or object path:
-            // `myvar = 4` - works
-            // `myvar[0] = 4` - DOESN'T work
-            // `myvar.a.b.c = 4` - DOESN'T work
             let target = resolve_lvalue(Arc::clone(&realm), name);
             let rhs = evaluate_expression(Arc::clone(&realm), value, true);
 
@@ -545,6 +596,17 @@ fn evaluate_expression(
 
         ExprKind::NotEquals(lhs, rhs) => {
             ControlFlow::Value(binary_op_helper(realm, "!=", lhs, rhs).unwrap())
+        }
+
+        ExprKind::Path { .. } => {
+            let key = flatten_path(expr);
+
+            let result = realm.read().unwrap().lookup(&key);
+
+            match result {
+                Some(val) => ControlFlow::Value(val),
+                None => panic!("Undefined path: `{key}`"),
+            }
         }
 
         ExprKind::True => ControlFlow::Value(Value::Bool(true)),

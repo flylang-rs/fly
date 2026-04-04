@@ -6,7 +6,7 @@ pub mod integers;
 pub mod print;
 pub mod strings;
 
-pub type RustInteropFn = fn(SharedRealm, &[Value]) -> ControlFlow;
+pub type RustInteropFn = fn(realm: SharedRealm, args: &[Value]) -> ControlFlow;
 
 #[macro_export]
 macro_rules! common_operation_binary {

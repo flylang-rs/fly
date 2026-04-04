@@ -1,3 +1,7 @@
-use exelib
+use exelib;
+
+print(exelib::d)
 
 exelib::its_my_showtime()
+
+print(exelib::d)
