@@ -1,5 +1,9 @@
+use exelib2;
+
 d = 49
 
 func its_my_showtime() {
 	print("Hi-yaaaah!", d)
+
+    exelib2::welkom();
 }
