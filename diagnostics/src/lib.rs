@@ -128,9 +128,9 @@ impl Diagnostics {
                     output,
                     "`- {}: {}",
                     "note"
-                        .if_supports_color(Stream::Stderr, |x| x.green())
+                        .if_supports_color(Stream::Stderr, |x| x.blue())
                         .if_supports_color(Stream::Stderr, |x| x.bold()),
-                    i.message.if_supports_color(Stream::Stderr, |x| x.bold()),
+                    i.message,
                 ).unwrap();
             }
         }
@@ -181,5 +181,15 @@ impl Diagnostics {
         self.emit_with_location(&mut diag, DiagnosticsKind::Warning, warning, address, notes, helps);
 
         eprintln!("{diag}");
+    }
+
+    pub fn note(&self, message: &str) {
+        eprintln!(
+            "`- {}: {}",
+            "note"
+                .if_supports_color(Stream::Stderr, |x| x.blue())
+                .if_supports_color(Stream::Stderr, |x| x.bold()),
+            message,
+        );
     }
 }

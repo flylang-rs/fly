@@ -29,7 +29,11 @@ impl<'a> Analyzer<'a> {
         self.warning_count
     }
 
-    pub fn analyze(&'a mut self) {
+    pub fn is_need_to_show_counters(&self) -> bool {
+        self.error_count != 0 || self.warning_count != 0
+    }
+
+    pub fn analyze(&mut self) {
         for i in self.ast {
             match i {
                 Statement::Expr(ex) => self.analyze_expression(ex),
@@ -157,8 +161,36 @@ impl<'a> Analyzer<'a> {
     }
 }
 
-pub fn analyze(ast: &[Statement]) {
+pub fn analyze<'a>(ast: &'a [Statement]) -> Analyzer<'a> {
     let mut analyzer = Analyzer::new(ast);
 
-    analyzer.analyze()
+    analyzer.analyze();
+
+    if analyzer.is_need_to_show_counters() {
+        let errors = if analyzer.error_count() != 0 {
+            format!("{} errors", analyzer.error_count())
+        } else {
+            String::new()
+        };
+
+        let warnings = if analyzer.warning_count() != 0 {
+            format!("{} warnings", analyzer.warning_count())
+        } else {
+            String::new()
+        };
+
+        let summary = if !errors.is_empty() && !warnings.is_empty() {
+            format!("{errors} and {warnings}")
+        } else if !errors.is_empty() {
+            errors
+        } else if !warnings.is_empty() {
+            warnings
+        } else {
+            String::new()
+        };
+
+        flylang_diagnostics::Diagnostics{}.note(&format!("analyzer finished with {}", summary));
+    }
+
+    analyzer
 }

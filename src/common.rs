@@ -11,6 +11,7 @@ pub type LoadingResult<T> = Result<T, LoadingError>;
 pub enum LoadingError {
     LexerError(LexerError),
     ParserError(ParserError),
+    AnalyzeFailed,
 }
 
 impl DiagnosticsReport for LoadingError {
@@ -18,6 +19,7 @@ impl DiagnosticsReport for LoadingError {
         match self {
             LoadingError::LexerError(lexer_error) => lexer_error.render(),
             LoadingError::ParserError(parser_error) => parser_error.render(),
+            LoadingError::AnalyzeFailed => unreachable!("Not rendered as diagnostics"),
         }
     }
 }
@@ -53,7 +55,11 @@ pub fn parse_source(source: Source) -> LoadingResult<Vec<Statement>> {
 
     let ast = ast.unwrap();
 
-    flylang_ast_analyzer::analyze(&ast);
+    let analyzer = flylang_ast_analyzer::analyze(&ast);
+
+    if analyzer.error_count() != 0 {
+        return Err(LoadingError::AnalyzeFailed);
+    }
 
     Ok(ast)
 }

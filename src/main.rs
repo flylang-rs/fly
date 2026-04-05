@@ -1,12 +1,17 @@
 use flylang_common::source::Source;
 use flylang_diagnostics::error::DiagnosticsReport;
 
+use crate::common::LoadingError;
+
 pub mod common;
 pub mod repl;
 
 fn run_file(source: Source) {
     let ast = match common::parse_source(source) {
         Ok(st) => st,
+        Err(LoadingError::AnalyzeFailed) => {
+            std::process::exit(1);
+        },
         Err(e) => {
             eprintln!("{}", e.render());
             
