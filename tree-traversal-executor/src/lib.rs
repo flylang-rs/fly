@@ -27,7 +27,7 @@ pub type SharedRealm = Arc<RwLock<Realm>>;
 
 enum ModuleState {
     Loading,
-    Loaded(LoadedModule),
+    Loaded/* (LoadedModule) */,
 }
 
 struct LoadedModule {
@@ -108,7 +108,7 @@ impl Interpreter {
         if let Some(val) = self.module_registry.read().unwrap().get(&path) {
             match val {
                 ModuleState::Loading => panic!("Circular import detected for module: {}", filename),
-                ModuleState::Loaded(_) => return, // We don't have to load it again
+                ModuleState::Loaded/* (_) */ => return, // We don't have to load it again
             }
         }
 
@@ -135,9 +135,9 @@ impl Interpreter {
 
         self.module_registry.write().unwrap().insert(
             path.clone(),
-            ModuleState::Loaded(LoadedModule {
-                exports: exports.clone(),
-            }),
+            ModuleState::Loaded /* ( LoadedModule {
+                    exports: exports.clone(),
+            } )*/,
         );
 
         for (name, value) in exports {
