@@ -76,10 +76,15 @@ impl Interpreter {
         }
     }
 
-    /// Entry point of out executor, it accepts a list of statements given by the parser.
+    /// Entry point of the interpreter, it accepts a list of statements given by the parser.
     /// Since it accepts any kind of statement including expressions, it will return a value.
     pub fn execute(&self, ast: Vec<Statement>) -> ControlFlow {
         self.exec_inner(Arc::clone(&self.world), &ast, true)
+    }
+
+    /// Script version of `Interpreter::execute`. Doesn't break when value is returned.
+    pub fn execute_script(&self, ast: Vec<Statement>) -> ControlFlow {
+        self.exec_inner(Arc::clone(&self.world), &ast, false)
     }
 
     /// Trampoline for executor: operate with given realm and the parsed code
@@ -499,9 +504,66 @@ impl Interpreter {
                     ControlFlow::Nothing
                 }
             }
-            ExprKind::PropertyAccess { origin, property } => todo!(),
-            ExprKind::IndexedAccess { origin, index } => todo!(),
+            ExprKind::PropertyAccess { origin, property } => {
+                let obj = self.evaluate_expression(Arc::clone(&realm), origin, true);
+                let ControlFlow::Value(obj) = obj else {
+                    panic!("Expected value")
+                };
 
+                let prop = property.value.as_id().unwrap();
+                let type_name = types::value_to_internal_type(&obj).unwrap();
+                let method_key = format!("{type_name}::{prop}");
+
+                let val = realm.read().unwrap().lookup(&method_key);
+
+                debug!("Property: {prop:?}");
+
+                match val {
+                    Some(val) => {
+                        return ControlFlow::Value(val)
+                    }
+                    None => panic!("No property `{prop}` on type `{type_name}`"),
+                }
+            }
+            ExprKind::IndexedAccess { origin, index } => {
+                let container = self.evaluate_expression(Arc::clone(&realm), origin, true);
+                let index = self.evaluate_expression(Arc::clone(&realm), index, true);
+
+                let ControlFlow::Value(container) = container else {
+                    panic!("Expected value")
+                };
+
+                let ControlFlow::Value(index) = index else {
+                    panic!("Expected value")
+                };
+
+                // Now it gets interesting
+
+                match (container, index) {
+                    (Value::Array(arr), Value::Integer(i)) => {
+                        let arr = arr.lock().unwrap();
+
+                        let val: Option<&Value> = arr.get(i as usize);
+
+                        match val {
+                            Some(v) => ControlFlow::Value(v.clone()),
+                            None => panic!("Index {i} out of bounds (len {})", arr.len()),
+                        }
+                    }
+                    (Value::String(s), Value::Integer(i)) => {
+                        // character access
+                        match s.chars().nth(i as usize) {
+                            Some(c) => ControlFlow::Value(Value::String(Arc::new(c.to_string()))),
+                            None => panic!("String index {i} out of bounds"),
+                        }
+                    }
+                    (container, index) => panic!(
+                        "Cannot index into {:?} with {:?}",
+                        types::value_to_internal_type(&container),
+                        types::value_to_internal_type(&index)
+                    ),
+                }
+            }
             ExprKind::AddAssign(lhs, rhs) => {
                 self.compound_assignment_helper(realm, "+", lhs, rhs, is_subexpression)
             }
@@ -773,6 +835,21 @@ impl Interpreter {
             }
             ExprKind::Identifier(name) => vec![name.clone()],
             _ => panic!("Invalid path segment: {:?}", expr.value),
+        }
+    }
+
+    fn property_access_segments_to_vec(&self, expr: &Expression) -> Vec<String> {
+        match &expr.value {
+            ExprKind::PropertyAccess { origin, property } => {
+                let lhs = self.property_access_segments_to_vec(origin);
+                let rhs = self.property_access_segments_to_vec(property);
+
+                lhs.into_iter()
+                    .chain(rhs.into_iter())
+                    .collect::<Vec<String>>()
+            }
+            ExprKind::Identifier(name) => vec![name.clone()],
+            _ => panic!("Invalid property access segment: {:?}", expr.value),
         }
     }
 

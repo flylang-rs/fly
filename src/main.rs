@@ -79,7 +79,7 @@ fn run_file(source: Source) {
 
     let interpreter = flylang_tte::Interpreter::new();
 
-    let result = interpreter.execute(ast);
+    let result = interpreter.execute_script(ast);
 
     println!("Program finished with result: {result:?}");
 }

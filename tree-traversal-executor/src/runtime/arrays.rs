@@ -2,15 +2,32 @@ use std::sync::Arc;
 
 use log::debug;
 
-use crate::{SharedRealm, control_flow::ControlFlow, object::Value, runtime::RustInteropFn, types};
+use crate::{Interpreter, SharedRealm, control_flow::ControlFlow, object::Value, runtime::RustInteropFn, types};
 
 pub static EXPORT: &[(&str, RustInteropFn)] = &[
+    ("array::push", array_push),
+    ("array::len",  array_len),
+
+    // To string
     ("array::to_string", array_to_string),
     ("array::to_displayable", array_to_displayable)
 ];
 
+pub fn array_push(_interp: &Interpreter, _realm: SharedRealm, args: &[Value]) -> ControlFlow {
+    let Value::Array(arr) = &args[0] else { panic!("Expected array, got: {:?}", args[0]) };
+    let value = args[1].clone();
+
+    arr.lock().unwrap().push(value);
+    ControlFlow::Value(Value::Nil)
+}
+
+pub fn array_len(_interp: &Interpreter, _realm: SharedRealm, args: &[Value]) -> ControlFlow {
+    let Value::Array(arr) = &args[0] else { panic!("Expected array") };
+    ControlFlow::Value(Value::Integer(arr.lock().unwrap().len() as i128))
+}
+
 fn array_to_string(
-    interpreter: &crate::Interpreter,
+    interpreter: &Interpreter,
     realm: SharedRealm,
     args: &[Value],
 ) -> ControlFlow {
@@ -60,7 +77,7 @@ fn array_to_string(
 }
 
 fn array_to_displayable(
-    interpreter: &crate::Interpreter,
+    interpreter: &Interpreter,
     realm: SharedRealm,
     args: &[Value],
 ) -> ControlFlow {
