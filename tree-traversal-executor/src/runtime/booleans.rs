@@ -12,6 +12,7 @@ pub static EXPORT: &[(&str, RustInteropFn)] = &[
     ("bool::operator!=bool", bool_neq),
     // To string
     ("bool::to_string", bool_to_string),
+    ("bool::to_displayable", bool_to_displayable),
 ];
 
 common_operation_unary!(bool_not, Bool, Bool, |x: &bool| !x);
@@ -22,10 +23,22 @@ common_operation_binary!(bool_or, Bool, Bool, Bool, |x: &bool, y: &bool| *x || *
 common_operation_binary!(bool_eq, Bool, Bool, Bool, |x: &bool, y: &bool| *x == *y);
 common_operation_binary!(bool_neq, Bool, Bool, Bool, |x: &bool, y: &bool| *x != *y);
 
-fn bool_to_string(_interpreter: &crate::Interpreter, _realm: SharedRealm, args: &[Value]) -> ControlFlow {
+fn bool_to_string(
+    _interpreter: &crate::Interpreter,
+    _realm: SharedRealm,
+    args: &[Value],
+) -> ControlFlow {
     let Value::Bool(i) = args[0] else {
         panic!("Exptected bool, got {:?}", args[0]);
     };
 
     ControlFlow::Value(Value::String(i.to_string().into()))
+}
+
+fn bool_to_displayable(
+    interpreter: &crate::Interpreter,
+    realm: SharedRealm,
+    args: &[Value],
+) -> ControlFlow {
+    bool_to_string(interpreter, realm, args)
 }

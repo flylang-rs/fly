@@ -27,6 +27,7 @@ pub static EXPORT: &[(&str, RustInteropFn)] = &[
     ("float::operator-", float_neg),
     // To string
     ("float::to_string", float_to_string),
+    ("float::to_displayable", float_to_displayable),
 ];
 
 common_operation_binary!(floats_add, Float, Float, Float, |x: &f64, y: &f64| x + y);
@@ -104,10 +105,22 @@ common_operation_binary!(floats_lte, Float, Float, Bool, |x: &f64, y: &f64| x <=
 
 common_operation_unary!(float_neg, Float, Float, |x: &f64| -x);
 
-fn float_to_string(_interpreter: &crate::Interpreter, _realm: SharedRealm, args: &[Value]) -> ControlFlow {
+fn float_to_string(
+    _interpreter: &crate::Interpreter,
+    _realm: SharedRealm,
+    args: &[Value],
+) -> ControlFlow {
     let Value::Float(i) = args[0] else {
         panic!("It's not a float, it's {:?}", args[0]);
     };
 
     ControlFlow::Value(Value::String(i.to_string().into()))
+}
+
+fn float_to_displayable(
+    interpreter: &crate::Interpreter,
+    realm: SharedRealm,
+    args: &[Value],
+) -> ControlFlow {
+    float_to_string(interpreter, realm, args)
 }

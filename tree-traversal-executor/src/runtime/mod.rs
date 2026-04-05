@@ -1,5 +1,6 @@
 use crate::{Interpreter, SharedRealm, control_flow::ControlFlow, object::Value};
 
+pub mod arrays;
 pub mod booleans;
 pub mod floats;
 pub mod integers;

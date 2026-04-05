@@ -17,6 +17,7 @@ pub static EXPORT: &[(&str, RustInteropFn)] = &[
     ("string::operator<=string", strings_lte),
     // To string
     ("string::to_string", string_to_string),
+    ("string::to_displayable", string_to_displayable),
 ];
 
 common_operation_binary!(
@@ -83,4 +84,14 @@ fn string_to_string(_interpreter: &crate::Interpreter, _realm: SharedRealm, args
     };
 
     ControlFlow::Value(Value::String(Arc::clone(i)))
+}
+
+fn string_to_displayable(_interpreter: &crate::Interpreter, _realm: SharedRealm, args: &[Value]) -> ControlFlow {
+    let Value::String(ref i) = args[0] else {
+        panic!("It's not a string, it's {:?}", args[0]);
+    };
+    
+    let disp = format!("\"{i}\"");
+
+    ControlFlow::Value(Value::String(disp.into()))
 }

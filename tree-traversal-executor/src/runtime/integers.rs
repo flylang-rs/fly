@@ -30,6 +30,7 @@ pub static EXPORT: &[(&str, RustInteropFn)] = &[
     ("integer::operator-", integer_neg),
     // To string
     ("integer::to_string", integer_to_string),
+    ("integer::to_displayable", integer_to_displayable),
 ];
 
 common_operation_binary!(
@@ -171,10 +172,22 @@ common_operation_binary!(
 
 common_operation_unary!(integer_neg, Integer, Integer, |x: &i128| -x);
 
-fn integer_to_string(_interpreter: &crate::Interpreter, _realm: SharedRealm, args: &[Value]) -> ControlFlow {
+fn integer_to_string(
+    _interpreter: &crate::Interpreter,
+    _realm: SharedRealm,
+    args: &[Value],
+) -> ControlFlow {
     let Value::Integer(i) = args[0] else {
         panic!("It's not an integer, it's {:?}", args[0]);
     };
 
     ControlFlow::Value(Value::String(i.to_string().into()))
+}
+
+fn integer_to_displayable(
+    interpreter: &crate::Interpreter,
+    realm: SharedRealm,
+    args: &[Value],
+) -> ControlFlow {
+    integer_to_string(interpreter, realm, args)
 }

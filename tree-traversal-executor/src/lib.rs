@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     path::PathBuf,
-    sync::{Arc, RwLock},
+    sync::{Arc, Mutex, RwLock},
 };
 
 use flylang_common::{source::Source, spanned::Spanned};
@@ -35,8 +35,13 @@ struct LoadedModule {
 }
 
 pub struct Interpreter {
+    // "Root" Realm of the interpreter
     world: SharedRealm,
+
+    // A realm that contains only internal modules and functions.
     builtins: SharedRealm,
+
+    // It tracks modules currently in use.
     module_registry: Arc<RwLock<HashMap<PathBuf, ModuleState>>>,
 }
 
@@ -47,13 +52,14 @@ impl Interpreter {
         // Import native functions from modules.
         // Chain 'em all!
         let natives = core::iter::empty()
+            .chain(runtime::arrays::EXPORT.iter())
             .chain(runtime::booleans::EXPORT.iter())
             .chain(runtime::floats::EXPORT.iter())
             .chain(runtime::integers::EXPORT.iter())
             .chain(runtime::print::EXPORT.iter())
             .chain(runtime::strings::EXPORT.iter());
 
-        // Import native functions into the world.
+        // Import native functions into the builtins subworld.
         for (name, func) in natives {
             builtins
                 .values_mut()
@@ -77,7 +83,12 @@ impl Interpreter {
     }
 
     /// Trampoline for executor: operate with given realm and the parsed code
-    fn exec_inner(&self, realm: SharedRealm, ast: &[Statement], return_on_value: bool) -> ControlFlow {
+    fn exec_inner(
+        &self,
+        realm: SharedRealm,
+        ast: &[Statement],
+        return_on_value: bool,
+    ) -> ControlFlow {
         for i in ast {
             let stmt = self.exec_single_statement(Arc::clone(&realm), i);
 
@@ -432,7 +443,22 @@ impl Interpreter {
                     other => other,
                 }
             }
-            ExprKind::Array(exprs) => todo!(),
+            ExprKind::Array(exprs) => {
+                let values: Vec<Value> = exprs
+                    .iter()
+                    .map(|x| {
+                        let expr = self.evaluate_expression(Arc::clone(&realm), x, false);
+
+                        let ControlFlow::Value(value) = expr else {
+                            panic!("Expected value, got: {expr:?}");
+                        };
+
+                        value
+                    })
+                    .collect();
+
+                ControlFlow::Value(Value::Array(Arc::new(Mutex::new(values))))
+            }
             ExprKind::Call { callee, parameters } => {
                 let func = self.evaluate_expression(Arc::clone(&realm), callee, true);
 
@@ -669,9 +695,12 @@ impl Interpreter {
             LValue::Identifier(name) => realm.read().unwrap().lookup(name.as_str()).unwrap(),
             LValue::Index { container, index } => {
                 let Value::Array(arr) = container else {
-                    panic!()
+                    panic!("Cannot index into type: {:?}", container);
                 };
-                let Value::Integer(i) = index else { panic!() };
+
+                let Value::Integer(i) = index else {
+                    panic!("Type `{:?}` cannot be used as an index", index);
+                };
 
                 arr.lock().unwrap()[*i as usize].clone()
             }
