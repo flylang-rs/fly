@@ -139,21 +139,14 @@ impl Parser {
     }
 
     // Maybe it should be in lexer.
-    fn check_number(&mut self, number_repr: String, address: Address) -> ast::Expression {
+    fn check_number(&mut self, number_repr: String, address: Address) -> ParserResult<ast::Expression> {
         if let Err(_) = number_repr.parse::<f64>() {
-            flylang_diagnostics::Diagnostics {}.error(
-                &format!("Failed to parse a number: {number_repr:?}"),
-                &address,
-                &[Note::new(address.clone(), "here")],
-                &[],
-            );
-            // FIXME: Maube a better way to diagnose errors while parsing?
-            std::process::exit(1);
+            return Err(ParserError::ParsingNumberFailed { number: number_repr, address });
         } else {
-            Spanned {
+            Ok(Spanned {
                 value: ast::ExprKind::Number(number_repr),
                 address,
-            }
+            })
         }
     }
 
@@ -251,13 +244,13 @@ impl Parser {
             Some(Token {
                 value: TokenValue::Number(nr),
                 address,
-            }) => self.check_number(nr, address),
+            }) => self.check_number(nr, address)?,
             // Idenitifer
             Some(Token {
-                value: TokenValue::Identifier(nr),
+                value: TokenValue::Identifier(id),
                 address,
             }) => Spanned {
-                value: ast::ExprKind::Identifier(nr),
+                value: ast::ExprKind::Identifier(id),
                 address,
             },
             // "String"

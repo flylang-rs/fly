@@ -1,4 +1,4 @@
-use flylang_common::Address;
+use flylang_common::{Address};
 use flylang_diagnostics::{Diagnostics, additions::Note, error::DiagnosticsReport};
 use flylang_lexer::token::Token;
 
@@ -6,6 +6,7 @@ use flylang_lexer::token::Token;
 pub enum ParserError {
     UnexpectedEOF(Address),
     UnexpectedTokenInExpression { token: Token },
+    ParsingNumberFailed { number: String, address: Address }
 }
 
 impl DiagnosticsReport for ParserError {
@@ -31,6 +32,15 @@ impl DiagnosticsReport for ParserError {
                     &[],
                 );
             }
+            ParserError::ParsingNumberFailed { number, address } => {
+                Diagnostics {}.error_ext(
+                    &mut report,
+                    &format!("Failed to parse a number: {number:?}"),
+                    &address,
+                    &[Note::new(address.clone(), "here")],
+                    &[],
+                );
+            },
         }
 
         report

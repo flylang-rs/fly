@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use flylang_common::source::Source;
-use flylang_diagnostics::{additions::Note, error::DiagnosticsReport};
+use flylang_diagnostics::error::DiagnosticsReport;
 use flylang_lexer::{error::LexerError, token::Token};
 use flylang_parser::{Parser, ast::Statement, error::ParserError, state::ParserState};
 

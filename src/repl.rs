@@ -1,6 +1,5 @@
 use std::{
-    io::{Read, Write},
-    sync::{Arc, RwLock},
+    io::{Write},
 };
 
 use crossterm::{
@@ -8,18 +7,14 @@ use crossterm::{
     terminal,
 };
 use flylang_common::source::Source;
-use flylang_diagnostics::{additions::Note, error::DiagnosticsReport};
-use flylang_lexer::{
-    error::LexerError,
-    token::{Token, TokenValue},
-};
-use flylang_parser::{Parser, ast::Statement, error::ParserError, state::ParserState};
-use flylang_tte::{Interpreter, SharedRealm, control_flow::ControlFlow, object::Value, realm::Realm};
+use flylang_diagnostics::{error::DiagnosticsReport};
+use flylang_tte::{Interpreter, control_flow::ControlFlow, object::Value};
 
 use crate::common::LoadingResult;
 
 pub struct REPL {
     interpreter: Interpreter,
+    line_counter: usize
 }
 
 pub enum ReadlineResult {
@@ -32,6 +27,7 @@ impl REPL {
     pub fn new() -> Self {
         Self {
             interpreter: Interpreter::new(),
+            line_counter: 1
         }
     }
 
@@ -41,7 +37,7 @@ impl REPL {
     pub fn read_line(&mut self) -> ReadlineResult {
         terminal::enable_raw_mode().unwrap();
 
-        std::io::stdout().write(b"> ").unwrap();
+        write!(std::io::stdout(), ":{:<2}   > ", self.line_counter).unwrap();
         std::io::stdout().flush().unwrap();
 
         let mut line = String::new();
@@ -127,12 +123,14 @@ impl REPL {
                             let stringres = self.interpreter.call_func_extern(&methodname, &[val]).unwrap();
 
                             if let ControlFlow::Value(Value::String(v)) = stringres {
-                                println!("{v}");
+                                println!("      = {v}");
                             }
                         }
                         Ok(ControlFlow::Nothing) => (),
                         _ => panic!("Don't know what to show for CF = {result:?}")
                     }
+
+                    self.line_counter += 1;
                 }
             }
         }
