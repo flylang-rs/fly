@@ -465,11 +465,31 @@ impl Interpreter {
                 ControlFlow::Value(Value::Array(Arc::new(Mutex::new(values))))
             }
             ExprKind::Call { callee, parameters } => {
+                // Special case - method call by using property access.
+                if let ExprKind::PropertyAccess { origin, property } = &callee.value {
+                    let obj = self.evaluate_expression(Arc::clone(&realm), origin, true);
+                    let ControlFlow::Value(obj) = obj else { panic!() };
+
+                    let prop = property.value.as_id().unwrap();
+                    let type_name = types::value_to_internal_type(&obj).unwrap();
+                    let method_key = format!("{type_name}::{prop}");
+
+                    let method = realm.read().unwrap().lookup(&method_key)
+                        .unwrap_or_else(|| panic!("No method `{prop}` on `{type_name}`"));
+
+                    let mut args = vec![obj];  // receiver (self) is first argument
+                    for p in parameters {
+                        let ControlFlow::Value(v) = self.evaluate_expression(Arc::clone(&realm), p, true)
+                            else { panic!() };
+                        args.push(v);
+                    }
+
+                    return self.call_func(realm, method, &args);
+                }
+
                 let func = self.evaluate_expression(Arc::clone(&realm), callee, true);
 
-                let ControlFlow::Value(func) = func else {
-                    panic!("Expected a function as value, got: {func:?}");
-                };
+                let ControlFlow::Value(func) = func else { panic!("Expected a function as value, got: {func:?}"); };
 
                 let args: Vec<Value> = parameters
                     .iter()
@@ -520,7 +540,7 @@ impl Interpreter {
 
                 match val {
                     Some(val) => {
-                        return ControlFlow::Value(val)
+                        return ControlFlow::Value(val);
                     }
                     None => panic!("No property `{prop}` on type `{type_name}`"),
                 }
@@ -705,16 +725,12 @@ impl Interpreter {
 
         let method_name = format!("{ty}::operator{op}");
 
-        let method = realm.read().unwrap().lookup(&method_name);
+        let method = realm.read().unwrap().lookup(&method_name).unwrap_or_else(|| panic!("Incompatible type for operation `{op}`: `{ty}`"));
 
-        if let Some(method) = method {
-            if let ControlFlow::Value(va) = self.call_func(realm, method, &[expr_val]) {
-                return Some(va);
-            } else {
-                panic!("Failed to get a return value from function call.");
-            }
+        if let ControlFlow::Value(va) = self.call_func(realm, method, &[expr_val]) {
+            return Some(va);
         } else {
-            panic!("Incompatible type for operation `{op}`: `{ty}`")
+            panic!("Failed to get a return value from function call.");
         }
     }
 

@@ -2,8 +2,9 @@ myarray = [1, 2, true, "Flylang", 3.1415926, [4, 5, 6]]
 
 print(myarray[3])
 
-# RUDIMENTARY: Remove myarray when finish it!
-myarray.push(myarray, 4)
+myarray.push(4)
 
 print(myarray)
-print("Len: ", myarray.len())
+print("Len:", myarray.len())
+
+print(myarray[3])
