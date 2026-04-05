@@ -77,7 +77,7 @@ common_operation_binary!(
     |x: &String, y: &String| x <= y
 );
 
-fn string_to_string(_realm: SharedRealm, args: &[Value]) -> ControlFlow {
+fn string_to_string(_interpreter: &crate::Interpreter, _realm: SharedRealm, args: &[Value]) -> ControlFlow {
     let Value::String(ref i) = args[0] else {
         panic!("It's not a string, it's {:?}", args[0]);
     };

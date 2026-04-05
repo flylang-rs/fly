@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
 use crate::{
-    SharedRealm, call_func, control_flow::ControlFlow, object::Value, runtime::RustInteropFn, types,
+    Interpreter, SharedRealm, control_flow::ControlFlow, object::Value, runtime::RustInteropFn, types
 };
 
 pub static EXPORT: &[(&str, RustInteropFn)] = &[("print", inner_print)];
 
-fn inner_print(realm: SharedRealm, args: &[Value]) -> ControlFlow {
+fn inner_print(interpreter: &Interpreter, realm: SharedRealm, args: &[Value]) -> ControlFlow {
     let len = args.len();
 
     for (n, i) in args.iter().enumerate() {
@@ -18,7 +18,7 @@ fn inner_print(realm: SharedRealm, args: &[Value]) -> ControlFlow {
 
         if let Some(method) = method {
             // FIXME: Fix that clone!
-            let string_value = call_func(Arc::clone(&realm), method, &[i.clone()]);
+            let string_value = interpreter.call_func(Arc::clone(&realm), method, &[i.clone()]);
 
             let ControlFlow::Value(Value::String(display_value)) = string_value else {
                 panic!("Failed `{}` to string conversion!", ty);

@@ -1,7 +1,12 @@
 use exelib;
 
+a = 99
+
 print(exelib::d)
 
 exelib::its_my_showtime()
 
 print(exelib::d)
+
+print(a, a == 99)
+

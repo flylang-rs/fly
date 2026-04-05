@@ -22,7 +22,7 @@ common_operation_binary!(bool_or, Bool, Bool, Bool, |x: &bool, y: &bool| *x || *
 common_operation_binary!(bool_eq, Bool, Bool, Bool, |x: &bool, y: &bool| *x == *y);
 common_operation_binary!(bool_neq, Bool, Bool, Bool, |x: &bool, y: &bool| *x != *y);
 
-fn bool_to_string(_realm: SharedRealm, args: &[Value]) -> ControlFlow {
+fn bool_to_string(_interpreter: &crate::Interpreter, _realm: SharedRealm, args: &[Value]) -> ControlFlow {
     let Value::Bool(i) = args[0] else {
         panic!("Exptected bool, got {:?}", args[0]);
     };

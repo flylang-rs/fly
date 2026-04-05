@@ -11,7 +11,6 @@ use crate::{SharedRealm, object::Value};
 pub struct Realm {
     values: HashMap<String, Value>,
     pub parent: Option<Arc<RwLock<Realm>>>,
-    pub module: Option<String>,
 }
 
 impl Realm {
@@ -19,35 +18,30 @@ impl Realm {
         Self {
             values: HashMap::new(),
             parent: None,
-            module: None,
-        }
-    }
-
-    pub fn for_module(parent: SharedRealm, module_name: String) -> Self {
-        Self {
-            values: HashMap::new(),
-            parent: Some(parent),
-            module: Some(module_name),
         }
     }
 
     /// Enter new level of realm, recursing deeper.
     pub fn dive(shared_realm: SharedRealm) -> Self {
-        /* Self {
-            values: HashMap::new(),
-            parent: Some(shared_realm),
-        } */
-
-        let parent = shared_realm.read().unwrap();
         Self {
             values: HashMap::new(),
-            parent: Some(Arc::clone(&shared_realm)),
-            module: parent.module.clone(),
+            parent: Some(shared_realm),
         }
+
+        // let parent = shared_realm.read().unwrap();
+        // Self {
+        //     values: HashMap::new(),
+        //     parent: Some(Arc::clone(&shared_realm)),
+        //     module: parent.module.clone(),
+        // }
     }
 
     pub fn is_root(&self) -> bool {
         self.parent.is_none()
+    }
+
+    pub fn into_values(self) -> HashMap<String, Value> {
+        self.values
     }
 
     pub fn values(&self) -> &HashMap<String, Value> {
@@ -59,16 +53,6 @@ impl Realm {
     }
 
     pub fn lookup(&self, term: &str) -> Option<Value> {
-    	// If we're in a module and term is unqualified, try module-prefixed first
-    	if let Some(ref mod_name) = self.module {
-            if !term.contains("::") {
-                let qualified = format!("{mod_name}::{term}");
-                if let Some(val) = self.values.get(&qualified) {
-                    return Some(val.clone());
-                }
-            }
-        }
-        
         // Search in current Realm.
         if let Some(val) = self.values.get(term) {
             return Some(val.clone());

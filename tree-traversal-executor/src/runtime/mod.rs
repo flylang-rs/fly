@@ -1,4 +1,4 @@
-use crate::{SharedRealm, control_flow::ControlFlow, object::Value};
+use crate::{Interpreter, SharedRealm, control_flow::ControlFlow, object::Value};
 
 pub mod booleans;
 pub mod floats;
@@ -6,12 +6,13 @@ pub mod integers;
 pub mod print;
 pub mod strings;
 
-pub type RustInteropFn = fn(realm: SharedRealm, args: &[Value]) -> ControlFlow;
+pub type RustInteropFn = fn(interpreter: &Interpreter, realm: SharedRealm, args: &[Value]) -> ControlFlow;
 
 #[macro_export]
 macro_rules! common_operation_binary {
     ($name:ident, $ty1:ident, $ty2:ident, $res_ty:ident, $conv:expr) => {
         pub fn $name(
+            _interpreter: &$crate::Interpreter,
             _realm: $crate::SharedRealm,
             args: &[$crate::object::Value],
         ) -> $crate::control_flow::ControlFlow {
@@ -35,6 +36,7 @@ macro_rules! common_operation_binary {
 macro_rules! common_operation_unary {
     ($name:ident, $ty:ident, $res_ty:ident, $conv:expr) => {
         pub fn $name(
+            _interpreter: &$crate::Interpreter,
             _realm: $crate::SharedRealm,
             args: &[$crate::object::Value],
         ) -> $crate::control_flow::ControlFlow {

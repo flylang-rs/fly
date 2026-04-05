@@ -171,7 +171,7 @@ common_operation_binary!(
 
 common_operation_unary!(integer_neg, Integer, Integer, |x: &i128| -x);
 
-fn integer_to_string(_realm: SharedRealm, args: &[Value]) -> ControlFlow {
+fn integer_to_string(_interpreter: &crate::Interpreter, _realm: SharedRealm, args: &[Value]) -> ControlFlow {
     let Value::Integer(i) = args[0] else {
         panic!("It's not an integer, it's {:?}", args[0]);
     };
