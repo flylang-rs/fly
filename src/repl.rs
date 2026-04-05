@@ -101,6 +101,9 @@ impl REPL {
     }
 
     pub fn enter(&mut self) {
+        println!("Fly REPL (version: {})", env!("CARGO_PKG_VERSION"));
+        println!();
+
         loop {
             let ln = self.read_line();
 
