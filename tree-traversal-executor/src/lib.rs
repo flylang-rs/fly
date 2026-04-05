@@ -5,6 +5,7 @@ use std::{
 };
 
 use flylang_common::{source::Source, spanned::Spanned};
+use flylang_diagnostics::additions::Note;
 use flylang_parser::ast::{DivisionKind, ExprKind, Expression, Statement, While};
 use log::debug;
 
@@ -56,6 +57,7 @@ impl Interpreter {
             .chain(runtime::booleans::EXPORT.iter())
             .chain(runtime::floats::EXPORT.iter())
             .chain(runtime::integers::EXPORT.iter())
+            .chain(runtime::nil::EXPORT.iter())
             .chain(runtime::print::EXPORT.iter())
             .chain(runtime::strings::EXPORT.iter());
 
@@ -419,8 +421,15 @@ impl Interpreter {
                 let value = realm.read().unwrap().lookup(id.as_str());
 
                 if value.is_none() {
-                    debug!("{:#?}", realm.read().unwrap());
-                    panic!("Name `{id}` is not defined.");
+                    flylang_diagnostics::Diagnostics {}.error(
+                        &format!("Name `{id}` is not defined."),
+                        &address,
+                        &[
+                            Note::new(address.clone(), "here")
+                        ],
+                        &[],
+                    );
+                    std::process::exit(1);
                 }
 
                 ControlFlow::Value(value.unwrap())
@@ -468,19 +477,27 @@ impl Interpreter {
                 // Special case - method call by using property access.
                 if let ExprKind::PropertyAccess { origin, property } = &callee.value {
                     let obj = self.evaluate_expression(Arc::clone(&realm), origin, true);
-                    let ControlFlow::Value(obj) = obj else { panic!() };
+                    let ControlFlow::Value(obj) = obj else {
+                        panic!()
+                    };
 
                     let prop = property.value.as_id().unwrap();
                     let type_name = types::value_to_internal_type(&obj).unwrap();
                     let method_key = format!("{type_name}::{prop}");
 
-                    let method = realm.read().unwrap().lookup(&method_key)
+                    let method = realm
+                        .read()
+                        .unwrap()
+                        .lookup(&method_key)
                         .unwrap_or_else(|| panic!("No method `{prop}` on `{type_name}`"));
 
-                    let mut args = vec![obj];  // receiver (self) is first argument
+                    let mut args = vec![obj]; // receiver (self) is first argument
                     for p in parameters {
-                        let ControlFlow::Value(v) = self.evaluate_expression(Arc::clone(&realm), p, true)
-                            else { panic!() };
+                        let ControlFlow::Value(v) =
+                            self.evaluate_expression(Arc::clone(&realm), p, true)
+                        else {
+                            panic!()
+                        };
                         args.push(v);
                     }
 
@@ -489,7 +506,9 @@ impl Interpreter {
 
                 let func = self.evaluate_expression(Arc::clone(&realm), callee, true);
 
-                let ControlFlow::Value(func) = func else { panic!("Expected a function as value, got: {func:?}"); };
+                let ControlFlow::Value(func) = func else {
+                    panic!("Expected a function as value, got: {func:?}");
+                };
 
                 let args: Vec<Value> = parameters
                     .iter()
@@ -668,6 +687,43 @@ impl Interpreter {
         ControlFlow::Nothing
     }
 
+    pub fn call_func_extern(&self, name: &str, args: &[Value]) -> Option<ControlFlow> {
+        let method = self.world.read().unwrap().lookup(name)?;
+
+        if let Value::Native(native) = method {
+            let new_realm = Realm::dive(Arc::clone(&self.world));
+
+            return Some(native(self, Arc::new(RwLock::new(new_realm)), args));
+        }
+
+        if let Value::Function(func) = method {
+            let mut new_realm = Realm::dive(Arc::clone(&func.closure_realm));
+
+            let parameters = &func.params;
+
+            if parameters.len() != args.len() {
+                panic!("Insufficent arguments!");
+            }
+
+            // Arguments are just temporary variables
+
+            for (par, arg) in parameters.iter().zip(args) {
+                new_realm.values_mut().insert(par.clone(), arg.clone());
+            }
+
+            let result = self
+                .exec_single_statement(Arc::new(RwLock::new(new_realm)), &func.body)
+                .unwrap_or(ControlFlow::Nothing);
+
+            return Some(match result {
+                ControlFlow::Return(v) => ControlFlow::Value(v),
+                other => other,
+            });
+        }
+
+        None
+    }
+
     fn binary_op_helper(
         &self,
         realm: SharedRealm,
@@ -725,7 +781,11 @@ impl Interpreter {
 
         let method_name = format!("{ty}::operator{op}");
 
-        let method = realm.read().unwrap().lookup(&method_name).unwrap_or_else(|| panic!("Incompatible type for operation `{op}`: `{ty}`"));
+        let method = realm
+            .read()
+            .unwrap()
+            .lookup(&method_name)
+            .unwrap_or_else(|| panic!("Incompatible type for operation `{op}`: `{ty}`"));
 
         if let ControlFlow::Value(va) = self.call_func(realm, method, &[expr_val]) {
             return Some(va);

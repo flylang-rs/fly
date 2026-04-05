@@ -1,3 +1,5 @@
+use std::fmt::Write;
+
 use flylang_common::Address;
 
 use owo_colors::{OwoColorize, Stream};
@@ -84,6 +86,7 @@ impl Diagnostics {
 
     fn emit(
         &self,
+        output: &mut String,
         kind: DiagnosticsKind,
         message: &str,
         address: &Address,
@@ -94,7 +97,8 @@ impl Diagnostics {
         let location = src.location(address.span.start);
         let code_line = src.line_text(location.0);
 
-        eprintln!(
+        writeln!(
+            output,
             "{}: {}:{}:{}: {} ",
             kind.as_str()
                 .if_supports_color(Stream::Stderr, |x| x.color(kind.color()))
@@ -103,27 +107,29 @@ impl Diagnostics {
             location.0,
             location.1,
             message.if_supports_color(Stream::Stderr, |x| x.bold())
-        );
-        eprintln!("     |");
-        eprintln!("{:>4} | {}", location.0, code_line);
+        ).unwrap();
+        writeln!(output, "     |").unwrap();
+        writeln!(output, "{:>4} | {}", location.0, code_line).unwrap();
 
         for i in notes {
             let location = src.location(i.position.span.start);
 
-            eprintln!(
+            writeln!(
+                output,
                 "     | {}{} {}",
                 " ".repeat(location.1 - 1),
                 "^".repeat(i.position.span.end - i.position.span.start),
                 i.message.if_supports_color(Stream::Stderr, |x| x.bold())
-            );
+            ).unwrap();
         }
 
         if !helps.is_empty() {
-            eprintln!("     |");
+            writeln!(output, "     |").unwrap();
         }
 
         for (i, n) in helps.iter().enumerate() {
-            eprintln!(
+            writeln!(
+                output,
                 "`- {} nr. {}: {}\n     |\n{}",
                 "help"
                     .if_supports_color(Stream::Stderr, |x| x.green())
@@ -135,18 +141,25 @@ impl Diagnostics {
                     &n.edits,
                     src.line_start(location.0 - 1)
                 ))
-            );
+            ).unwrap();
         }
 
-        eprintln!("     |");
-        eprintln!();
+        writeln!(output, "     |").unwrap();
     }
 
     pub fn error(&self, error: &str, address: &Address, notes: &[Note], helps: &[Help]) {
-        self.emit(DiagnosticsKind::Error, error, address, notes, helps);
+        let mut diag = String::new();
+
+        self.emit(&mut diag, DiagnosticsKind::Error, error, address, notes, helps);
+
+        eprintln!("{diag}");
     }
 
     pub fn warning(&self, warning: &str, address: &Address, notes: &[Note], helps: &[Help]) {
-        self.emit(DiagnosticsKind::Warning, warning, address, notes, helps);
+        let mut diag = String::new();
+
+        self.emit(&mut diag, DiagnosticsKind::Warning, warning, address, notes, helps);
+
+        eprintln!("{diag}");
     }
 }

@@ -150,7 +150,8 @@ impl<'a> Analyzer<'a> {
                 }
             }
             kind => {
-                println!("Expression type: {kind:#?}");
+                // println!("Expression type: {kind:#?}");
+                
             }
         }
     }

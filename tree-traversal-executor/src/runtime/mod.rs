@@ -4,6 +4,7 @@ pub mod arrays;
 pub mod booleans;
 pub mod floats;
 pub mod integers;
+pub mod nil;
 pub mod print;
 pub mod strings;
 

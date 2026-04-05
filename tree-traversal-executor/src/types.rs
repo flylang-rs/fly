@@ -9,7 +9,7 @@ pub const TYPE_NATIVE: &str = "native";
 pub const TYPE_NIL: &str = "nil";
 pub const TYPE_STRING: &str = "string";
 
-pub fn value_to_internal_type(val: &Value) -> Option<&str> {
+pub fn value_to_internal_type(val: &Value) -> Option<&'static str> {
     match val {
         Value::Array(_) => Some(TYPE_ARRAY),
         Value::Bool(_) => Some(TYPE_BOOL),

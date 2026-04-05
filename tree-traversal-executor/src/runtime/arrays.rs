@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use log::debug;
 
@@ -18,6 +18,7 @@ pub fn array_push(_interp: &Interpreter, _realm: SharedRealm, args: &[Value]) ->
     let value = args[1].clone();
 
     arr.lock().unwrap().push(value);
+
     ControlFlow::Value(Value::Nil)
 }
 
@@ -45,6 +46,24 @@ fn array_to_string(
     let length = container.len();
 
     for (idx, val) in container.iter().enumerate() {
+        // An important moment: if we have an array in array
+        if let Value::Array(arr) = val {
+            // And that array point to source array
+            if Arc::ptr_eq(arr, array) {
+                // It's a circiular reference, it will infinitely scan itself.
+                // To avoid this, replace it with ellipsis like Python does.
+
+                let elem_repr = if idx == length - 1 {
+                    "[...]"
+                } else {
+                    "[...], "
+                };
+
+                repr.push_str(&elem_repr);
+                continue;
+            }
+        }
+
         let ty = types::value_to_internal_type(val).unwrap();
         let method_name = format!("{ty}::to_displayable");
 
