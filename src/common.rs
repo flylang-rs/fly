@@ -1,12 +1,31 @@
 use std::sync::Arc;
 
 use flylang_common::source::Source;
-use flylang_diagnostics::additions::Note;
+use flylang_diagnostics::{additions::Note, error::DiagnosticsReport};
 use flylang_lexer::{error::LexerError, token::Token};
 use flylang_parser::{Parser, ast::Statement, error::ParserError, state::ParserState};
 
-pub fn parse_source(source: Source) -> Vec<Statement> {
-    let mut lexer = flylang_lexer::Lexer::new(Arc::new(source));
+pub type LoadingResult<T> = Result<T, LoadingError>;
+
+#[derive(Debug, Clone)]
+pub enum LoadingError {
+    LexerError(LexerError),
+    ParserError(ParserError),
+}
+
+impl DiagnosticsReport for LoadingError {
+    fn render(&self) -> String {
+        match self {
+            LoadingError::LexerError(lexer_error) => lexer_error.render(),
+            LoadingError::ParserError(parser_error) => parser_error.render(),
+        }
+    }
+}
+
+pub fn parse_source(source: Source) -> LoadingResult<Vec<Statement>> {
+    let source = Arc::new(source);
+    
+    let mut lexer = flylang_lexer::Lexer::new(source);
     let mut tokens: Vec<Token> = vec![];
 
     loop {
@@ -17,9 +36,7 @@ pub fn parse_source(source: Source) -> Vec<Statement> {
             Err(LexerError::EOF) => break,
             // This arm is more serious, we have a problem here
             Err(err) => {
-                eprintln!("Error: {err:?}");
-
-                std::process::exit(1);
+                return Err(LoadingError::LexerError(err));
             }
         }
     }
@@ -31,33 +48,12 @@ pub fn parse_source(source: Source) -> Vec<Statement> {
     let ast = parser.parse(ParserState::Neutral);
 
     if let Err(e) = ast {
-        // TODO: Move it out
-        match e {
-            ParserError::UnexpectedEOF => {
-                flylang_diagnostics::Diagnostics {}.error(
-                    "Unexpected EOF",
-                    parser.eof_address(),
-                    &[],
-                    &[],
-                );
-            }
-            ParserError::UnexpectedTokenInExpression { token } => {
-                flylang_diagnostics::Diagnostics {}.error(
-                    "Unexpected token",
-                    &token.address,
-                    &[Note::new(token.address.clone(), "here")],
-                    &[],
-                );
-            }
-        }
-
-        // eprintln!("ParserError: {e:#?}");
-        std::process::exit(1);
+        return Err(LoadingError::ParserError(e));
     }
 
     let ast = ast.unwrap();
 
     flylang_ast_analyzer::analyze(&ast);
 
-    ast
+    Ok(ast)
 }

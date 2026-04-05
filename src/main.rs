@@ -1,10 +1,18 @@
 use flylang_common::source::Source;
+use flylang_diagnostics::error::DiagnosticsReport;
 
 pub mod common;
 pub mod repl;
 
 fn run_file(source: Source) {
-    let ast = common::parse_source(source);
+    let ast = match common::parse_source(source) {
+        Ok(st) => st,
+        Err(e) => {
+            eprintln!("{}", e.render());
+            
+            std::process::exit(1)
+        }
+    };
 
     let interpreter = flylang_tte::Interpreter::new();
 

@@ -8,13 +8,15 @@ use crossterm::{
     terminal,
 };
 use flylang_common::source::Source;
-use flylang_diagnostics::additions::Note;
+use flylang_diagnostics::{additions::Note, error::DiagnosticsReport};
 use flylang_lexer::{
     error::LexerError,
     token::{Token, TokenValue},
 };
 use flylang_parser::{Parser, ast::Statement, error::ParserError, state::ParserState};
 use flylang_tte::{Interpreter, SharedRealm, control_flow::ControlFlow, object::Value, realm::Realm};
+
+use crate::common::LoadingResult;
 
 pub struct REPL {
     interpreter: Interpreter,
@@ -94,10 +96,10 @@ impl REPL {
         ReadlineResult::Ignore
     }
 
-    pub fn execute(&mut self, line: String) -> ControlFlow {
-        let ast = crate::common::parse_source(Source::new(String::from("<REPL>"), line));
+    pub fn execute(&mut self, line: String) -> LoadingResult<ControlFlow> {
+        let ast = crate::common::parse_source(Source::new(String::from("<REPL>"), line))?;
 
-        self.interpreter.execute(ast)
+        Ok(self.interpreter.execute(ast))
     }
 
     pub fn enter(&mut self) {
@@ -114,7 +116,10 @@ impl REPL {
                     let result = self.execute(line);
 
                     match result {
-                        ControlFlow::Value(val) => {
+                        Err(e) => {
+                            eprintln!("{}", e.render());
+                        }
+                        Ok(ControlFlow::Value(val)) => {
                             let ty = flylang_tte::types::value_to_internal_type(&val).unwrap();
 
                             let methodname = format!("{ty}::to_displayable");
@@ -125,7 +130,7 @@ impl REPL {
                                 println!("{v}");
                             }
                         }
-                        ControlFlow::Nothing => (),
+                        Ok(ControlFlow::Nothing) => (),
                         _ => panic!("Don't know what to show for CF = {result:?}")
                     }
                 }

@@ -251,6 +251,7 @@ name = "flylang-lexer"
 version = "0.1.0"
 dependencies = [
  "flylang-common",
+ "flylang-diagnostics",
  "insta",
 ]
 

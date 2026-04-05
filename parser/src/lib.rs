@@ -244,7 +244,7 @@ impl Parser {
 
         let start_addr = self
             .peek_address()
-            .ok_or_else(|| ParserError::UnexpectedEOF)?;
+            .ok_or_else(|| ParserError::UnexpectedEOF(self.eof_addr.clone()))?;
 
         let mut lhs = match self.next_token() {
             // Number
@@ -625,8 +625,10 @@ impl Parser {
     fn parse_statement(&mut self) -> ParserResult<ast::Statement> {
         self.skip_whitespaces();
 
+        let eof = self.eof_addr.clone();
+
         loop {
-            return match self.peek().ok_or_else(|| ParserError::UnexpectedEOF)? {
+            return match self.peek().ok_or_else(|| ParserError::UnexpectedEOF(eof))? {
                 TokenValue::Func => Ok(self.parse_func()?),
                 TokenValue::If => Ok(self.parse_if()?),
                 TokenValue::While => Ok(self.parse_while()?),

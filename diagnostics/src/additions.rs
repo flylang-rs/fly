@@ -3,14 +3,19 @@ use core::ops::Range;
 use flylang_common::Address;
 
 pub struct Note<'a> {
-    pub(crate) position: Address,
+    pub(crate) position: Option<Address>,
     pub(crate) message: &'a str,
 }
 
 impl<'a> Note<'a> {
     pub fn new(position: Address, message: &'a str) -> Self {
-        Self { position, message }
+        Self { position: Some(position), message }
     }
+
+    pub fn message(message: &'a str) -> Self {
+        Self { position: None, message }
+    }
+
 }
 
 #[derive(Debug, Clone)]

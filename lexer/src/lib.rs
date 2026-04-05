@@ -215,7 +215,7 @@ impl Lexer {
                     return Err(LexerError::InvalidNumberError {
                         span: Address {
                             source: self.source.clone(),
-                            span: start..offset + ch.len_utf8(),
+                            span: start..offset + 1,
                         },
                     });
                 }
@@ -223,6 +223,7 @@ impl Lexer {
                     if ch.is_ascii_digit() && !Self::is_digit_for_radix(ch, radix) =>
                 {
                     return Err(LexerError::InvalidDigitForNumberBase {
+                        base: radix as _,
                         span: Address {
                             source: self.source.clone(),
                             span: start..offset + ch.len_utf8(),
@@ -474,7 +475,7 @@ impl Lexer {
                 character,
                 span: Address {
                     source: self.source.clone(),
-                    span: (position..position),
+                    span: (position..position + 1),
                 },
             })?,
         };
