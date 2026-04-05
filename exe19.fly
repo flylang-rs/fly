@@ -1,0 +1,9 @@
+func add(x, y) {
+    n = x - y
+
+    "Wrong value!"
+
+    return x + y
+}
+
+add(4, 9)

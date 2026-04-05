@@ -18,8 +18,8 @@ use crate::{
 pub mod control_flow;
 pub mod function;
 pub mod object;
+pub mod parser_glue;
 pub mod realm;
-pub mod runner;
 pub mod runtime;
 pub mod types;
 
@@ -27,7 +27,7 @@ pub type SharedRealm = Arc<RwLock<Realm>>;
 
 enum ModuleState {
     Loading,
-    Loaded/* (LoadedModule) */,
+    Loaded(LoadedModule),
 }
 
 struct LoadedModule {
@@ -73,17 +73,25 @@ impl Interpreter {
     /// Entry point of out executor, it accepts a list of statements given by the parser.
     /// Since it accepts any kind of statement including expressions, it will return a value.
     pub fn execute(&self, ast: Vec<Statement>) -> ControlFlow {
-        self.exec_inner(Arc::clone(&self.world), &ast)
+        self.exec_inner(Arc::clone(&self.world), &ast, true)
     }
 
     /// Trampoline for executor: operate with given realm and the parsed code
-    fn exec_inner(&self, realm: SharedRealm, ast: &[Statement]) -> ControlFlow {
+    fn exec_inner(&self, realm: SharedRealm, ast: &[Statement], return_on_value: bool) -> ControlFlow {
         for i in ast {
             let stmt = self.exec_single_statement(Arc::clone(&realm), i);
 
+            debug!("Got: {i:?} => {stmt:?}");
+
             match stmt {
+                Some(cf @ ControlFlow::Return(_)) => return cf,
+                Some(cf @ ControlFlow::Break) => return cf,
+                Some(cf @ ControlFlow::Continue) => return cf,
+
+                Some(cf @ ControlFlow::Value(_)) if return_on_value => return cf,
+
+                Some(ControlFlow::Value(_)) => continue,
                 Some(ControlFlow::Nothing) => continue,
-                Some(v) => return v,
                 None => continue,
             }
         }
@@ -108,7 +116,7 @@ impl Interpreter {
         if let Some(val) = self.module_registry.read().unwrap().get(&path) {
             match val {
                 ModuleState::Loading => panic!("Circular import detected for module: {}", filename),
-                ModuleState::Loaded/* (_) */ => return, // We don't have to load it again
+                ModuleState::Loaded(_) => return, // We don't have to load it again
             }
         }
 
@@ -125,19 +133,19 @@ impl Interpreter {
             }
         };
 
-        let ast = runner::parse_into_ast(Source::new(filename, code)).unwrap();
+        let ast = parser_glue::parse_into_ast(Source::new(filename, code)).unwrap();
 
         let module_realm = Arc::new(RwLock::new(Realm::dive(Arc::clone(&self.builtins))));
 
-        self.exec_inner(Arc::clone(&module_realm), &ast);
+        self.exec_inner(Arc::clone(&module_realm), &ast, false);
 
         let exports = module_realm.read().unwrap().values().clone();
 
         self.module_registry.write().unwrap().insert(
             path.clone(),
-            ModuleState::Loaded /* ( LoadedModule {
-                    exports: exports.clone(),
-            } )*/,
+            ModuleState::Loaded(LoadedModule {
+                exports: exports.clone(),
+            }),
         );
 
         for (name, value) in exports {
@@ -206,7 +214,10 @@ impl Interpreter {
                     };
 
                     if let ExprKind::Block(bk) = &block_value.value {
-                        return Some(self.exec_inner(Arc::clone(&realm), &bk));
+                        // let inner_realm = Arc::new(RwLock::new(Realm::dive(Arc::clone(&realm))));
+
+                        // return Some(self.exec_inner(inner_realm, &bk));
+                        return Some(self.exec_inner(Arc::clone(&realm), &bk, false));
                     } else {
                         panic!("Expected a block!")
                     }
@@ -214,6 +225,9 @@ impl Interpreter {
                     // ...
                 } else {
                     if let Some(else_body) = &stmt.else_body {
+                        // let inner_realm = Arc::new(RwLock::new(Realm::dive(Arc::clone(&realm))));
+
+                        // self.exec_single_statement(inner_realm, &else_body);
                         self.exec_single_statement(realm, &else_body)
                     } else {
                         Some(ControlFlow::Nothing)
@@ -227,11 +241,15 @@ impl Interpreter {
             }
             Statement::Scope { held_value, body } => todo!(),
             Statement::Return { value } => {
-                let value = self.evaluate_expression(realm, value, false);
+                let cf = self.evaluate_expression(realm, value, false);
 
-                debug!("Return: {value:?}");
+                debug!("Return: {cf:?}");
 
-                Some(value)
+                let ControlFlow::Value(v) = cf else {
+                    panic!("Expected a value in return statement, got: {cf:?}");
+                };
+
+                Some(ControlFlow::Return(v))
             }
             Statement::Expr(expr) => {
                 debug!("Evaluating: {expr:?}");
@@ -276,14 +294,13 @@ impl Interpreter {
                     };
 
                     if let ExprKind::Block(bk) = &block_value.value {
-                        let block_result = self.exec_inner(Arc::clone(&realm), &bk);
+                        let block_result = self.exec_inner(Arc::clone(&realm), &bk, false);
 
                         match block_result {
-                            ControlFlow::Nothing => (),
-                            ControlFlow::Value(_) => (),
-                            ControlFlow::Return(_) => (),
+                            ControlFlow::Return(_) => return Some(block_result),
                             ControlFlow::Break => break,
                             ControlFlow::Continue => continue,
+                            _ => (),
                         }
                     } else {
                         panic!("Expected a block!")
@@ -406,7 +423,7 @@ impl Interpreter {
             ExprKind::String(st) => ControlFlow::Value(Value::String(Arc::new(st.clone()))),
             ExprKind::Block(ast) => {
                 let inner_realm = Arc::new(RwLock::new(Realm::dive(Arc::clone(&realm))));
-                let block_result = self.exec_inner(inner_realm, ast);
+                let block_result = self.exec_inner(inner_realm, ast, false);
 
                 match block_result {
                     ControlFlow::Return(_) => block_result,
@@ -534,7 +551,10 @@ impl Interpreter {
                 func.params, result
             );
 
-            return result;
+            return match result {
+                ControlFlow::Return(v) => ControlFlow::Value(v),
+                other => other,
+            };
         }
 
         ControlFlow::Nothing
@@ -576,7 +596,7 @@ impl Interpreter {
         let method = realm.read().unwrap().lookup(&method_name);
 
         if let Some(method) = method {
-            if let ControlFlow::Return(va) = self.call_func(realm, method, &[lhs, rhs]) {
+            if let ControlFlow::Value(va) = self.call_func(realm, method, &[lhs, rhs]) {
                 return Some(va);
             } else {
                 panic!("Failed to get a return value from function call.");
@@ -600,7 +620,7 @@ impl Interpreter {
         let method = realm.read().unwrap().lookup(&method_name);
 
         if let Some(method) = method {
-            if let ControlFlow::Return(va) = self.call_func(realm, method, &[expr_val]) {
+            if let ControlFlow::Value(va) = self.call_func(realm, method, &[expr_val]) {
                 return Some(va);
             } else {
                 panic!("Failed to get a return value from function call.");
@@ -729,16 +749,6 @@ impl Interpreter {
 
     // Flattens path into a string that will be used in Realm's HashMap lookup.
     fn flatten_path(&self, expr: &Expression) -> String {
-        match &expr.value {
-            ExprKind::Path { parent, value } => {
-                format!(
-                    "{}::{}",
-                    self.flatten_path(parent),
-                    self.flatten_path(value)
-                )
-            }
-            ExprKind::Identifier(name) => name.clone(),
-            _ => panic!("Invalid path segment: {:?}", expr.value),
-        }
+        self.path_segments_to_vec(expr).join("::")
     }
 }

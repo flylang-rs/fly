@@ -22,7 +22,7 @@ macro_rules! common_operation_binary {
             if let $crate::object::Value::$ty1(x) = lhs
                 && let $crate::object::Value::$ty2(y) = rhs
             {
-                return $crate::control_flow::ControlFlow::Return($crate::object::Value::$res_ty(
+                return $crate::control_flow::ControlFlow::Value($crate::object::Value::$res_ty(
                     ($conv)(x, y),
                 ));
             }
@@ -43,7 +43,7 @@ macro_rules! common_operation_unary {
             let val = &args[0];
 
             if let $crate::object::Value::$ty(x) = val {
-                return $crate::control_flow::ControlFlow::Return($crate::object::Value::$res_ty(
+                return $crate::control_flow::ControlFlow::Value($crate::object::Value::$res_ty(
                     ($conv)(x),
                 ));
             }

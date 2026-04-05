@@ -4,8 +4,6 @@ use flylang_common::source::Source;
 use flylang_lexer::{error::LexerError, token::Token};
 use flylang_parser::{Parser, ast::Statement, error::ParserError, state::ParserState};
 
-use crate::{SharedRealm, control_flow::ControlFlow};
-
 #[derive(Debug, Clone)]
 pub enum ImportError {
     LexerError(LexerError),
