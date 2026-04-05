@@ -1,0 +1,49 @@
+---
+source: parser/src/tests/mod.rs
+expression: code
+---
+Ok(
+    [
+        Function(
+            Function {
+                name: Spanned(
+                    "log",
+                    6..9,
+                ),
+                arguments: [
+                    Spanned(
+                        Identifier(
+                            "x",
+                        ),
+                        10..11,
+                    ),
+                    Spanned(
+                        Assignment {
+                            name: Spanned(
+                                Identifier(
+                                    "base",
+                                ),
+                                13..17,
+                            ),
+                            value: Spanned(
+                                Identifier(
+                                    "E",
+                                ),
+                                20..21,
+                            ),
+                        },
+                        13..21,
+                    ),
+                ],
+                body: Expr(
+                    Spanned(
+                        Block(
+                            [],
+                        ),
+                        23..36,
+                    ),
+                ),
+            },
+        ),
+    ],
+)

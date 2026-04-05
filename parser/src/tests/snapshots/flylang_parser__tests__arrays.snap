@@ -1,0 +1,181 @@
+---
+source: parser/src/tests/mod.rs
+expression: code
+---
+Ok(
+    [
+        Expr(
+            Spanned(
+                Assignment {
+                    name: Spanned(
+                        Identifier(
+                            "a",
+                        ),
+                        10..11,
+                    ),
+                    value: Spanned(
+                        Array(
+                            [
+                                Spanned(
+                                    Number(
+                                        "1",
+                                    ),
+                                    15..16,
+                                ),
+                                Spanned(
+                                    Number(
+                                        "2",
+                                    ),
+                                    18..19,
+                                ),
+                                Spanned(
+                                    Number(
+                                        "3",
+                                    ),
+                                    21..22,
+                                ),
+                            ],
+                        ),
+                        14..23,
+                    ),
+                },
+                10..23,
+            ),
+        ),
+        Expr(
+            Spanned(
+                Assignment {
+                    name: Spanned(
+                        Identifier(
+                            "b",
+                        ),
+                        24..25,
+                    ),
+                    value: Spanned(
+                        Array(
+                            [
+                                Spanned(
+                                    Number(
+                                        "1",
+                                    ),
+                                    29..30,
+                                ),
+                                Spanned(
+                                    Number(
+                                        "2",
+                                    ),
+                                    32..33,
+                                ),
+                                Spanned(
+                                    Array(
+                                        [
+                                            Spanned(
+                                                Number(
+                                                    "3",
+                                                ),
+                                                36..37,
+                                            ),
+                                            Spanned(
+                                                Number(
+                                                    "4",
+                                                ),
+                                                39..40,
+                                            ),
+                                            Spanned(
+                                                Number(
+                                                    "5",
+                                                ),
+                                                42..43,
+                                            ),
+                                        ],
+                                    ),
+                                    35..44,
+                                ),
+                            ],
+                        ),
+                        28..45,
+                    ),
+                },
+                24..45,
+            ),
+        ),
+        Expr(
+            Spanned(
+                Assignment {
+                    name: Spanned(
+                        Identifier(
+                            "c",
+                        ),
+                        46..47,
+                    ),
+                    value: Spanned(
+                        Array(
+                            [
+                                Spanned(
+                                    Add(
+                                        Spanned(
+                                            Identifier(
+                                                "a",
+                                            ),
+                                            51..52,
+                                        ),
+                                        Spanned(
+                                            Identifier(
+                                                "b",
+                                            ),
+                                            55..56,
+                                        ),
+                                    ),
+                                    51..56,
+                                ),
+                            ],
+                        ),
+                        50..57,
+                    ),
+                },
+                46..57,
+            ),
+        ),
+        Expr(
+            Spanned(
+                Assignment {
+                    name: Spanned(
+                        Identifier(
+                            "d",
+                        ),
+                        58..59,
+                    ),
+                    value: Spanned(
+                        IndexedAccess {
+                            origin: Spanned(
+                                Identifier(
+                                    "a",
+                                ),
+                                62..63,
+                            ),
+                            index: Spanned(
+                                Add(
+                                    Spanned(
+                                        Number(
+                                            "0",
+                                        ),
+                                        64..65,
+                                    ),
+                                    Spanned(
+                                        Number(
+                                            "1",
+                                        ),
+                                        68..69,
+                                    ),
+                                ),
+                                64..69,
+                            ),
+                        },
+                        62..69,
+                    ),
+                },
+                58..69,
+            ),
+        ),
+    ],
+)

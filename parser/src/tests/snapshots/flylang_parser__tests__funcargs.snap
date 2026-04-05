@@ -1,0 +1,75 @@
+---
+source: parser/src/tests/mod.rs
+expression: code
+---
+Ok(
+    [
+        Function(
+            Function {
+                name: Spanned(
+                    "multiarg",
+                    6..14,
+                ),
+                arguments: [
+                    Spanned(
+                        Identifier(
+                            "a",
+                        ),
+                        15..16,
+                    ),
+                    Spanned(
+                        Identifier(
+                            "b",
+                        ),
+                        18..19,
+                    ),
+                    Spanned(
+                        Identifier(
+                            "c",
+                        ),
+                        21..22,
+                    ),
+                ],
+                body: Expr(
+                    Spanned(
+                        Block(
+                            [
+                                Return {
+                                    value: Spanned(
+                                        Add(
+                                            Spanned(
+                                                Add(
+                                                    Spanned(
+                                                        Identifier(
+                                                            "a",
+                                                        ),
+                                                        37..38,
+                                                    ),
+                                                    Spanned(
+                                                        Identifier(
+                                                            "b",
+                                                        ),
+                                                        41..42,
+                                                    ),
+                                                ),
+                                                37..42,
+                                            ),
+                                            Spanned(
+                                                Identifier(
+                                                    "c",
+                                                ),
+                                                45..46,
+                                            ),
+                                        ),
+                                        37..46,
+                                    ),
+                                },
+                            ],
+                        ),
+                        24..48,
+                    ),
+                ),
+            },
+        ),
+    ],
+)

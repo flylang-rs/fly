@@ -1,0 +1,55 @@
+---
+source: parser/src/tests/mod.rs
+expression: code
+---
+Ok(
+    [
+        Function(
+            Function {
+                name: Spanned(
+                    "main",
+                    6..10,
+                ),
+                arguments: [],
+                body: Expr(
+                    Spanned(
+                        Block(
+                            [
+                                Expr(
+                                    Spanned(
+                                        Call {
+                                            callee: Spanned(
+                                                Identifier(
+                                                    "print",
+                                                ),
+                                                19..24,
+                                            ),
+                                            parameters: [
+                                                Spanned(
+                                                    String(
+                                                        "Hello, world!",
+                                                    ),
+                                                    25..39,
+                                                ),
+                                            ],
+                                        },
+                                        25..41,
+                                    ),
+                                ),
+                                Return {
+                                    value: Spanned(
+                                        Number(
+                                            "0",
+                                        ),
+                                        55..56,
+                                    ),
+                                },
+                            ],
+                        ),
+                        13..59,
+                    ),
+                ),
+            },
+        ),
+    ],
+)

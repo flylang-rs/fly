@@ -1,0 +1,49 @@
+---
+source: parser/src/tests/mod.rs
+expression: code
+---
+Ok(
+    [
+        Expr(
+            Spanned(
+                Add(
+                    Spanned(
+                        Mul(
+                            Spanned(
+                                Number(
+                                    "4",
+                                ),
+                                0..1,
+                            ),
+                            Spanned(
+                                Add(
+                                    Spanned(
+                                        Number(
+                                            "2",
+                                        ),
+                                        5..6,
+                                    ),
+                                    Spanned(
+                                        Number(
+                                            "2",
+                                        ),
+                                        9..10,
+                                    ),
+                                ),
+                                4..11,
+                            ),
+                        ),
+                        0..11,
+                    ),
+                    Spanned(
+                        Number(
+                            "2",
+                        ),
+                        14..15,
+                    ),
+                ),
+                0..15,
+            ),
+        ),
+    ],
+)

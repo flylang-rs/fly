@@ -1,0 +1,7 @@
+---
+source: parser/src/tests/mod.rs
+expression: code
+---
+Err(
+    UnexpectedEOF,
+)

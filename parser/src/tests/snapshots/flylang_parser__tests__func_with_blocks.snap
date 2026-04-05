@@ -1,0 +1,63 @@
+---
+source: parser/src/tests/mod.rs
+expression: code
+---
+Ok(
+    [
+        Function(
+            Function {
+                name: Spanned(
+                    "fly",
+                    6..9,
+                ),
+                arguments: [],
+                body: Expr(
+                    Spanned(
+                        Block(
+                            [
+                                Expr(
+                                    Spanned(
+                                        Block(
+                                            [
+                                                Expr(
+                                                    Spanned(
+                                                        Block(
+                                                            [
+                                                                Expr(
+                                                                    Spanned(
+                                                                        Add(
+                                                                            Spanned(
+                                                                                Number(
+                                                                                    "4",
+                                                                                ),
+                                                                                42..43,
+                                                                            ),
+                                                                            Spanned(
+                                                                                Number(
+                                                                                    "9",
+                                                                                ),
+                                                                                46..47,
+                                                                            ),
+                                                                        ),
+                                                                        42..47,
+                                                                    ),
+                                                                ),
+                                                            ],
+                                                        ),
+                                                        28..57,
+                                                    ),
+                                                ),
+                                            ],
+                                        ),
+                                        18..63,
+                                    ),
+                                ),
+                            ],
+                        ),
+                        12..65,
+                    ),
+                ),
+            },
+        ),
+    ],
+)

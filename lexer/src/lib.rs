@@ -4,7 +4,9 @@ pub mod token;
 
 // Import tests when necessary
 #[cfg(test)]
-mod tests;
+pub mod tests;
+
+pub mod test_utils;
 
 use core::{iter::Peekable, ops::Range};
 use std::sync::Arc;

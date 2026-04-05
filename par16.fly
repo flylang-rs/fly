@@ -1,7 +1,0 @@
-ninja = Character()
-
-ninja.first_name = "Lloyd"
-ninja.middle_name = "Montgomery"
-ninja.last_name = "Garmadon"
-
-ninja.gi.color = GiColor.Green

@@ -5,6 +5,10 @@ use std::iter::Peekable;
 
 use crate::{error::ParserError, state::ParserState};
 
+// Import tests when necessary
+#[cfg(test)]
+mod tests;
+
 pub mod ast;
 pub mod error;
 pub mod state;

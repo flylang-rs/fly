@@ -1,4 +1,4 @@
-mod utils;
+use crate::test_utils;
 
 #[test]
 fn test_strings() {
@@ -9,7 +9,7 @@ fn test_strings() {
 "string with \n newline"
 "#;
 
-    let tokens = utils::code_to_tokens(code);
+    let tokens = test_utils::code_to_tokens(code);
 
     insta::assert_debug_snapshot!(tokens.map(|x| x.into_values_with_positions()));
 }
@@ -24,7 +24,7 @@ _12345678
 _
 "#;
 
-    let tokens = utils::code_to_tokens(code);
+    let tokens = test_utils::code_to_tokens(code);
 
     insta::assert_debug_snapshot!(tokens.map(|x| x.into_values_with_positions()));
 }
@@ -53,7 +53,7 @@ a % b
 5 % 2 == 1
 "#;
 
-    let tokens = utils::code_to_tokens(code);
+    let tokens = test_utils::code_to_tokens(code);
 
     insta::assert_debug_snapshot!(tokens.map(|x| x.into_values_with_positions()));
 }
@@ -71,7 +71,7 @@ fn test_numbers() {
 0o12345670
 "#;
 
-    let tokens = utils::code_to_tokens(code);
+    let tokens = test_utils::code_to_tokens(code);
 
     insta::assert_debug_snapshot!(tokens.map(|x| x.into_values_with_positions()));
 }
@@ -84,7 +84,7 @@ func main() {
 }
     "#;
 
-    let tokens = utils::code_to_tokens(code);
+    let tokens = test_utils::code_to_tokens(code);
 
     insta::assert_debug_snapshot!(tokens.map(|x| x.into_values_with_positions()));
 }
@@ -101,7 +101,7 @@ this = code
 some_code = again
 "#;
 
-    let tokens = utils::code_to_tokens(code);
+    let tokens = test_utils::code_to_tokens(code);
 
     insta::assert_debug_snapshot!(tokens.map(|x| x.into_values_with_positions()));
 }

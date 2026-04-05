@@ -1,0 +1,90 @@
+---
+source: parser/src/tests/mod.rs
+expression: code
+---
+Ok(
+    [
+        ModuleUsageDeclaration {
+            path: Spanned(
+                Identifier(
+                    "wings",
+                ),
+                16..21,
+            ),
+        },
+        Expr(
+            Spanned(
+                Call {
+                    callee: Spanned(
+                        PropertyAccess {
+                            origin: Spanned(
+                                Identifier(
+                                    "wings",
+                                ),
+                                38..43,
+                            ),
+                            property: Spanned(
+                                Identifier(
+                                    "flap",
+                                ),
+                                44..48,
+                            ),
+                        },
+                        38..48,
+                    ),
+                    parameters: [],
+                },
+                49..50,
+            ),
+        ),
+        Scope {
+            held_value: Spanned(
+                Assignment {
+                    name: Spanned(
+                        Identifier(
+                            "a",
+                        ),
+                        66..67,
+                    ),
+                    value: Spanned(
+                        String(
+                            "Opa, I have birds too! And mine are better, 'cause they have mics!",
+                        ),
+                        70..137,
+                    ),
+                },
+                65..139,
+            ),
+            body: Expr(
+                Spanned(
+                    Block(
+                        [
+                            Expr(
+                                Spanned(
+                                    Call {
+                                        callee: Spanned(
+                                            Identifier(
+                                                "print",
+                                            ),
+                                            146..151,
+                                        ),
+                                        parameters: [
+                                            Spanned(
+                                                Identifier(
+                                                    "a",
+                                                ),
+                                                152..153,
+                                            ),
+                                        ],
+                                    },
+                                    152..154,
+                                ),
+                            ),
+                        ],
+                    ),
+                    140..156,
+                ),
+            ),
+        },
+    ],
+)

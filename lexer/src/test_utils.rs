@@ -7,7 +7,7 @@ use crate::{
     token::{Token, TokenValue},
 };
 
-pub(super) struct Tester {
+pub struct Tester {
     tokens: Vec<Token>,
 }
 
@@ -18,10 +18,14 @@ impl Tester {
             .map(|token| (token.value, token.address.span))
             .collect()
     }
+
+    pub fn into_tokens(self) -> Vec<Token> {
+        self.tokens
+    }
 }
 
-pub(super) fn code_to_tokens(code: &str) -> Result<Tester, LexerError> {
-    let mut lexer = crate::Lexer::new(Source::new("test.fly".to_owned(), code.to_owned()).into());
+pub fn code_to_tokens(code: &str) -> Result<Tester, LexerError> {
+    let mut lexer = crate::Lexer::new(Source::new("<test>".to_owned(), code.to_owned()).into());
 
     let mut vec = Vec::with_capacity(8);
 

@@ -1,0 +1,49 @@
+---
+source: parser/src/tests/mod.rs
+expression: code
+---
+Ok(
+    [
+        Expr(
+            Spanned(
+                Add(
+                    Spanned(
+                        PropertyAccess {
+                            origin: Spanned(
+                                Identifier(
+                                    "a",
+                                ),
+                                1..2,
+                            ),
+                            property: Spanned(
+                                Identifier(
+                                    "b",
+                                ),
+                                3..4,
+                            ),
+                        },
+                        1..4,
+                    ),
+                    Spanned(
+                        PropertyAccess {
+                            origin: Spanned(
+                                Identifier(
+                                    "c",
+                                ),
+                                7..8,
+                            ),
+                            property: Spanned(
+                                Identifier(
+                                    "d",
+                                ),
+                                9..10,
+                            ),
+                        },
+                        7..10,
+                    ),
+                ),
+                1..10,
+            ),
+        ),
+    ],
+)

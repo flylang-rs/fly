@@ -1,0 +1,53 @@
+---
+source: parser/src/tests/mod.rs
+expression: code
+---
+Ok(
+    [
+        Expr(
+            Spanned(
+                Assignment {
+                    name: Spanned(
+                        Array(
+                            [
+                                Spanned(
+                                    Identifier(
+                                        "a",
+                                    ),
+                                    30..31,
+                                ),
+                                Spanned(
+                                    Identifier(
+                                        "b",
+                                    ),
+                                    33..34,
+                                ),
+                            ],
+                        ),
+                        29..35,
+                    ),
+                    value: Spanned(
+                        Array(
+                            [
+                                Spanned(
+                                    Number(
+                                        "4",
+                                    ),
+                                    39..40,
+                                ),
+                                Spanned(
+                                    Number(
+                                        "9",
+                                    ),
+                                    42..43,
+                                ),
+                            ],
+                        ),
+                        38..44,
+                    ),
+                },
+                29..44,
+            ),
+        ),
+    ],
+)

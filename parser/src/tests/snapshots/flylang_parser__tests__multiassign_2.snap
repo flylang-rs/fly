@@ -1,0 +1,109 @@
+---
+source: parser/src/tests/mod.rs
+expression: code
+---
+Ok(
+    [
+        Expr(
+            Spanned(
+                Assignment {
+                    name: Spanned(
+                        Assignment {
+                            name: Spanned(
+                                Assignment {
+                                    name: Spanned(
+                                        Identifier(
+                                            "a",
+                                        ),
+                                        1..2,
+                                    ),
+                                    value: Spanned(
+                                        Identifier(
+                                            "b",
+                                        ),
+                                        5..6,
+                                    ),
+                                },
+                                1..6,
+                            ),
+                            value: Spanned(
+                                Identifier(
+                                    "c",
+                                ),
+                                9..10,
+                            ),
+                        },
+                        1..10,
+                    ),
+                    value: Spanned(
+                        Number(
+                            "1",
+                        ),
+                        13..14,
+                    ),
+                },
+                1..14,
+            ),
+        ),
+        Expr(
+            Spanned(
+                Assignment {
+                    name: Spanned(
+                        Identifier(
+                            "d",
+                        ),
+                        15..16,
+                    ),
+                    value: Spanned(
+                        Add(
+                            Spanned(
+                                Identifier(
+                                    "a",
+                                ),
+                                19..20,
+                            ),
+                            Spanned(
+                                Identifier(
+                                    "b",
+                                ),
+                                23..24,
+                            ),
+                        ),
+                        19..24,
+                    ),
+                },
+                15..24,
+            ),
+        ),
+        Expr(
+            Spanned(
+                Assignment {
+                    name: Spanned(
+                        Identifier(
+                            "e",
+                        ),
+                        25..26,
+                    ),
+                    value: Spanned(
+                        Add(
+                            Spanned(
+                                Identifier(
+                                    "d",
+                                ),
+                                29..30,
+                            ),
+                            Spanned(
+                                Identifier(
+                                    "a",
+                                ),
+                                33..34,
+                            ),
+                        ),
+                        29..34,
+                    ),
+                },
+                25..34,
+            ),
+        ),
+    ],
+)

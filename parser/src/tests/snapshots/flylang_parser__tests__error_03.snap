@@ -1,0 +1,23 @@
+---
+source: parser/src/tests/mod.rs
+expression: code
+---
+Err(
+    UnexpectedTokenInExpression {
+        token: Token {
+            value: Assign,
+            address: Address {
+                source: Source {
+                    filepath: "<test>",
+                    code: "\n= [4, 3]\n    ",
+                    line_starts: [
+                        0,
+                        1,
+                        10,
+                    ],
+                },
+                span: 1..2,
+            },
+        },
+    },
+)

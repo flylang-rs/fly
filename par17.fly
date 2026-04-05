@@ -1,3 +1,0 @@
-a = A()
-
-d = a.as_b().as_c().into().unwrap()

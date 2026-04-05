@@ -1,0 +1,99 @@
+---
+source: parser/src/tests/mod.rs
+expression: code
+---
+Ok(
+    [
+        Expr(
+            Spanned(
+                Assignment {
+                    name: Spanned(
+                        Identifier(
+                            "a",
+                        ),
+                        1..2,
+                    ),
+                    value: Spanned(
+                        Call {
+                            callee: Spanned(
+                                Identifier(
+                                    "foo",
+                                ),
+                                5..8,
+                            ),
+                            parameters: [
+                                Spanned(
+                                    Number(
+                                        "1",
+                                    ),
+                                    9..10,
+                                ),
+                                Spanned(
+                                    Number(
+                                        "2",
+                                    ),
+                                    12..13,
+                                ),
+                                Spanned(
+                                    Number(
+                                        "3",
+                                    ),
+                                    15..16,
+                                ),
+                                Spanned(
+                                    Number(
+                                        "4",
+                                    ),
+                                    18..19,
+                                ),
+                            ],
+                        },
+                        9..20,
+                    ),
+                },
+                1..20,
+            ),
+        ),
+        Expr(
+            Spanned(
+                Assignment {
+                    name: Spanned(
+                        Identifier(
+                            "b",
+                        ),
+                        21..22,
+                    ),
+                    value: Spanned(
+                        Mul(
+                            Spanned(
+                                Add(
+                                    Spanned(
+                                        Number(
+                                            "2",
+                                        ),
+                                        26..27,
+                                    ),
+                                    Spanned(
+                                        Number(
+                                            "2",
+                                        ),
+                                        30..31,
+                                    ),
+                                ),
+                                25..32,
+                            ),
+                            Spanned(
+                                Number(
+                                    "2",
+                                ),
+                                35..36,
+                            ),
+                        ),
+                        25..36,
+                    ),
+                },
+                21..36,
+            ),
+        ),
+    ],
+)

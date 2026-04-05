@@ -1,0 +1,120 @@
+---
+source: parser/src/tests/mod.rs
+expression: code
+---
+Ok(
+    [
+        Expr(
+            Spanned(
+                Assignment {
+                    name: Spanned(
+                        Identifier(
+                            "a",
+                        ),
+                        1..2,
+                    ),
+                    value: Spanned(
+                        Call {
+                            callee: Spanned(
+                                Identifier(
+                                    "A",
+                                ),
+                                5..6,
+                            ),
+                            parameters: [],
+                        },
+                        7..8,
+                    ),
+                },
+                1..8,
+            ),
+        ),
+        Expr(
+            Spanned(
+                Assignment {
+                    name: Spanned(
+                        Identifier(
+                            "d",
+                        ),
+                        9..10,
+                    ),
+                    value: Spanned(
+                        Call {
+                            callee: Spanned(
+                                PropertyAccess {
+                                    origin: Spanned(
+                                        Call {
+                                            callee: Spanned(
+                                                PropertyAccess {
+                                                    origin: Spanned(
+                                                        Call {
+                                                            callee: Spanned(
+                                                                PropertyAccess {
+                                                                    origin: Spanned(
+                                                                        Call {
+                                                                            callee: Spanned(
+                                                                                PropertyAccess {
+                                                                                    origin: Spanned(
+                                                                                        Identifier(
+                                                                                            "a",
+                                                                                        ),
+                                                                                        13..14,
+                                                                                    ),
+                                                                                    property: Spanned(
+                                                                                        Identifier(
+                                                                                            "as_b",
+                                                                                        ),
+                                                                                        15..19,
+                                                                                    ),
+                                                                                },
+                                                                                13..19,
+                                                                            ),
+                                                                            parameters: [],
+                                                                        },
+                                                                        20..21,
+                                                                    ),
+                                                                    property: Spanned(
+                                                                        Identifier(
+                                                                            "as_c",
+                                                                        ),
+                                                                        22..26,
+                                                                    ),
+                                                                },
+                                                                20..26,
+                                                            ),
+                                                            parameters: [],
+                                                        },
+                                                        27..28,
+                                                    ),
+                                                    property: Spanned(
+                                                        Identifier(
+                                                            "into",
+                                                        ),
+                                                        29..33,
+                                                    ),
+                                                },
+                                                27..33,
+                                            ),
+                                            parameters: [],
+                                        },
+                                        34..35,
+                                    ),
+                                    property: Spanned(
+                                        Identifier(
+                                            "unwrap",
+                                        ),
+                                        36..42,
+                                    ),
+                                },
+                                34..42,
+                            ),
+                            parameters: [],
+                        },
+                        43..44,
+                    ),
+                },
+                9..44,
+            ),
+        ),
+    ],
+)

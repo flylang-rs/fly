@@ -1,3 +1,0 @@
-# Test multiple assignment
-
-[a, b] = [4, 9]
