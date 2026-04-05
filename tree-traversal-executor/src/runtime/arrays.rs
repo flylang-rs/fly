@@ -29,7 +29,7 @@ fn array_to_string(
 
     for (idx, val) in container.iter().enumerate() {
         let ty = types::value_to_internal_type(val).unwrap();
-        let method_name = format!("{ty}::to_string");
+        let method_name = format!("{ty}::to_displayable");
 
         debug!("Method name: {method_name}");
 
