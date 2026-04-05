@@ -6,3 +6,4 @@ print(myarray[3])
 myarray.push(myarray, 4)
 
 print(myarray)
+print("Len: ", myarray.len())
