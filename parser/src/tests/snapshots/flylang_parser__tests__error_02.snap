@@ -3,5 +3,18 @@ source: parser/src/tests/mod.rs
 expression: code
 ---
 Err(
-    UnexpectedEOF,
+    UnexpectedEOF(
+        Address {
+            source: Source {
+                filepath: "<test>",
+                code: "\nabc = 3 +\n    ",
+                line_starts: [
+                    0,
+                    1,
+                    11,
+                ],
+            },
+            span: 10..11,
+        },
+    ),
 )
