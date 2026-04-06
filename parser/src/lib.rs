@@ -1,5 +1,4 @@
 use flylang_common::{Address, spanned::Spanned};
-use flylang_diagnostics::additions::Note;
 use flylang_lexer::token::{Token, TokenValue};
 use std::iter::Peekable;
 

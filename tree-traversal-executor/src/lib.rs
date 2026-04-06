@@ -261,7 +261,7 @@ impl Interpreter {
 
                 Some(ControlFlow::Nothing)
             }
-            Statement::Scope { held_value, body } => todo!(),
+            Statement::Scope { .. } => todo!(),
             Statement::Return { value } => {
                 let cf = self.evaluate_expression(realm, value, false);
 
@@ -868,7 +868,7 @@ impl Interpreter {
 
                 arr.lock().unwrap()[i as usize] = value;
             }
-            LValue::Property { object, name } => {
+            LValue::Property { .. } => {
                 todo!("Property assignment when I add objects")
             }
         }

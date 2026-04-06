@@ -231,6 +231,7 @@ dependencies = [
  "flylang-common",
  "flylang-diagnostics",
  "flylang-parser",
+ "log",
 ]
 
 [[package]]

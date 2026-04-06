@@ -1,7 +1,5 @@
 use std::sync::{Arc, Mutex};
 
-use log::debug;
-
 use crate::{
     Interpreter, SharedRealm, control_flow::ControlFlow, object::Value, runtime::RustInteropFn,
     types,

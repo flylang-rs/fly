@@ -7,3 +7,5 @@ edition = "2024"
 flylang-common = { path = "../common" }
 flylang-parser = { path = "../parser" }
 flylang-diagnostics = { path = "../diagnostics" }
+
+log = "0.4.29"

@@ -3,6 +3,7 @@ use flylang_diagnostics::{
     additions::{Help, Note, TextEdit},
 };
 use flylang_parser::ast::{ExprKind, Expression, Function, Statement};
+use log::debug;
 
 pub struct Analyzer<'a> {
     ast: &'a [Statement],
@@ -154,8 +155,7 @@ impl<'a> Analyzer<'a> {
                 }
             }
             kind => {
-                // println!("Expression type: {kind:#?}");
-                
+                debug!("TODO: Analyze that expression: {kind:#?}");
             }
         }
     }
