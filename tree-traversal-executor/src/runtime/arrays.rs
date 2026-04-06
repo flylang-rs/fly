@@ -82,7 +82,7 @@ fn array_to_string(interpreter: &Interpreter, realm: SharedRealm, args: &[Value]
                     false
                 }
 
-				// TODO: Check, make tests for that case and fix.
+                // TODO: Check, make tests for that case and fix.
                 if check_array(&array, Arc::clone(arr)) {
                     let elem_repr = if idx == length - 1 {
                         "[...]"
@@ -98,20 +98,14 @@ fn array_to_string(interpreter: &Interpreter, realm: SharedRealm, args: &[Value]
 
         let ty = types::value_to_internal_type(val).unwrap();
         let method_name = format!("{ty}::to_displayable");
-
-        debug!("Method name: {method_name}");
-
         let method = realm.read().unwrap().lookup(&method_name);
 
         if let Some(method) = method {
-            let string_value = interpreter.call_func(Arc::clone(&realm), method, &[val.clone()]);
-
-            let ControlFlow::Value(Value::String(display_value)) = string_value else {
-                panic!(
-                    "Failed getting displayable representation for type `{}`!",
-                    ty
-                );
-            };
+            let display_value = interpreter
+                .call_func(Arc::clone(&realm), method, &[val.clone()])
+                .as_value()
+                .and_then(|x| x.as_arc_string())
+                .unwrap_or_else(|| panic!("Failed getting displayable representation for type `{}`!", ty));
 
             let elem_repr = if idx == length - 1 {
                 format!("{}", display_value)

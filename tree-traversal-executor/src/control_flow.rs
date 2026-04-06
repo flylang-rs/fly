@@ -8,3 +8,14 @@ pub enum ControlFlow {
     Break,         // for loops
     Continue,      // for loops
 }
+
+impl ControlFlow {
+	// Complex values are backed by Arc, making clones actually cheap
+	pub fn as_value(&self) -> Option<Value> {
+		if let ControlFlow::Value(val) = self {
+			Some(val.clone())
+		} else {
+			None
+		}
+	}
+}

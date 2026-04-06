@@ -14,6 +14,16 @@ pub enum Value {
     Native(RustInteropFn),
 }
 
+impl Value {
+	pub fn as_arc_string(&self) -> Option<Arc<String>> {
+		if let Value::String(s) = self {
+			Some(Arc::clone(s))
+		} else {
+			None
+		}
+	}
+}
+
 #[derive(Debug, Clone)]
 pub enum LValue {
     Identifier(String),
