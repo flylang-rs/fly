@@ -78,6 +78,10 @@ impl Interpreter {
         }
     }
 
+    pub fn world(&self) -> &SharedRealm {
+        &self.world
+    }
+
     /// Entry point of the interpreter, it accepts a list of statements given by the parser.
     /// Since it accepts any kind of statement including expressions, it will return a value.
     pub fn execute(&self, ast: Vec<Statement>) -> ControlFlow {
@@ -648,6 +652,8 @@ impl Interpreter {
     // Performs a function call.
     // Supported both native and regular functions.
     fn call_func(&self, realm: SharedRealm, func: Value, args: &[Value]) -> ControlFlow {
+        debug!("Call function with parameters {args:?}");
+
         if let Value::Native(native) = func {
             let new_realm = Realm::dive(realm);
 

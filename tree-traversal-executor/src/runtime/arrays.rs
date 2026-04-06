@@ -1,10 +1,10 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use log::debug;
 
 use crate::{
-    control_flow::ControlFlow, object::Value, runtime::RustInteropFn, types, Interpreter,
-    SharedRealm,
+    Interpreter, SharedRealm, control_flow::ControlFlow, object::Value, runtime::RustInteropFn,
+    types,
 };
 
 pub static EXPORT: &[(&str, RustInteropFn)] = &[
@@ -33,98 +33,76 @@ pub fn array_len(_interp: &Interpreter, _realm: SharedRealm, args: &[Value]) -> 
     ControlFlow::Value(Value::Integer(arr.lock().unwrap().len() as i128))
 }
 
-fn array_to_string(interpreter: &Interpreter, realm: SharedRealm, args: &[Value]) -> ControlFlow {
-    debug!("Called with realm: {:#?}", realm.read().unwrap().values());
+fn render_value(
+    interpreter: &Interpreter,
+    realm: &SharedRealm,
+    val: &Value,
+    seen: &mut Vec<*const Mutex<Vec<Value>>>,
+) -> String {
+    if let Value::Array(arr) = val {
+        return render_array(interpreter, realm, arr, seen);
+    }
 
-    let Value::Array(array) = &args[0] else {
-        panic!("It's not an array, it's {:?}", args[0]);
-    };
-
-    let mut repr = String::from("[");
-
-    let bind = array.lock();
-    let container = bind.as_deref().unwrap();
-
-    let length = container.len();
-
-    for (idx, val) in container.iter().enumerate() {
-        // An important moment: if we have an array in array
-        if let Value::Array(arr) = val {
-            // And that array point to source array
-            if Arc::ptr_eq(arr, array) {
-                // It's a circiular reference, it will infinitely scan itself.
-                // To avoid this, replace it with ellipsis like Python does.
-
-                let elem_repr = if idx == length - 1 {
-                    "[...]"
-                } else {
-                    "[...], "
-                };
-
-                repr.push_str(&elem_repr);
-                continue;
-            } else {
-                type ArrayValue = Arc<std::sync::Mutex<Vec<Value>>>;
-
-                fn check_array(arr1: &ArrayValue, arr2: ArrayValue) -> bool {
-                    for i in &*arr2.lock().unwrap() {
-                        if let Value::Array(a) = i {
-                            if Arc::ptr_eq(&arr1, a) {
-                                return true;
-                            }
-
-                            if check_array(arr1, Arc::clone(a)) {
-                                return true;
-                            }
-                        }
-                    }
-
-                    false
-                }
-
-                // TODO: Check, make tests for that case and fix.
-                if check_array(&array, Arc::clone(arr)) {
-                    let elem_repr = if idx == length - 1 {
-                        "[...]"
-                    } else {
-                        "[...], "
-                    };
-
-                    repr.push_str(&elem_repr);
-                    continue;
-                }
-            }
-        }
-
-        let ty = types::value_to_internal_type(val).unwrap();
-        let method_name = format!("{ty}::to_displayable");
-        let method = realm.read().unwrap().lookup(&method_name);
-
-        if let Some(method) = method {
-            let display_value = interpreter
-                .call_func(Arc::clone(&realm), method, &[val.clone()])
-                .as_value()
-                .and_then(|x| x.as_arc_string())
-                .unwrap_or_else(|| panic!("Failed getting displayable representation for type `{}`!", ty));
-
-            let elem_repr = if idx == length - 1 {
-                format!("{}", display_value)
-            } else {
-                format!("{}, ", display_value)
-            };
-
-            repr.push_str(&elem_repr);
-        } else {
+    let ty = types::value_to_internal_type(val).unwrap();
+    let method_name = format!("{ty}::to_displayable");
+    let method = realm
+        .read()
+        .unwrap()
+        .lookup(&method_name)
+        .unwrap_or_else(|| {
             panic!(
                 "Method `to_displayable` is not implemented for type: {}",
                 ty
-            );
-        }
+            )
+        });
+
+    interpreter
+        .call_func(Arc::clone(realm), method, &[val.clone()])
+        .as_value()
+        .and_then(|x| x.as_arc_string())
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| panic!("Failed getting displayable for `{}`", ty))
+}
+
+fn render_array(
+    interpreter: &Interpreter,
+    realm: &SharedRealm,
+    array: &Arc<Mutex<Vec<Value>>>,
+    seen: &mut Vec<*const Mutex<Vec<Value>>>,
+) -> String {
+    let ptr = Arc::as_ptr(array);
+
+    if seen.contains(&ptr) {
+        return "[...]".to_string();
     }
 
-    repr.push(']');
+    seen.push(ptr);
 
-    ControlFlow::Value(Value::String(repr.into()))
+    let parts: Vec<String> = {  // put that into block so guard will be dropped on its end.
+        let guard = array.lock().unwrap();
+
+        guard
+            .iter()
+            .map(|val| render_value(interpreter, realm, val, seen))
+            .collect()
+    };
+
+    seen.pop();
+
+    format!("[{}]", parts.join(", "))
+}
+
+fn array_to_string(interpreter: &Interpreter, realm: SharedRealm, args: &[Value]) -> ControlFlow {
+    let Value::Array(array) = &args[0] else {
+        panic!("Expected array, got {:?}", args[0]);
+    };
+
+    // It's like a stack - with each recursion push value's address onto it.
+    // If it encounters value with the same address, it's a cyclic reference, show the "[...]", and it's done.
+    let mut seen = Vec::new();
+    let result = render_array(interpreter, &realm, array, &mut seen);
+
+    ControlFlow::Value(Value::String(result.into()))
 }
 
 fn array_to_displayable(
