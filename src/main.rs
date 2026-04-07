@@ -26,11 +26,37 @@ fn run_file(source: Source) {
     println!("Program finished with result: {result:?}");
 }
 
+fn show_help() {
+    let prog_name = std::env::args().next().unwrap();
+
+    println!("The Fly programming language.");
+    println!("Version: {}", env!("CARGO_PKG_VERSION"));
+    println!();
+
+    println!("Usage: {prog_name} [COMMAND] [OPTIONS] <script.fly>...");
+    println!();
+
+    println!("Options:");
+    println!("  --repl\t\tLaunch Fly REPL");
+    println!("  -h, --help\t\tShow this help");
+    println!();
+
+    println!("Commands:");
+    println!("  To be added soon.");
+}
+
 fn main() -> std::io::Result<()> {
     env_logger::builder()
         .default_format()
         .format_timestamp_millis()
         .init();
+
+    // TODO: Use `clap` crate for CLI args parsing.
+    if std::env::args().any(|x| x == "-h" || x == "--help") {
+        show_help();
+
+        std::process::exit(0);
+    }
 
     if std::env::args().any(|x| x == "--repl") {
         repl::REPL::new().enter();
@@ -41,7 +67,10 @@ fn main() -> std::io::Result<()> {
     let filepath = if let Some(arg) = std::env::args().nth(1) {
         arg
     } else {
-        eprintln!("No file specified!");
+        flylang_diagnostics::report_simple_error("no file specified!");
+        eprintln!();
+
+        show_help();
 
         std::process::exit(1);
     };

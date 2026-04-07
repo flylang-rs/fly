@@ -182,14 +182,25 @@ impl Diagnostics {
 
         eprintln!("{diag}");
     }
+}
 
-    pub fn note(&self, message: &str) {
-        eprintln!(
-            "`- {}: {}",
-            "note"
-                .if_supports_color(Stream::Stderr, |x| x.blue())
-                .if_supports_color(Stream::Stderr, |x| x.bold()),
-            message,
-        );
-    }
+pub fn report_simple_note(message: &str) {
+    eprintln!(
+        "`- {}: {}",
+        "note"
+            .if_supports_color(Stream::Stderr, |x| x.blue())
+            .if_supports_color(Stream::Stderr, |x| x.bold()),
+        message,
+    );
+}
+
+pub fn report_simple_error(message: &str) {
+    eprintln!(
+        "{}: {}",
+        "error"
+            .if_supports_color(Stream::Stderr, |x| x.red())
+            .if_supports_color(Stream::Stderr, |x| x.bold()),
+        message
+            .if_supports_color(Stream::Stderr, |x| x.bold()),
+    );
 }

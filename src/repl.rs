@@ -100,6 +100,7 @@ impl REPL {
 
     pub fn enter(&mut self) {
         println!("Fly REPL (version: {})", env!("CARGO_PKG_VERSION"));
+        println!("Hit Ctrl-D to exit.");
         println!();
 
         loop {

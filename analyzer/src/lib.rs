@@ -189,7 +189,7 @@ pub fn analyze<'a>(ast: &'a [Statement]) -> Analyzer<'a> {
             String::new()
         };
 
-        flylang_diagnostics::Diagnostics{}.note(&format!("analyzer finished with {}", summary));
+        flylang_diagnostics::report_simple_note(&format!("analyzer finished with {}", summary));
     }
 
     analyzer
