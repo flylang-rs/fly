@@ -1,4 +1,4 @@
-![](static/logo.png)
+![Flylang logo](static/logo.png)
 
 # Flylang 🪽
 
