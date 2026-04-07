@@ -122,8 +122,6 @@ impl Parser {
 
         let name = name.into_spanned_identifier().unwrap();
 
-        eprintln!("Name: {name:?}");
-
         self.expect(TokenValue::OpenParen);
 
         let (arguments, _) = self.parse_argument_list()?;
