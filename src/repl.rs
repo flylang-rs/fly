@@ -10,7 +10,7 @@ use flylang_common::source::Source;
 use flylang_diagnostics::{error::DiagnosticsReport};
 use flylang_tte::{Interpreter, control_flow::ControlFlow, object::Value};
 
-use crate::common::LoadingResult;
+use crate::common::{LoadingError, LoadingResult};
 
 pub struct REPL {
     interpreter: Interpreter,
@@ -94,8 +94,9 @@ impl REPL {
 
     pub fn execute(&mut self, line: String) -> LoadingResult<ControlFlow> {
         let ast = crate::common::parse_source(Source::new(String::from("<REPL>"), line))?;
+        let result = self.interpreter.execute(ast).map_err(|e| LoadingError::InterpreterError(e))?;
 
-        Ok(self.interpreter.execute(ast))
+        Ok(result)
     }
 
     pub fn enter(&mut self) {
@@ -121,7 +122,14 @@ impl REPL {
 
                             let methodname = format!("{ty}::to_displayable");
 
-                            let stringres = self.interpreter.call_func_extern(&methodname, &[val]).unwrap();
+                            let stringres = match self.interpreter.call_func_extern(&methodname, &[val]) {
+                                Ok(cf) => cf.unwrap(),
+                                Err(e) => {
+                                    eprintln!("{}", e.render());
+
+                                    continue
+                                }
+                            };
 
                             if let ControlFlow::Value(Value::String(v)) = stringres {
                                 println!("      = {v}");

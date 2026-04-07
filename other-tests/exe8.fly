@@ -1,1 +1,3 @@
-"string" + 1
+# Should error.
+
+print("string" + 1)

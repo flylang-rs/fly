@@ -11,12 +11,14 @@ use log::debug;
 
 use crate::{
     control_flow::ControlFlow,
+    error::InterpreterError,
     function::Function,
     object::{LValue, Value},
     realm::Realm,
 };
 
 pub mod control_flow;
+pub mod error;
 pub mod function;
 pub mod object;
 pub mod parser_glue;
@@ -25,6 +27,7 @@ pub mod runtime;
 pub mod types;
 
 pub type SharedRealm = Arc<RwLock<Realm>>;
+pub type InterpreterResult<T> = Result<T, InterpreterError>;
 
 enum ModuleState {
     Loading,
@@ -84,12 +87,12 @@ impl Interpreter {
 
     /// Entry point of the interpreter, it accepts a list of statements given by the parser.
     /// Since it accepts any kind of statement including expressions, it will return a value.
-    pub fn execute(&self, ast: Vec<Statement>) -> ControlFlow {
+    pub fn execute(&self, ast: Vec<Statement>) -> InterpreterResult<ControlFlow> {
         self.exec_inner(Arc::clone(&self.world), &ast, true)
     }
 
     /// Script version of `Interpreter::execute`. Doesn't break when value is returned.
-    pub fn execute_script(&self, ast: Vec<Statement>) -> ControlFlow {
+    pub fn execute_script(&self, ast: Vec<Statement>) -> InterpreterResult<ControlFlow> {
         self.exec_inner(Arc::clone(&self.world), &ast, false)
     }
 
@@ -99,18 +102,18 @@ impl Interpreter {
         realm: SharedRealm,
         ast: &[Statement],
         return_on_value: bool,
-    ) -> ControlFlow {
+    ) -> InterpreterResult<ControlFlow> {
         for i in ast {
-            let stmt = self.exec_single_statement(Arc::clone(&realm), i);
+            let stmt = self.exec_single_statement(Arc::clone(&realm), i)?;
 
             debug!("Got: {i:?} => {stmt:?}");
 
             match stmt {
-                Some(cf @ ControlFlow::Return(_)) => return cf,
-                Some(cf @ ControlFlow::Break) => return cf,
-                Some(cf @ ControlFlow::Continue) => return cf,
+                Some(cf @ ControlFlow::Return(_)) => return Ok(cf),
+                Some(cf @ ControlFlow::Break) => return Ok(cf),
+                Some(cf @ ControlFlow::Continue) => return Ok(cf),
 
-                Some(cf @ ControlFlow::Value(_)) if return_on_value => return cf,
+                Some(cf @ ControlFlow::Value(_)) if return_on_value => return Ok(cf),
 
                 Some(ControlFlow::Value(_)) => continue,
                 Some(ControlFlow::Nothing) => continue,
@@ -120,7 +123,7 @@ impl Interpreter {
 
         debug!("Nothing returned");
 
-        ControlFlow::Nothing
+        Ok(ControlFlow::Nothing)
     }
 
     fn import_module(&self, realm: SharedRealm, path_segments: Vec<String>) {
@@ -188,7 +191,7 @@ impl Interpreter {
         &self,
         realm: SharedRealm,
         statement: &Statement,
-    ) -> Option<ControlFlow> {
+    ) -> InterpreterResult<Option<ControlFlow>> {
         match statement {
             Statement::Function(function) => {
                 let name = &function.name.value;
@@ -209,13 +212,13 @@ impl Interpreter {
                     .values_mut()
                     .insert(name.clone(), value);
 
-                None
+                Ok(None)
             }
             Statement::If(stmt) => {
                 // if x < n { ...
                 //       ^^^^^
                 // Values are accessed outside the `if` body's scope, so passing `realm` is OK.
-                let cond = self.evaluate_expression(Arc::clone(&realm), &stmt.condition, false);
+                let cond = self.evaluate_expression(Arc::clone(&realm), &stmt.condition, false)?;
 
                 // Condition must be a value.
                 let ControlFlow::Value(cond) = cond else {
@@ -239,7 +242,7 @@ impl Interpreter {
                         // let inner_realm = Arc::new(RwLock::new(Realm::dive(Arc::clone(&realm))));
 
                         // return Some(self.exec_inner(inner_realm, &bk));
-                        return Some(self.exec_inner(Arc::clone(&realm), &bk, false));
+                        return Ok(Some(self.exec_inner(Arc::clone(&realm), &bk, false)?));
                     } else {
                         panic!("Expected a block!")
                     }
@@ -252,18 +255,18 @@ impl Interpreter {
                         // self.exec_single_statement(inner_realm, &else_body);
                         self.exec_single_statement(realm, &else_body)
                     } else {
-                        Some(ControlFlow::Nothing)
+                        Ok(Some(ControlFlow::Nothing))
                     }
                 }
             }
             Statement::ModuleUsageDeclaration { path } => {
                 self.import_module(realm, self.path_segments_to_vec(path));
 
-                Some(ControlFlow::Nothing)
+                Ok(Some(ControlFlow::Nothing))
             }
             Statement::Scope { .. } => todo!(),
             Statement::Return { value } => {
-                let cf = self.evaluate_expression(realm, value, false);
+                let cf = self.evaluate_expression(realm, value, false)?;
 
                 debug!("Return: {cf:?}");
 
@@ -271,16 +274,16 @@ impl Interpreter {
                     panic!("Expected a value in return statement, got: {cf:?}");
                 };
 
-                Some(ControlFlow::Return(v))
+                Ok(Some(ControlFlow::Return(v)))
             }
             Statement::Expr(expr) => {
                 debug!("Evaluating: {expr:?}");
 
-                let expr = self.evaluate_expression(realm, expr, false);
+                let expr = self.evaluate_expression(realm, expr, false)?;
 
                 debug!("Expression: {expr:?}");
 
-                Some(expr)
+                Ok(Some(expr))
             }
             Statement::While(while_loop) => {
                 let While { condition, body } = while_loop;
@@ -289,7 +292,7 @@ impl Interpreter {
                     // while x < n { ...
                     //       ^^^^^
                     // Values are accessed outside the while body's scope, so passing `realm` is OK.
-                    let cond = self.evaluate_expression(Arc::clone(&realm), condition, false);
+                    let cond = self.evaluate_expression(Arc::clone(&realm), condition, false)?;
 
                     // Condition must be a value.
                     let ControlFlow::Value(cond) = cond else {
@@ -316,10 +319,10 @@ impl Interpreter {
                     };
 
                     if let ExprKind::Block(bk) = &block_value.value {
-                        let block_result = self.exec_inner(Arc::clone(&realm), &bk, false);
+                        let block_result = self.exec_inner(Arc::clone(&realm), &bk, false)?;
 
                         match block_result {
-                            ControlFlow::Return(_) => return Some(block_result),
+                            ControlFlow::Return(_) => return Ok(Some(block_result)),
                             ControlFlow::Break => break,
                             ControlFlow::Continue => continue,
                             _ => (),
@@ -329,10 +332,10 @@ impl Interpreter {
                     }
                 }
 
-                Some(ControlFlow::Nothing)
+                Ok(Some(ControlFlow::Nothing))
             }
-            Statement::Continue => Some(ControlFlow::Continue),
-            Statement::Break => Some(ControlFlow::Break),
+            Statement::Continue => Ok(Some(ControlFlow::Continue)),
+            Statement::Break => Ok(Some(ControlFlow::Break)),
             st => todo!("Unexpected statement: {:?}", st),
         }
     }
@@ -353,21 +356,24 @@ impl Interpreter {
         realm: SharedRealm,
         expr: &Expression,
         is_subexpression: bool,
-    ) -> ControlFlow {
+    ) -> InterpreterResult<ControlFlow> {
         let Spanned { value, address } = expr;
 
         debug!("Eval: {expr:?}");
 
-        match value {
-            ExprKind::Add(lhs, rhs) => {
-                ControlFlow::Value(self.binary_op_helper(realm, "+", lhs, rhs).unwrap())
-            }
-            ExprKind::Sub(lhs, rhs) => {
-                ControlFlow::Value(self.binary_op_helper(realm, "-", lhs, rhs).unwrap())
-            }
-            ExprKind::Mul(lhs, rhs) => {
-                ControlFlow::Value(self.binary_op_helper(realm, "*", lhs, rhs).unwrap())
-            }
+        let result = match value {
+            ExprKind::Add(lhs, rhs) => ControlFlow::Value(
+                self.binary_op_helper(realm, "+", lhs, rhs)?
+                    .unwrap(),
+            ),
+            ExprKind::Sub(lhs, rhs) => ControlFlow::Value(
+                self.binary_op_helper(realm, "-", lhs, rhs)?
+                    .unwrap(),
+            ),
+            ExprKind::Mul(lhs, rhs) => ControlFlow::Value(
+                self.binary_op_helper(realm, "*", lhs, rhs)?
+                    .unwrap(),
+            ),
             ExprKind::Div(lhs, rhs, division_kind) => {
                 let op = match division_kind {
                     DivisionKind::Neutral => "/",
@@ -375,49 +381,64 @@ impl Interpreter {
                     DivisionKind::RoundingDown => "/-",
                 };
 
-                ControlFlow::Value(self.binary_op_helper(realm, op, lhs, rhs).unwrap())
+                ControlFlow::Value(
+                    self.binary_op_helper(realm, op, lhs, rhs)?
+                        .unwrap(),
+                )
             }
-            ExprKind::Mod(lhs, rhs) => {
-                ControlFlow::Value(self.binary_op_helper(realm, "%", lhs, rhs).unwrap())
-            }
-            ExprKind::And(lhs, rhs) => {
-                ControlFlow::Value(self.binary_op_helper(realm, "&&", lhs, rhs).unwrap())
-            }
-            ExprKind::Or(lhs, rhs) => {
-                ControlFlow::Value(self.binary_op_helper(realm, "||", lhs, rhs).unwrap())
-            }
-            ExprKind::BitAnd(lhs, rhs) => {
-                ControlFlow::Value(self.binary_op_helper(realm, "&", lhs, rhs).unwrap())
-            }
-            ExprKind::BitOr(lhs, rhs) => {
-                ControlFlow::Value(self.binary_op_helper(realm, "|", lhs, rhs).unwrap())
-            }
-            ExprKind::BitShiftLeft(lhs, rhs) => {
-                ControlFlow::Value(self.binary_op_helper(realm, "<<", lhs, rhs).unwrap())
-            }
-            ExprKind::BitShiftRight(lhs, rhs) => {
-                ControlFlow::Value(self.binary_op_helper(realm, ">>", lhs, rhs).unwrap())
-            }
-            ExprKind::Equals(lhs, rhs) => {
-                ControlFlow::Value(self.binary_op_helper(realm, "==", lhs, rhs).unwrap())
-            }
-            ExprKind::Greater(lhs, rhs) => {
-                ControlFlow::Value(self.binary_op_helper(realm, ">", lhs, rhs).unwrap())
-            }
-            ExprKind::GreaterOrEquals(lhs, rhs) => {
-                ControlFlow::Value(self.binary_op_helper(realm, ">=", lhs, rhs).unwrap())
-            }
-            ExprKind::Less(lhs, rhs) => {
-                ControlFlow::Value(self.binary_op_helper(realm, "<", lhs, rhs).unwrap())
-            }
-            ExprKind::LessOrEquals(lhs, rhs) => {
-                ControlFlow::Value(self.binary_op_helper(realm, "<=", lhs, rhs).unwrap())
-            }
+            ExprKind::Mod(lhs, rhs) => ControlFlow::Value(
+                self.binary_op_helper(realm, "%", lhs, rhs)?
+                    .unwrap(),
+            ),
+            ExprKind::And(lhs, rhs) => ControlFlow::Value(
+                self.binary_op_helper(realm, "&&", lhs, rhs)?
+                    .unwrap(),
+            ),
+            ExprKind::Or(lhs, rhs) => ControlFlow::Value(
+                self.binary_op_helper(realm, "||", lhs, rhs)?
+                    .unwrap(),
+            ),
+            ExprKind::BitAnd(lhs, rhs) => ControlFlow::Value(
+                self.binary_op_helper(realm, "&", lhs, rhs)?
+                    .unwrap(),
+            ),
+            ExprKind::BitOr(lhs, rhs) => ControlFlow::Value(
+                self.binary_op_helper(realm, "|", lhs, rhs)?
+                    .unwrap(),
+            ),
+            ExprKind::BitShiftLeft(lhs, rhs) => ControlFlow::Value(
+                self.binary_op_helper(realm, "<<", lhs, rhs)?
+                    .unwrap(),
+            ),
+            ExprKind::BitShiftRight(lhs, rhs) => ControlFlow::Value(
+                self.binary_op_helper(realm, ">>", lhs, rhs)?
+                    .unwrap(),
+            ),
+            ExprKind::Equals(lhs, rhs) => ControlFlow::Value(
+                self.binary_op_helper(realm, "==", lhs, rhs)?
+                    .unwrap(),
+            ),
+            ExprKind::Greater(lhs, rhs) => ControlFlow::Value(
+                self.binary_op_helper(realm, ">", lhs, rhs)?
+                    .unwrap(),
+            ),
+            ExprKind::GreaterOrEquals(lhs, rhs) => ControlFlow::Value(
+                self.binary_op_helper(realm, ">=", lhs, rhs)?
+                    .unwrap(),
+            ),
+            ExprKind::Less(lhs, rhs) => ControlFlow::Value(
+                self.binary_op_helper(realm, "<", lhs, rhs)?
+                    .unwrap(),
+            ),
+            ExprKind::LessOrEquals(lhs, rhs) => ControlFlow::Value(
+                self.binary_op_helper(realm, "<=", lhs, rhs)?
+                    .unwrap(),
+            ),
             ExprKind::Not(val) => {
-                ControlFlow::Value(self.unary_op_helper(realm, "!", val).unwrap())
+                ControlFlow::Value(self.unary_op_helper(realm, "!", val)?.unwrap())
             }
             ExprKind::Neg(val) => {
-                ControlFlow::Value(self.unary_op_helper(realm, "-", val).unwrap())
+                ControlFlow::Value(self.unary_op_helper(realm, "-", val)?.unwrap())
             }
             ExprKind::Identifier(id) => {
                 debug!("Looking for {id:#?} from realm module ...");
@@ -425,15 +446,10 @@ impl Interpreter {
                 let value = realm.read().unwrap().lookup(id.as_str());
 
                 if value.is_none() {
-                    flylang_diagnostics::Diagnostics {}.error(
-                        &format!("Name `{id}` is not defined."),
-                        &address,
-                        &[
-                            Note::new(address.clone(), "here")
-                        ],
-                        &[],
-                    );
-                    std::process::exit(1);
+                    return Err(InterpreterError::NameNotDefined {
+                        name: id.clone(),
+                        address: address.clone(),
+                    });
                 }
 
                 ControlFlow::Value(value.unwrap())
@@ -452,7 +468,7 @@ impl Interpreter {
             ExprKind::String(st) => ControlFlow::Value(Value::String(Arc::new(st.clone()))),
             ExprKind::Block(ast) => {
                 let inner_realm = Arc::new(RwLock::new(Realm::dive(Arc::clone(&realm))));
-                let block_result = self.exec_inner(inner_realm, ast, false);
+                let block_result = self.exec_inner(inner_realm, ast, false)?;
 
                 match block_result {
                     ControlFlow::Return(_) => block_result,
@@ -462,25 +478,28 @@ impl Interpreter {
                 }
             }
             ExprKind::Array(exprs) => {
-                let values: Vec<Value> = exprs
-                    .iter()
-                    .map(|x| {
-                        let expr = self.evaluate_expression(Arc::clone(&realm), x, false);
+                let mut values_iter = exprs.iter().map(|x| {
+                    let expr = self.evaluate_expression(Arc::clone(&realm), x, false)?;
 
-                        let ControlFlow::Value(value) = expr else {
-                            panic!("Expected value, got: {expr:?}");
-                        };
+                    let ControlFlow::Value(value) = expr else {
+                        panic!("Expected value, got: {expr:?}");
+                    };
 
-                        value
-                    })
-                    .collect();
+                    Ok(value)
+                });
+
+                let mut values: Vec<Value> = vec![];
+
+                for i in values_iter {
+                    values.push(i?);
+                }
 
                 ControlFlow::Value(Value::Array(Arc::new(Mutex::new(values))))
             }
             ExprKind::Call { callee, parameters } => {
                 // Special case - method call by using property access.
                 if let ExprKind::PropertyAccess { origin, property } = &callee.value {
-                    let obj = self.evaluate_expression(Arc::clone(&realm), origin, true);
+                    let obj = self.evaluate_expression(Arc::clone(&realm), origin, true)?;
                     let ControlFlow::Value(obj) = obj else {
                         panic!()
                     };
@@ -498,7 +517,7 @@ impl Interpreter {
                     let mut args = vec![obj]; // receiver (self) is first argument
                     for p in parameters {
                         let ControlFlow::Value(v) =
-                            self.evaluate_expression(Arc::clone(&realm), p, true)
+                            self.evaluate_expression(Arc::clone(&realm), p, true)?
                         else {
                             panic!()
                         };
@@ -508,32 +527,35 @@ impl Interpreter {
                     return self.call_func(realm, method, &args);
                 }
 
-                let func = self.evaluate_expression(Arc::clone(&realm), callee, true);
+                let func = self.evaluate_expression(Arc::clone(&realm), callee, true)?;
 
                 let ControlFlow::Value(func) = func else {
                     panic!("Expected a function as value, got: {func:?}");
                 };
 
-                let args: Vec<Value> = parameters
-                    .iter()
-                    .map(|x| {
-                        let expr = self.evaluate_expression(Arc::clone(&realm), x, true);
+                let mut args_iter = parameters.iter().map(|x| {
+                    let expr = self.evaluate_expression(Arc::clone(&realm), x, true)?;
 
-                        if let ControlFlow::Value(va) = expr {
-                            va
-                        } else {
-                            panic!("Expected value, got: {expr:?}");
-                        }
-                    })
-                    .collect();
+                    if let ControlFlow::Value(va) = expr {
+                        Ok(va)
+                    } else {
+                        panic!("Expected value, got: {expr:?}");
+                    }
+                });
+
+                let mut args = vec![];
+
+                for i in args_iter {
+                    args.push(i?);
+                }
 
                 debug!("Calling func with args: {:?}", args);
 
-                self.call_func(realm, func, &args)
+                self.call_func(realm, func, &args)?
             }
             ExprKind::Assignment { name, value } => {
-                let target = self.resolve_lvalue(Arc::clone(&realm), name);
-                let rhs = self.evaluate_expression(Arc::clone(&realm), value, true);
+                let target = self.resolve_lvalue(Arc::clone(&realm), name)?;
+                let rhs = self.evaluate_expression(Arc::clone(&realm), value, true)?;
 
                 let ControlFlow::Value(rhs) = rhs else {
                     panic!("Expected RHS as value, got: {rhs:?}");
@@ -548,7 +570,7 @@ impl Interpreter {
                 }
             }
             ExprKind::PropertyAccess { origin, property } => {
-                let obj = self.evaluate_expression(Arc::clone(&realm), origin, true);
+                let obj = self.evaluate_expression(Arc::clone(&realm), origin, true)?;
                 let ControlFlow::Value(obj) = obj else {
                     panic!("Expected value")
                 };
@@ -563,14 +585,14 @@ impl Interpreter {
 
                 match val {
                     Some(val) => {
-                        return ControlFlow::Value(val);
+                        return Ok(ControlFlow::Value(val));
                     }
                     None => panic!("No property `{prop}` on type `{type_name}`"),
                 }
             }
             ExprKind::IndexedAccess { origin, index } => {
-                let container = self.evaluate_expression(Arc::clone(&realm), origin, true);
-                let index = self.evaluate_expression(Arc::clone(&realm), index, true);
+                let container = self.evaluate_expression(Arc::clone(&realm), origin, true)?;
+                let index = self.evaluate_expression(Arc::clone(&realm), index, true)?;
 
                 let ControlFlow::Value(container) = container else {
                     panic!("Expected value")
@@ -607,15 +629,27 @@ impl Interpreter {
                     ),
                 }
             }
-            ExprKind::AddAssign(lhs, rhs) => {
-                self.compound_assignment_helper(realm, "+", lhs, rhs, is_subexpression)
-            }
-            ExprKind::SubAssign(lhs, rhs) => {
-                self.compound_assignment_helper(realm, "-", lhs, rhs, is_subexpression)
-            }
-            ExprKind::MulAssign(lhs, rhs) => {
-                self.compound_assignment_helper(realm, "*", lhs, rhs, is_subexpression)
-            }
+            ExprKind::AddAssign(lhs, rhs) => self.compound_assignment_helper(
+                realm,
+                "+",
+                lhs,
+                rhs,
+                is_subexpression,
+            )?,
+            ExprKind::SubAssign(lhs, rhs) => self.compound_assignment_helper(
+                realm,
+                "-",
+                lhs,
+                rhs,
+                is_subexpression,
+            )?,
+            ExprKind::MulAssign(lhs, rhs) => self.compound_assignment_helper(
+                realm,
+                "*",
+                lhs,
+                rhs,
+                is_subexpression,
+            )?,
             ExprKind::DivAssign(lhs, rhs, division_kind) => {
                 let op = match division_kind {
                     DivisionKind::Neutral => "/",
@@ -623,15 +657,26 @@ impl Interpreter {
                     DivisionKind::RoundingDown => "/-",
                 };
 
-                self.compound_assignment_helper(realm, op, lhs, rhs, is_subexpression)
+                self.compound_assignment_helper(
+                    realm,
+                    op,
+                    lhs,
+                    rhs,
+                    is_subexpression,
+                )?
             }
-            ExprKind::ModAssign(lhs, rhs) => {
-                self.compound_assignment_helper(realm, "%", lhs, rhs, is_subexpression)
-            }
+            ExprKind::ModAssign(lhs, rhs) => self.compound_assignment_helper(
+                realm,
+                "%",
+                lhs,
+                rhs,
+                is_subexpression,
+            )?,
 
-            ExprKind::NotEquals(lhs, rhs) => {
-                ControlFlow::Value(self.binary_op_helper(realm, "!=", lhs, rhs).unwrap())
-            }
+            ExprKind::NotEquals(lhs, rhs) => ControlFlow::Value(
+                self.binary_op_helper(realm, "!=", lhs, rhs)?
+                    .unwrap(),
+            ),
 
             ExprKind::Path { .. } => {
                 let key = self.flatten_path(expr);
@@ -646,18 +691,25 @@ impl Interpreter {
 
             ExprKind::True => ControlFlow::Value(Value::Bool(true)),
             ExprKind::False => ControlFlow::Value(Value::Bool(false)),
-        }
+        };
+
+        Ok(result)
     }
 
     // Performs a function call.
     // Supported both native and regular functions.
-    fn call_func(&self, realm: SharedRealm, func: Value, args: &[Value]) -> ControlFlow {
+    fn call_func(
+        &self,
+        realm: SharedRealm,
+        func: Value,
+        args: &[Value],
+    ) -> InterpreterResult<ControlFlow> {
         debug!("Call function with parameters {args:?}");
 
         if let Value::Native(native) = func {
             let new_realm = Realm::dive(realm);
 
-            return native(self, Arc::new(RwLock::new(new_realm)), args);
+            return Ok(native(self, Arc::new(RwLock::new(new_realm)), args));
         }
 
         if let Value::Function(func) = func {
@@ -676,7 +728,7 @@ impl Interpreter {
             }
 
             let result = self
-                .exec_single_statement(Arc::new(RwLock::new(new_realm)), &func.body)
+                .exec_single_statement(Arc::new(RwLock::new(new_realm)), &func.body)?
                 .unwrap_or(ControlFlow::Nothing);
 
             debug!(
@@ -684,22 +736,29 @@ impl Interpreter {
                 func.params, result
             );
 
-            return match result {
+            return Ok(match result {
                 ControlFlow::Return(v) => ControlFlow::Value(v),
                 other => other,
-            };
+            });
         }
 
-        ControlFlow::Nothing
+        Ok(ControlFlow::Nothing)
     }
 
-    pub fn call_func_extern(&self, name: &str, args: &[Value]) -> Option<ControlFlow> {
-        let method = self.world.read().unwrap().lookup(name)?;
+    pub fn call_func_extern(
+        &self,
+        name: &str,
+        args: &[Value],
+    ) -> InterpreterResult<Option<ControlFlow>> {
+        let method = match self.world.read().unwrap().lookup(name) {
+            Some(v) => v,
+            None => return Ok(None),
+        };
 
         if let Value::Native(native) = method {
             let new_realm = Realm::dive(Arc::clone(&self.world));
 
-            return Some(native(self, Arc::new(RwLock::new(new_realm)), args));
+            return Ok(Some(native(self, Arc::new(RwLock::new(new_realm)), args)));
         }
 
         if let Value::Function(func) = method {
@@ -718,16 +777,16 @@ impl Interpreter {
             }
 
             let result = self
-                .exec_single_statement(Arc::new(RwLock::new(new_realm)), &func.body)
+                .exec_single_statement(Arc::new(RwLock::new(new_realm)), &func.body)?
                 .unwrap_or(ControlFlow::Nothing);
 
-            return Some(match result {
+            return Ok(Some(match result {
                 ControlFlow::Return(v) => ControlFlow::Value(v),
                 other => other,
-            });
+            }));
         }
 
-        None
+        Ok(None)
     }
 
     fn binary_op_helper(
@@ -736,9 +795,9 @@ impl Interpreter {
         op: &str,
         lhs: &Expression,
         rhs: &Expression,
-    ) -> Option<Value> {
-        let lhs_val = self.evaluate_expression(Arc::clone(&realm), lhs, true);
-        let rhs_val = self.evaluate_expression(Arc::clone(&realm), rhs, true);
+    ) -> InterpreterResult<Option<Value>> {
+        let lhs_val = self.evaluate_expression(Arc::clone(&realm), lhs, true)?;
+        let rhs_val = self.evaluate_expression(Arc::clone(&realm), rhs, true)?;
 
         let ControlFlow::Value(lhs_val) = lhs_val else {
             panic!("A value should be returned by LHS, got: {lhs_val:?}");
@@ -748,36 +807,55 @@ impl Interpreter {
             panic!("A value should be returned by RHS, got: {rhs_val:?}");
         };
 
-        self.binary_op_helper_values(realm, op, lhs_val, rhs_val)
+        self.binary_op_helper_values(
+            realm,
+            op,
+            Spanned::new(lhs_val, lhs.address.clone()),
+            Spanned::new(rhs_val, rhs.address.clone()),
+        )
     }
 
     fn binary_op_helper_values(
         &self,
         realm: SharedRealm,
         op: &str,
-        lhs: Value,
-        rhs: Value,
-    ) -> Option<Value> {
-        let l_type = types::value_to_internal_type(&lhs).unwrap();
-        let r_type = types::value_to_internal_type(&rhs).unwrap();
+        lhs: Spanned<Value>,
+        rhs: Spanned<Value>,
+    ) -> InterpreterResult<Option<Value>> {
+        let l_type = types::value_to_internal_type(&lhs.value).unwrap();
+        let r_type = types::value_to_internal_type(&rhs.value).unwrap();
 
         let method_name = format!("{l_type}::operator{op}{r_type}");
 
-        let method = realm.read().unwrap().lookup(&method_name);
+        let method = realm
+            .read()
+            .unwrap()
+            .lookup(&method_name)
+            // .unwrap_or_else(|| {
+            //     panic!("Incompatible types for operation `{op}`: `{l_type}` and `{r_type}`")
+            // });
+            .ok_or_else(|| InterpreterError::IncompatibleTypesForOperation {
+                op: op.to_string(),
+                lhs_addr: lhs.address.clone(),
+                rhs_addr: rhs.address.clone(),
+                lhs_type: l_type.to_owned(),
+                rhs_type: r_type.to_owned(),
+            })?;
 
-        if let Some(method) = method {
-            if let ControlFlow::Value(va) = self.call_func(realm, method, &[lhs, rhs]) {
-                return Some(va);
-            } else {
-                panic!("Failed to get a return value from function call.");
-            }
+        if let ControlFlow::Value(va) = self.call_func(realm, method, &[lhs.value, rhs.value])? {
+            return Ok(Some(va));
         } else {
-            panic!("Incompatible types for operation `{op}`: `{l_type}` and `{r_type}`")
+            panic!("Failed to get a return value from function call.");
         }
     }
 
-    fn unary_op_helper(&self, realm: SharedRealm, op: &str, expr: &Expression) -> Option<Value> {
-        let expr_val = self.evaluate_expression(Arc::clone(&realm), expr, true);
+    fn unary_op_helper(
+        &self,
+        realm: SharedRealm,
+        op: &str,
+        expr: &Expression,
+    ) -> InterpreterResult<Option<Value>> {
+        let expr_val = self.evaluate_expression(Arc::clone(&realm), expr, true)?;
 
         let ControlFlow::Value(expr_val) = expr_val else {
             panic!("A value should be returned, got: {expr_val:?}");
@@ -793,20 +871,20 @@ impl Interpreter {
             .lookup(&method_name)
             .unwrap_or_else(|| panic!("Incompatible type for operation `{op}`: `{ty}`"));
 
-        if let ControlFlow::Value(va) = self.call_func(realm, method, &[expr_val]) {
-            return Some(va);
+        if let ControlFlow::Value(va) = self.call_func(realm, method, &[expr_val])? {
+            return Ok(Some(va));
         } else {
             panic!("Failed to get a return value from function call.");
         }
     }
 
-    fn resolve_lvalue(&self, realm: SharedRealm, expr: &Expression) -> LValue {
+    fn resolve_lvalue(&self, realm: SharedRealm, expr: &Expression) -> InterpreterResult<LValue> {
         match &expr.value {
-            ExprKind::Identifier(name) => LValue::Identifier(name.clone()),
+            ExprKind::Identifier(name) => Ok(LValue::Identifier(name.clone())),
 
             ExprKind::IndexedAccess { origin, index } => {
-                let container = self.evaluate_expression(Arc::clone(&realm), origin, true);
-                let index = self.evaluate_expression(Arc::clone(&realm), index, true);
+                let container = self.evaluate_expression(Arc::clone(&realm), origin, true)?;
+                let index = self.evaluate_expression(Arc::clone(&realm), index, true)?;
 
                 let ControlFlow::Value(container) = container else {
                     panic!("Expected value as container, got: {container:?}");
@@ -816,18 +894,18 @@ impl Interpreter {
                     panic!("Expected value as index, got: {index:?}");
                 };
 
-                LValue::Index { container, index }
+                Ok(LValue::Index { container, index })
             }
 
             ExprKind::PropertyAccess { origin, property } => {
                 let object = self.evaluate_expression(Arc::clone(&realm), origin, true);
                 let name = property.value.as_id().unwrap().to_owned();
 
-                let ControlFlow::Value(object) = object else {
+                let Ok(ControlFlow::Value(object)) = object else {
                     panic!("Expected value as object, got: {object:?}");
                 };
 
-                LValue::Property { object, name }
+                Ok(LValue::Property { object, name })
             }
 
             _ => panic!("Invalid assignment target"),
@@ -881,28 +959,33 @@ impl Interpreter {
         name: &Expression,
         value: &Expression,
         is_subexpression: bool,
-    ) -> ControlFlow {
-        let target = self.resolve_lvalue(Arc::clone(&realm), name);
+    ) -> InterpreterResult<ControlFlow> {
+        let target = self.resolve_lvalue(Arc::clone(&realm), name)?;
 
         // Read current value — identifier needs a lookup, indexed needs evaluation
         let current = self.read_lvalue(Arc::clone(&realm), &target);
-        let rhs = self.evaluate_expression(Arc::clone(&realm), value, true);
+        let rhs = self.evaluate_expression(Arc::clone(&realm), value, true)?;
 
         let ControlFlow::Value(rhs) = rhs else {
             panic!("Expected RHS as value, got: {rhs:?}");
         };
 
         let result = self
-            .binary_op_helper_values(Arc::clone(&realm), op, current, rhs)
+            .binary_op_helper_values(
+                Arc::clone(&realm),
+                op,
+                Spanned::new(current, name.address.clone()),
+                Spanned::new(rhs, value.address.clone()),
+            )?
             .unwrap();
 
         self.assign(Arc::clone(&realm), target, result.clone());
 
-        if is_subexpression {
+        Ok(if is_subexpression {
             ControlFlow::Value(result)
         } else {
             ControlFlow::Nothing
-        }
+        })
     }
 
     fn path_segments_to_vec(&self, expr: &Expression) -> Vec<String> {

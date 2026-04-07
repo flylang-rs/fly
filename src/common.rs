@@ -4,6 +4,7 @@ use flylang_common::source::Source;
 use flylang_diagnostics::error::DiagnosticsReport;
 use flylang_lexer::{error::LexerError, token::Token};
 use flylang_parser::{Parser, ast::Statement, error::ParserError, state::ParserState};
+use flylang_tte::{Interpreter, error::InterpreterError};
 
 pub type LoadingResult<T> = Result<T, LoadingError>;
 
@@ -12,6 +13,7 @@ pub enum LoadingError {
     LexerError(LexerError),
     ParserError(ParserError),
     AnalyzeFailed,
+    InterpreterError(InterpreterError),
 }
 
 impl DiagnosticsReport for LoadingError {
@@ -20,6 +22,7 @@ impl DiagnosticsReport for LoadingError {
             LoadingError::LexerError(lexer_error) => lexer_error.render(),
             LoadingError::ParserError(parser_error) => parser_error.render(),
             LoadingError::AnalyzeFailed => unreachable!("Not rendered as diagnostics"),
+            LoadingError::InterpreterError(ie) => ie.render(),
         }
     }
 }

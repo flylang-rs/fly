@@ -21,7 +21,14 @@ fn run_file(source: Source) {
 
     let interpreter = flylang_tte::Interpreter::new();
 
-    let result = interpreter.execute_script(ast);
+    let result = match interpreter.execute_script(ast) {
+        Ok(res) => res,
+        Err(e) => {
+            eprintln!("{}", e.render());
+
+            std::process::exit(1)
+        },
+    };
 
     println!("Program finished with result: {result:?}");
 }

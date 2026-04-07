@@ -56,6 +56,7 @@ fn render_value(
 
     interpreter
         .call_func(Arc::clone(realm), method, &[val.clone()])
+        .unwrap_or_else(|e| panic!("Unhandled interpreter error. ({e:?})"))
         .as_value()
         .and_then(|x| x.as_arc_string())
         .map(|s| s.to_string())
