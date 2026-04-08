@@ -13,7 +13,7 @@ pub static EXPORT: &[(&str, RustInteropFn)] = &[
     ("array::to_displayable", array_to_displayable),
 ];
 
-pub fn array_push(_interp: &Interpreter, _realm: SharedRealm, args: &[Value]) -> ControlFlow {
+pub fn array_push(_interp: &mut Interpreter, _realm: SharedRealm, args: &[Value]) -> ControlFlow {
     let Value::Array(arr) = &args[0] else {
         panic!("Expected array, got: {:?}", args[0])
     };
@@ -24,7 +24,7 @@ pub fn array_push(_interp: &Interpreter, _realm: SharedRealm, args: &[Value]) ->
     ControlFlow::Value(Value::Nil)
 }
 
-pub fn array_len(_interp: &Interpreter, _realm: SharedRealm, args: &[Value]) -> ControlFlow {
+pub fn array_len(_interp: &mut Interpreter, _realm: SharedRealm, args: &[Value]) -> ControlFlow {
     let Value::Array(arr) = &args[0] else {
         panic!("Expected array")
     };
@@ -32,7 +32,7 @@ pub fn array_len(_interp: &Interpreter, _realm: SharedRealm, args: &[Value]) -> 
 }
 
 fn render_value(
-    interpreter: &Interpreter,
+    interpreter: &mut Interpreter,
     realm: &SharedRealm,
     val: &Value,
     seen: &mut Vec<*const Mutex<Vec<Value>>>,
@@ -64,7 +64,7 @@ fn render_value(
 }
 
 fn render_array(
-    interpreter: &Interpreter,
+    interpreter: &mut Interpreter,
     realm: &SharedRealm,
     array: &Arc<Mutex<Vec<Value>>>,
     seen: &mut Vec<*const Mutex<Vec<Value>>>,
@@ -91,7 +91,7 @@ fn render_array(
     format!("[{}]", parts.join(", "))
 }
 
-fn array_to_string(interpreter: &Interpreter, realm: SharedRealm, args: &[Value]) -> ControlFlow {
+fn array_to_string(interpreter: &mut Interpreter, realm: SharedRealm, args: &[Value]) -> ControlFlow {
     let Value::Array(array) = &args[0] else {
         panic!("Expected array, got {:?}", args[0]);
     };
@@ -105,7 +105,7 @@ fn array_to_string(interpreter: &Interpreter, realm: SharedRealm, args: &[Value]
 }
 
 fn array_to_displayable(
-    interpreter: &Interpreter,
+    interpreter: &mut Interpreter,
     realm: SharedRealm,
     args: &[Value],
 ) -> ControlFlow {

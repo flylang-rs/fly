@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use flylang_common::source::Source;
 use flylang_diagnostics::error::DiagnosticsReport;
 
@@ -7,7 +9,9 @@ pub mod common;
 pub mod repl;
 
 fn run_file(source: Source) {
-    let ast = match common::parse_source(source) {
+    let source = Arc::new(source);
+
+    let ast = match common::parse_source(Arc::clone(&source)) {
         Ok(st) => st,
         Err(LoadingError::AnalyzeFailed) => {
             std::process::exit(1);
@@ -19,11 +23,34 @@ fn run_file(source: Source) {
         }
     };
 
-    let interpreter = flylang_tte::Interpreter::new();
+    let mut interpreter = flylang_tte::Interpreter::new();
 
-    let result = match interpreter.execute_script(ast) {
+    let result = match interpreter.execute_script(source, ast) {
         Ok(res) => res,
         Err(e) => {
+            flylang_diagnostics::report_simple_error("Exception occured, showing traceback...");
+
+            for (nr, i) in interpreter.calltrace().iter().enumerate() {
+                let addr = if let Some((l, c)) = i.address_line_col {
+                    format!(":{l}:{c}")
+                } else {
+                    String::new()
+                };
+
+                flylang_diagnostics::report_simple_error(
+                    
+                    &format!(
+                        "  - #{}: {} in {}{}",
+                        nr + 1,
+                        i.func_name,
+                        i.address_filename,
+                        addr
+                    )
+                );
+            }
+
+            eprintln!();
+
             eprintln!("{}", e.render());
 
             std::process::exit(1)

@@ -24,7 +24,7 @@ common_operation_binary!(bool_eq, Bool, Bool, Bool, |x: &bool, y: &bool| *x == *
 common_operation_binary!(bool_neq, Bool, Bool, Bool, |x: &bool, y: &bool| *x != *y);
 
 fn bool_to_string(
-    _interpreter: &crate::Interpreter,
+    _interpreter: &mut crate::Interpreter,
     _realm: SharedRealm,
     args: &[Value],
 ) -> ControlFlow {
@@ -36,7 +36,7 @@ fn bool_to_string(
 }
 
 fn bool_to_displayable(
-    interpreter: &crate::Interpreter,
+    interpreter: &mut crate::Interpreter,
     realm: SharedRealm,
     args: &[Value],
 ) -> ControlFlow {

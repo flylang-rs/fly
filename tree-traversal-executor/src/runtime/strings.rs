@@ -78,7 +78,7 @@ common_operation_binary!(
     |x: &String, y: &String| x <= y
 );
 
-fn string_to_string(_interpreter: &crate::Interpreter, _realm: SharedRealm, args: &[Value]) -> ControlFlow {
+fn string_to_string(_interpreter: &mut crate::Interpreter, _realm: SharedRealm, args: &[Value]) -> ControlFlow {
     let Value::String(ref i) = args[0] else {
         panic!("It's not a string, it's {:?}", args[0]);
     };
@@ -86,7 +86,7 @@ fn string_to_string(_interpreter: &crate::Interpreter, _realm: SharedRealm, args
     ControlFlow::Value(Value::String(Arc::clone(i)))
 }
 
-fn string_to_displayable(_interpreter: &crate::Interpreter, _realm: SharedRealm, args: &[Value]) -> ControlFlow {
+fn string_to_displayable(_interpreter: &mut crate::Interpreter, _realm: SharedRealm, args: &[Value]) -> ControlFlow {
     let Value::String(ref i) = args[0] else {
         panic!("It's not a string, it's {:?}", args[0]);
     };

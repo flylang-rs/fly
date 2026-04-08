@@ -7,7 +7,7 @@ use crate::{
 
 pub static EXPORT: &[(&str, RustInteropFn)] = &[("print", inner_print)];
 
-fn inner_print(interpreter: &Interpreter, realm: SharedRealm, args: &[Value]) -> ControlFlow {
+fn inner_print(interpreter: &mut Interpreter, realm: SharedRealm, args: &[Value]) -> ControlFlow {
     let len = args.len();
 
     for (n, i) in args.iter().enumerate() {

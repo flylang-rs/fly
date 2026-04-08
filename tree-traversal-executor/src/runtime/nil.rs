@@ -6,7 +6,7 @@ pub static EXPORT: &[(&str, RustInteropFn)] = &[
 ];
 
 fn nil_to_string(
-    _interpreter: &crate::Interpreter,
+    _interpreter: &mut crate::Interpreter,
     _realm: SharedRealm,
     _args: &[Value],
 ) -> ControlFlow {

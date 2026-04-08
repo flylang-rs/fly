@@ -1,5 +1,5 @@
 use std::{
-    io::{Write},
+    io::Write, sync::Arc,
 };
 
 use crossterm::{
@@ -93,7 +93,7 @@ impl REPL {
     }
 
     pub fn execute(&mut self, line: String) -> LoadingResult<ControlFlow> {
-        let ast = crate::common::parse_source(Source::new(String::from("<REPL>"), line))?;
+        let ast = crate::common::parse_source(Arc::new(Source::new(String::from("<REPL>"), line)))?;
         let result = self.interpreter.execute(ast).map_err(|e| LoadingError::InterpreterError(e))?;
 
         Ok(result)

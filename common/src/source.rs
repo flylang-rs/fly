@@ -1,5 +1,5 @@
 /// Describes the source file with code.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Source {
     pub filepath: String,
     pub code: String,

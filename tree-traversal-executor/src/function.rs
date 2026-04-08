@@ -1,11 +1,13 @@
 use std::sync::{Arc, RwLock};
 
+use flylang_common::spanned::Spanned;
 use flylang_parser::ast::Statement;
 
 use crate::realm::Realm;
 
 #[derive(Clone)]
 pub struct Function {
+    pub normal_name: Spanned<String>,
     pub params: Vec<String>,
     pub body: Statement,
     pub closure_realm: Arc<RwLock<Realm>>, // captured at definition time

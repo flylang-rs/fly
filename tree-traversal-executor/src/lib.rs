@@ -1,15 +1,16 @@
 use std::{
-    collections::HashMap,
+    collections::{HashMap, LinkedList},
     path::PathBuf,
     sync::{Arc, Mutex, RwLock},
 };
 
-use flylang_common::{source::Source, spanned::Spanned};
+use flylang_common::{Address, source::Source, spanned::Spanned};
 use flylang_diagnostics::additions::Note;
 use flylang_parser::ast::{DivisionKind, ExprKind, Expression, Statement, While};
 use log::debug;
 
 use crate::{
+    calltrace::CallFrame,
     control_flow::ControlFlow,
     error::InterpreterError,
     function::Function,
@@ -17,6 +18,7 @@ use crate::{
     realm::Realm,
 };
 
+pub mod calltrace;
 pub mod control_flow;
 pub mod error;
 pub mod function;
@@ -42,11 +44,14 @@ pub struct Interpreter {
     // "Root" Realm of the interpreter
     world: SharedRealm,
 
-    // A realm that contains only internal modules and functions.
+    // A realm that contains only internal modules and functions. (actually a root realm)
     builtins: SharedRealm,
 
     // It tracks modules currently in use.
     module_registry: Arc<RwLock<HashMap<PathBuf, ModuleState>>>,
+
+    // Contains call trace to output it when an error happens.
+    call_trace: LinkedList<CallFrame>,
 }
 
 impl Interpreter {
@@ -78,6 +83,7 @@ impl Interpreter {
             builtins,
             world,
             module_registry: Arc::new(RwLock::new(HashMap::new())),
+            call_trace: LinkedList::new(),
         }
     }
 
@@ -85,20 +91,34 @@ impl Interpreter {
         &self.world
     }
 
+    pub fn calltrace(&self) -> &LinkedList<CallFrame> {
+        &self.call_trace
+    }
+
     /// Entry point of the interpreter, it accepts a list of statements given by the parser.
     /// Since it accepts any kind of statement including expressions, it will return a value.
-    pub fn execute(&self, ast: Vec<Statement>) -> InterpreterResult<ControlFlow> {
+    pub fn execute(&mut self, ast: Vec<Statement>) -> InterpreterResult<ControlFlow> {
         self.exec_inner(Arc::clone(&self.world), &ast, true)
     }
 
     /// Script version of `Interpreter::execute`. Doesn't break when value is returned.
-    pub fn execute_script(&self, ast: Vec<Statement>) -> InterpreterResult<ControlFlow> {
+    pub fn execute_script(
+        &mut self,
+        source: Arc<Source>,
+        ast: Vec<Statement>,
+    ) -> InterpreterResult<ControlFlow> {
+        self.call_trace.push_back(CallFrame {
+            func_name: "<main>".to_string(),
+            address_filename: source.filepath.clone(),
+            address_line_col: None,
+        });
+
         self.exec_inner(Arc::clone(&self.world), &ast, false)
     }
 
     /// Trampoline for executor: operate with given realm and the parsed code
     fn exec_inner(
-        &self,
+        &mut self,
         realm: SharedRealm,
         ast: &[Statement],
         return_on_value: bool,
@@ -126,9 +146,11 @@ impl Interpreter {
         Ok(ControlFlow::Nothing)
     }
 
-    fn import_module(&self, realm: SharedRealm, path_segments: Vec<String>) {
-        eprintln!("{path_segments:?}");
-
+    fn import_module(
+        &mut self,
+        realm: SharedRealm,
+        path_segments: Vec<String>,
+    ) -> InterpreterResult<()> {
         if path_segments.len() > 1 {
             todo!("Deeper import is not supported yet...");
         }
@@ -141,7 +163,7 @@ impl Interpreter {
         if let Some(val) = self.module_registry.read().unwrap().get(&path) {
             match val {
                 ModuleState::Loading => panic!("Circular import detected for module: {}", filename),
-                ModuleState::Loaded(_) => return, // We don't have to load it again
+                ModuleState::Loaded(_) => return Ok(()), // We don't have to load it again
             }
         }
 
@@ -162,7 +184,7 @@ impl Interpreter {
 
         let module_realm = Arc::new(RwLock::new(Realm::dive(Arc::clone(&self.builtins))));
 
-        self.exec_inner(Arc::clone(&module_realm), &ast, false);
+        self.exec_inner(Arc::clone(&module_realm), &ast, false)?;
 
         let exports = module_realm.read().unwrap().values().clone();
 
@@ -180,6 +202,8 @@ impl Interpreter {
                 .values_mut()
                 .insert(format!("{}::{}", module_name, name), value);
         }
+
+        Ok(())
     }
 
     /// Execute the single statement.
@@ -188,7 +212,7 @@ impl Interpreter {
     ///
     /// `return nil` will return `Some(Value::Nil)`
     fn exec_single_statement(
-        &self,
+        &mut self,
         realm: SharedRealm,
         statement: &Statement,
     ) -> InterpreterResult<Option<ControlFlow>> {
@@ -197,6 +221,7 @@ impl Interpreter {
                 let name = &function.name.value;
 
                 let value = Value::Function(Arc::new(Function {
+                    normal_name: function.name.clone(),
                     params: function
                         .arguments
                         .iter()
@@ -260,7 +285,7 @@ impl Interpreter {
                 }
             }
             Statement::ModuleUsageDeclaration { path } => {
-                self.import_module(realm, self.path_segments_to_vec(path));
+                self.import_module(realm, self.path_segments_to_vec(path))?;
 
                 Ok(Some(ControlFlow::Nothing))
             }
@@ -352,7 +377,7 @@ impl Interpreter {
     // > a = b = c = d = 9
     // = 9
     fn evaluate_expression(
-        &self,
+        &mut self,
         realm: SharedRealm,
         expr: &Expression,
         is_subexpression: bool,
@@ -362,18 +387,15 @@ impl Interpreter {
         debug!("Eval: {expr:?}");
 
         let result = match value {
-            ExprKind::Add(lhs, rhs) => ControlFlow::Value(
-                self.binary_op_helper(realm, "+", lhs, rhs)?
-                    .unwrap(),
-            ),
-            ExprKind::Sub(lhs, rhs) => ControlFlow::Value(
-                self.binary_op_helper(realm, "-", lhs, rhs)?
-                    .unwrap(),
-            ),
-            ExprKind::Mul(lhs, rhs) => ControlFlow::Value(
-                self.binary_op_helper(realm, "*", lhs, rhs)?
-                    .unwrap(),
-            ),
+            ExprKind::Add(lhs, rhs) => {
+                ControlFlow::Value(self.binary_op_helper(realm, "+", lhs, rhs)?.unwrap())
+            }
+            ExprKind::Sub(lhs, rhs) => {
+                ControlFlow::Value(self.binary_op_helper(realm, "-", lhs, rhs)?.unwrap())
+            }
+            ExprKind::Mul(lhs, rhs) => {
+                ControlFlow::Value(self.binary_op_helper(realm, "*", lhs, rhs)?.unwrap())
+            }
             ExprKind::Div(lhs, rhs, division_kind) => {
                 let op = match division_kind {
                     DivisionKind::Neutral => "/",
@@ -381,59 +403,44 @@ impl Interpreter {
                     DivisionKind::RoundingDown => "/-",
                 };
 
-                ControlFlow::Value(
-                    self.binary_op_helper(realm, op, lhs, rhs)?
-                        .unwrap(),
-                )
+                ControlFlow::Value(self.binary_op_helper(realm, op, lhs, rhs)?.unwrap())
             }
-            ExprKind::Mod(lhs, rhs) => ControlFlow::Value(
-                self.binary_op_helper(realm, "%", lhs, rhs)?
-                    .unwrap(),
-            ),
-            ExprKind::And(lhs, rhs) => ControlFlow::Value(
-                self.binary_op_helper(realm, "&&", lhs, rhs)?
-                    .unwrap(),
-            ),
-            ExprKind::Or(lhs, rhs) => ControlFlow::Value(
-                self.binary_op_helper(realm, "||", lhs, rhs)?
-                    .unwrap(),
-            ),
-            ExprKind::BitAnd(lhs, rhs) => ControlFlow::Value(
-                self.binary_op_helper(realm, "&", lhs, rhs)?
-                    .unwrap(),
-            ),
-            ExprKind::BitOr(lhs, rhs) => ControlFlow::Value(
-                self.binary_op_helper(realm, "|", lhs, rhs)?
-                    .unwrap(),
-            ),
-            ExprKind::BitShiftLeft(lhs, rhs) => ControlFlow::Value(
-                self.binary_op_helper(realm, "<<", lhs, rhs)?
-                    .unwrap(),
-            ),
-            ExprKind::BitShiftRight(lhs, rhs) => ControlFlow::Value(
-                self.binary_op_helper(realm, ">>", lhs, rhs)?
-                    .unwrap(),
-            ),
-            ExprKind::Equals(lhs, rhs) => ControlFlow::Value(
-                self.binary_op_helper(realm, "==", lhs, rhs)?
-                    .unwrap(),
-            ),
-            ExprKind::Greater(lhs, rhs) => ControlFlow::Value(
-                self.binary_op_helper(realm, ">", lhs, rhs)?
-                    .unwrap(),
-            ),
-            ExprKind::GreaterOrEquals(lhs, rhs) => ControlFlow::Value(
-                self.binary_op_helper(realm, ">=", lhs, rhs)?
-                    .unwrap(),
-            ),
-            ExprKind::Less(lhs, rhs) => ControlFlow::Value(
-                self.binary_op_helper(realm, "<", lhs, rhs)?
-                    .unwrap(),
-            ),
-            ExprKind::LessOrEquals(lhs, rhs) => ControlFlow::Value(
-                self.binary_op_helper(realm, "<=", lhs, rhs)?
-                    .unwrap(),
-            ),
+            ExprKind::Mod(lhs, rhs) => {
+                ControlFlow::Value(self.binary_op_helper(realm, "%", lhs, rhs)?.unwrap())
+            }
+            ExprKind::And(lhs, rhs) => {
+                ControlFlow::Value(self.binary_op_helper(realm, "&&", lhs, rhs)?.unwrap())
+            }
+            ExprKind::Or(lhs, rhs) => {
+                ControlFlow::Value(self.binary_op_helper(realm, "||", lhs, rhs)?.unwrap())
+            }
+            ExprKind::BitAnd(lhs, rhs) => {
+                ControlFlow::Value(self.binary_op_helper(realm, "&", lhs, rhs)?.unwrap())
+            }
+            ExprKind::BitOr(lhs, rhs) => {
+                ControlFlow::Value(self.binary_op_helper(realm, "|", lhs, rhs)?.unwrap())
+            }
+            ExprKind::BitShiftLeft(lhs, rhs) => {
+                ControlFlow::Value(self.binary_op_helper(realm, "<<", lhs, rhs)?.unwrap())
+            }
+            ExprKind::BitShiftRight(lhs, rhs) => {
+                ControlFlow::Value(self.binary_op_helper(realm, ">>", lhs, rhs)?.unwrap())
+            }
+            ExprKind::Equals(lhs, rhs) => {
+                ControlFlow::Value(self.binary_op_helper(realm, "==", lhs, rhs)?.unwrap())
+            }
+            ExprKind::Greater(lhs, rhs) => {
+                ControlFlow::Value(self.binary_op_helper(realm, ">", lhs, rhs)?.unwrap())
+            }
+            ExprKind::GreaterOrEquals(lhs, rhs) => {
+                ControlFlow::Value(self.binary_op_helper(realm, ">=", lhs, rhs)?.unwrap())
+            }
+            ExprKind::Less(lhs, rhs) => {
+                ControlFlow::Value(self.binary_op_helper(realm, "<", lhs, rhs)?.unwrap())
+            }
+            ExprKind::LessOrEquals(lhs, rhs) => {
+                ControlFlow::Value(self.binary_op_helper(realm, "<=", lhs, rhs)?.unwrap())
+            }
             ExprKind::Not(val) => {
                 ControlFlow::Value(self.unary_op_helper(realm, "!", val)?.unwrap())
             }
@@ -478,7 +485,7 @@ impl Interpreter {
                 }
             }
             ExprKind::Array(exprs) => {
-                let mut values_iter = exprs.iter().map(|x| {
+                let values_iter = exprs.iter().map(|x| {
                     let expr = self.evaluate_expression(Arc::clone(&realm), x, false)?;
 
                     let ControlFlow::Value(value) = expr else {
@@ -524,7 +531,13 @@ impl Interpreter {
                         args.push(v);
                     }
 
-                    return self.call_func(realm, method, &args);
+                    self.push_call_frame_for_methodcall(method_key.clone(), callee);
+
+                    let value = self.call_func(realm, method, &args);
+
+                    self.call_trace.pop_back();
+
+                    return value;
                 }
 
                 let func = self.evaluate_expression(Arc::clone(&realm), callee, true)?;
@@ -533,7 +546,7 @@ impl Interpreter {
                     panic!("Expected a function as value, got: {func:?}");
                 };
 
-                let mut args_iter = parameters.iter().map(|x| {
+                let args_iter = parameters.iter().map(|x| {
                     let expr = self.evaluate_expression(Arc::clone(&realm), x, true)?;
 
                     if let ControlFlow::Value(va) = expr {
@@ -551,7 +564,13 @@ impl Interpreter {
 
                 debug!("Calling func with args: {:?}", args);
 
-                self.call_func(realm, func, &args)?
+                self.push_call_frame(callee, &func);
+
+                let value = self.call_func(realm, func, &args)?;
+
+                self.call_trace.pop_back();
+
+                value
             }
             ExprKind::Assignment { name, value } => {
                 let target = self.resolve_lvalue(Arc::clone(&realm), name)?;
@@ -629,27 +648,15 @@ impl Interpreter {
                     ),
                 }
             }
-            ExprKind::AddAssign(lhs, rhs) => self.compound_assignment_helper(
-                realm,
-                "+",
-                lhs,
-                rhs,
-                is_subexpression,
-            )?,
-            ExprKind::SubAssign(lhs, rhs) => self.compound_assignment_helper(
-                realm,
-                "-",
-                lhs,
-                rhs,
-                is_subexpression,
-            )?,
-            ExprKind::MulAssign(lhs, rhs) => self.compound_assignment_helper(
-                realm,
-                "*",
-                lhs,
-                rhs,
-                is_subexpression,
-            )?,
+            ExprKind::AddAssign(lhs, rhs) => {
+                self.compound_assignment_helper(realm, "+", lhs, rhs, is_subexpression)?
+            }
+            ExprKind::SubAssign(lhs, rhs) => {
+                self.compound_assignment_helper(realm, "-", lhs, rhs, is_subexpression)?
+            }
+            ExprKind::MulAssign(lhs, rhs) => {
+                self.compound_assignment_helper(realm, "*", lhs, rhs, is_subexpression)?
+            }
             ExprKind::DivAssign(lhs, rhs, division_kind) => {
                 let op = match division_kind {
                     DivisionKind::Neutral => "/",
@@ -657,26 +664,15 @@ impl Interpreter {
                     DivisionKind::RoundingDown => "/-",
                 };
 
-                self.compound_assignment_helper(
-                    realm,
-                    op,
-                    lhs,
-                    rhs,
-                    is_subexpression,
-                )?
+                self.compound_assignment_helper(realm, op, lhs, rhs, is_subexpression)?
             }
-            ExprKind::ModAssign(lhs, rhs) => self.compound_assignment_helper(
-                realm,
-                "%",
-                lhs,
-                rhs,
-                is_subexpression,
-            )?,
+            ExprKind::ModAssign(lhs, rhs) => {
+                self.compound_assignment_helper(realm, "%", lhs, rhs, is_subexpression)?
+            }
 
-            ExprKind::NotEquals(lhs, rhs) => ControlFlow::Value(
-                self.binary_op_helper(realm, "!=", lhs, rhs)?
-                    .unwrap(),
-            ),
+            ExprKind::NotEquals(lhs, rhs) => {
+                ControlFlow::Value(self.binary_op_helper(realm, "!=", lhs, rhs)?.unwrap())
+            }
 
             ExprKind::Path { .. } => {
                 let key = self.flatten_path(expr);
@@ -696,10 +692,46 @@ impl Interpreter {
         Ok(result)
     }
 
+    fn push_call_frame(&mut self, callee: &Expression, func: &Value) {
+        let name: Spanned<String> = match &func {
+            Value::Function(function) => function.normal_name.clone(),
+            Value::Native(_) => {
+                if let Spanned { value: ExprKind::Identifier(id), address: saddr } = callee {
+                    Spanned::new(id.clone(), saddr.clone())
+                } else {
+                    todo!("Make a stringified value of native func {callee:?}")
+                }
+            }
+            _ => todo!()
+        };
+
+        self.call_trace.push_back(CallFrame {
+            func_name: name.value,
+            address_filename: name.address.source.filepath.clone(),
+            address_line_col: name
+                .address
+                .source
+                .location(callee.address.span.start)
+                .into(),
+        });
+    }
+
+    fn push_call_frame_for_methodcall(&mut self, method_key: String, callee: &Expression) {
+        self.call_trace.push_back(CallFrame {
+            func_name: method_key.clone(),
+            address_filename: callee.address.source.filepath.clone(),
+            address_line_col: callee
+                .address
+                .source
+                .location(callee.address.span.start)
+                .into(),
+        });
+    }
+
     // Performs a function call.
     // Supported both native and regular functions.
     fn call_func(
-        &self,
+        &mut self,
         realm: SharedRealm,
         func: Value,
         args: &[Value],
@@ -746,7 +778,7 @@ impl Interpreter {
     }
 
     pub fn call_func_extern(
-        &self,
+        &mut self,
         name: &str,
         args: &[Value],
     ) -> InterpreterResult<Option<ControlFlow>> {
@@ -790,7 +822,7 @@ impl Interpreter {
     }
 
     fn binary_op_helper(
-        &self,
+        &mut self,
         realm: SharedRealm,
         op: &str,
         lhs: &Expression,
@@ -816,7 +848,7 @@ impl Interpreter {
     }
 
     fn binary_op_helper_values(
-        &self,
+        &mut self,
         realm: SharedRealm,
         op: &str,
         lhs: Spanned<Value>,
@@ -850,7 +882,7 @@ impl Interpreter {
     }
 
     fn unary_op_helper(
-        &self,
+        &mut self,
         realm: SharedRealm,
         op: &str,
         expr: &Expression,
@@ -878,7 +910,7 @@ impl Interpreter {
         }
     }
 
-    fn resolve_lvalue(&self, realm: SharedRealm, expr: &Expression) -> InterpreterResult<LValue> {
+    fn resolve_lvalue(&mut self, realm: SharedRealm, expr: &Expression) -> InterpreterResult<LValue> {
         match &expr.value {
             ExprKind::Identifier(name) => Ok(LValue::Identifier(name.clone())),
 
@@ -912,7 +944,7 @@ impl Interpreter {
         }
     }
 
-    fn read_lvalue(&self, realm: SharedRealm, target: &LValue) -> Value {
+    fn read_lvalue(&mut self, realm: SharedRealm, target: &LValue) -> Value {
         match target {
             LValue::Identifier(name) => realm.read().unwrap().lookup(name.as_str()).unwrap(),
             LValue::Index { container, index } => {
@@ -931,7 +963,7 @@ impl Interpreter {
     }
 
     // I separated it into a function to make it compatible with OpAssignments (+=, -=, ...)
-    fn assign(&self, realm: SharedRealm, target: LValue, value: Value) {
+    fn assign(&mut self, realm: SharedRealm, target: LValue, value: Value) {
         match target {
             LValue::Identifier(name) => {
                 realm.write().unwrap().values_mut().insert(name, value);
@@ -953,7 +985,7 @@ impl Interpreter {
     }
 
     fn compound_assignment_helper(
-        &self,
+        &mut self,
         realm: SharedRealm,
         op: &str,
         name: &Expression,
@@ -1003,7 +1035,7 @@ impl Interpreter {
         }
     }
 
-    fn property_access_segments_to_vec(&self, expr: &Expression) -> Vec<String> {
+    fn property_access_segments_to_vec(&mut self, expr: &Expression) -> Vec<String> {
         match &expr.value {
             ExprKind::PropertyAccess { origin, property } => {
                 let lhs = self.property_access_segments_to_vec(origin);
