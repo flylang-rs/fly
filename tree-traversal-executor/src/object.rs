@@ -22,6 +22,22 @@ impl Value {
 			None
 		}
 	}
+
+	pub fn as_integer(&self) -> Option<i128> {
+		if let Value::Integer(i) = self {
+			Some(*i)
+		} else {
+			None
+		}
+	}
+
+	pub fn as_float(&self) -> Option<f64> {
+		if let Value::Float(f) = self {
+			Some(*f)
+		} else {
+			None
+		}
+	}
 }
 
 #[derive(Debug, Clone)]
