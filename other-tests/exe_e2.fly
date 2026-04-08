@@ -1,0 +1,13 @@
+func a() {
+	print(x)
+}
+
+func b() {
+	a()
+}
+
+func c() {
+	b()
+}
+
+c()
