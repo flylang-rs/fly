@@ -1,4 +1,4 @@
-use flylang_common::{Address, spanned::Spanned};
+use flylang_common::Address;
 use flylang_diagnostics::{additions::Note, error::DiagnosticsReport};
 
 #[rustfmt::skip]
