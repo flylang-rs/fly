@@ -1,3 +1,5 @@
+use log::info;
+
 use std::sync::Arc;
 
 use flylang_common::source::Source;
@@ -57,7 +59,7 @@ fn run_file(source: Source) {
         },
     };
 
-    println!("Program finished with result: {result:?}");
+    info!("Program finished with result: {result:?}");
 }
 
 fn show_help() {
