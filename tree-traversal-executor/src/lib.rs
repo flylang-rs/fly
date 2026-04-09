@@ -149,6 +149,7 @@ impl Interpreter {
     fn import_module(
         &mut self,
         realm: SharedRealm,
+        importer: &str,
         path_segments: Vec<String>,
     ) -> InterpreterResult<()> {
         if path_segments.len() > 1 {
@@ -158,7 +159,16 @@ impl Interpreter {
         let module_name = path_segments.join("::");
         let filename = path_segments[0].clone() + ".fly";
 
-        let path = PathBuf::from(filename.clone());
+        debug!("Importer: {importer:?}");
+
+        let mut path = PathBuf::from(importer)
+            .parent()
+            .map(|x| x.to_path_buf())
+            .unwrap();  // TODO: Checks
+
+        path = path.join(&filename);
+
+        debug!("Final path: {path:?}");
 
         if let Some(val) = self.module_registry.read().unwrap().get(&path) {
             match val {
@@ -172,7 +182,7 @@ impl Interpreter {
             .unwrap()
             .insert(path.clone(), ModuleState::Loading);
 
-        let code = match std::fs::read_to_string(&filename) {
+        let code = match std::fs::read_to_string(&path) {
             Ok(f) => f,
             Err(e) => {
                 eprintln!("Failed to open file `{filename}`: {e:?}");
@@ -285,7 +295,11 @@ impl Interpreter {
                 }
             }
             Statement::ModuleUsageDeclaration { path } => {
-                self.import_module(realm, self.path_segments_to_vec(path))?;
+                // Importer = who imports the module.
+                // Sly and maybe forbidden way to do it is get importer filepath from a token that decalres module import.
+                let importer = path.address.source.filepath.as_str();
+
+                self.import_module(realm, importer, self.path_segments_to_vec(path))?;
 
                 Ok(Some(ControlFlow::Nothing))
             }
@@ -696,13 +710,17 @@ impl Interpreter {
         let name: Spanned<String> = match &func {
             Value::Function(function) => function.normal_name.clone(),
             Value::Native(_) => {
-                if let Spanned { value: ExprKind::Identifier(id), address: saddr } = callee {
+                if let Spanned {
+                    value: ExprKind::Identifier(id),
+                    address: saddr,
+                } = callee
+                {
                     Spanned::new(id.clone(), saddr.clone())
                 } else {
                     todo!("Make a stringified value of native func {callee:?}")
                 }
             }
-            _ => todo!()
+            _ => todo!(),
         };
 
         self.call_trace.push_back(CallFrame {
@@ -910,7 +928,11 @@ impl Interpreter {
         }
     }
 
-    fn resolve_lvalue(&mut self, realm: SharedRealm, expr: &Expression) -> InterpreterResult<LValue> {
+    fn resolve_lvalue(
+        &mut self,
+        realm: SharedRealm,
+        expr: &Expression,
+    ) -> InterpreterResult<LValue> {
         match &expr.value {
             ExprKind::Identifier(name) => Ok(LValue::Identifier(name.clone())),
 
