@@ -1050,8 +1050,21 @@ impl Interpreter {
         }
     }
 
-    // Flattens path into a string that will be used in Realm's HashMap lookup.
+    /// Flattens path into a string that will be used in Realm's HashMap lookup.
     fn flatten_path(&self, expr: &Expression) -> String {
         self.path_segments_to_vec(expr).join("::")
+    }
+
+    /// "Forks" an interpreter.
+    /// It shares world, builtins and module registry, but creates new call trace stack.
+    /// A forked interpreter can be safely put into a new thread like `thread::spawn(move || /* There's a forked interpreter */)`.
+    /// TODO: It's planned for multithreading. May be changed, or completely removed.
+    pub fn fork(&self) -> Self {
+        Self {
+            world: Arc::clone(&self.world),
+            builtins: Arc::clone(&self.builtins),
+            module_registry: Arc::clone(&self.module_registry),
+            call_trace: LinkedList::new(),
+        }
     }
 }
