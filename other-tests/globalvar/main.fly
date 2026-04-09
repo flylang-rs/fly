@@ -1,0 +1,7 @@
+use mod1;
+
+print(mod1::val)
+
+mod1::do()
+
+print(mod1::val, mod1::get())

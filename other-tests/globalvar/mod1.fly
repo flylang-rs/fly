@@ -1,0 +1,9 @@
+val = 0
+
+func do() {
+	val = 7
+}
+
+func get() {
+	return val
+}
