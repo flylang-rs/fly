@@ -82,6 +82,7 @@ pub enum TokenValue {
     Nil,
     Operator,
     Override,
+    Private,
     Public,
     Record,
     Return,

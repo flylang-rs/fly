@@ -1,0 +1,13 @@
+a = 0
+
+func do() {
+    a = 9
+    
+    private a = 4
+
+    a = 13   # Won't work, we declared `a` as private and any access of `a` will be only local.
+}
+
+do()
+
+print(a)   # 9

@@ -18,6 +18,7 @@ pub(crate) static KEYWORDS: LazyLock<HashMap<&'static str, crate::TokenValue>> =
             ("nil", TokenValue::Nil),
             ("operator", TokenValue::Operator),
             ("override", TokenValue::Override),
+            ("private", TokenValue::Private),
             ("public", TokenValue::Public),
             ("record", TokenValue::Record),
             ("return", TokenValue::Return),

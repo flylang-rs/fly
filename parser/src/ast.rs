@@ -143,9 +143,16 @@ pub struct While {
 
 #[derive(Debug, Clone)]
 pub struct VariableDefinition {
-    pub name: Spanned<String>,
-    pub type_annotation: Box<Expression>,
+    pub name: Box<Expression>,
+    pub visibility: VariableVisibility,
+    pub type_annotation: Option<Box<Expression>>,
     pub value: Box<Expression>,
+}
+
+#[derive(Debug, Clone)]
+pub enum VariableVisibility {
+    Local,
+    Global
 }
 
 #[derive(Debug, Copy, Clone)]

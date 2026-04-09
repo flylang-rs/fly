@@ -247,7 +247,7 @@ impl Interpreter {
                     .values_mut()
                     .insert(name.clone(), value);
 
-                Ok(None)
+                Ok(Some(ControlFlow::Nothing))
             }
             Statement::If(stmt) => {
                 // if x < n { ...
@@ -375,6 +375,23 @@ impl Interpreter {
             }
             Statement::Continue => Ok(Some(ControlFlow::Continue)),
             Statement::Break => Ok(Some(ControlFlow::Break)),
+            Statement::VariableDefinition(var) => {
+                let target = match self.resolve_lvalue(Arc::clone(&realm), &var.name)? {
+                    LValue::Identifier(id) => LValue::PrivateIdentifier(id),
+                    piv @ LValue::PrivateIdentifier(_) => piv,
+                    _ => unreachable!("Cannot do private indexed or property assignments.")
+                };
+
+                let rhs = self.evaluate_expression(Arc::clone(&realm), &var.value, false)?;
+
+                let ControlFlow::Value(rhs) = rhs else {
+                    panic!("Expected RHS as value, got: {rhs:?}");
+                };
+
+                self.assign(Arc::clone(&realm), target, rhs.clone());
+
+                Ok(Some(ControlFlow::Nothing))
+            }
             st => todo!("Unexpected statement: {:?}", st),
         }
     }
@@ -962,6 +979,13 @@ impl Interpreter {
                 Ok(LValue::Property { object, name })
             }
 
+            // FIXME: I'm not sure it should look like this!
+            // ExprKind::Path { .. } => {
+            //     let fullpath = self.path_segments_to_vec(expr).join("::");
+
+            //     Ok(LValue::Identifier(fullpath))
+            // }
+
             _ => panic!("Invalid assignment target"),
         }
     }
@@ -969,6 +993,7 @@ impl Interpreter {
     fn read_lvalue(&mut self, realm: SharedRealm, target: &LValue) -> Value {
         match target {
             LValue::Identifier(name) => realm.read().unwrap().lookup(name.as_str()).unwrap(),
+            LValue::PrivateIdentifier(name) => realm.read().unwrap().lookup(name.as_str()).unwrap(),
             LValue::Index { container, index } => {
                 let Value::Array(arr) = container else {
                     panic!("Cannot index into type: {:?}", container);
@@ -986,8 +1011,19 @@ impl Interpreter {
 
     // I separated it into a function to make it compatible with OpAssignments (+=, -=, ...)
     fn assign(&mut self, realm: SharedRealm, target: LValue, value: Value) {
+        debug!("!!! Assignment: {target:?}");
+
         match target {
             LValue::Identifier(name) => {
+                let assigned = realm.write().unwrap().write_existing(&name, value.clone());
+
+                if !assigned {
+                    // If it doesn't exist, create it locally
+                    realm.write().unwrap().values_mut().insert(name, value);
+                }
+            }
+            LValue::PrivateIdentifier(name) => {
+                // Always create it locally
                 realm.write().unwrap().values_mut().insert(name, value);
             }
             LValue::Index { container, index } => {

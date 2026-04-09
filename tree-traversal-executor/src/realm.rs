@@ -61,6 +61,21 @@ impl Realm {
         // If not found, try searching in parent Realm.
         self.parent.as_ref()?.try_read().unwrap().lookup(term)
     }
+
+    /// Walks up the realm chain and it rewrites the value of variable
+    /// if it encounteres a variable with specified name.
+    /// It does nothing if there's no variable with specified name.
+    /// Returns a boolean indicated does that variable exist or not.
+    pub fn write_existing(&mut self, name: &str, value: Value) -> bool {
+        if self.values.contains_key(name) {
+            self.values.insert(name.to_owned(), value);
+            true
+        } else if let Some(parent) = &self.parent {
+            parent.write().unwrap().write_existing(name, value)
+        } else {
+            false
+        }
+    }
 }
 
 // ...

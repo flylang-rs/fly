@@ -2,7 +2,7 @@ use flylang_common::{Address, spanned::Spanned};
 use flylang_lexer::token::{Token, TokenValue};
 use std::iter::Peekable;
 
-use crate::{error::ParserError, state::ParserState};
+use crate::{ast::{ExprKind, VariableDefinition}, error::ParserError, state::ParserState};
 
 // Import tests when necessary
 #[cfg(test)]
@@ -612,6 +612,39 @@ impl Parser {
         }
     }
 
+    fn parse_private(&mut self) -> ParserResult<ast::Statement> {
+        self.next_token();
+
+        let eof = self.eof_addr.clone();
+        let current_token = self.peek().ok_or_else(|| ParserError::UnexpectedEOF(eof))?;
+
+        match current_token {
+            TokenValue::Identifier(_) => {
+                let expr = self.parse_expression(0)?;
+
+                if let ExprKind::Assignment { name, value } = expr.value {
+                    return Ok(ast::Statement::VariableDefinition(VariableDefinition {
+                        name,
+                        visibility: ast::VariableVisibility::Local,
+                        type_annotation: None,
+                        value,
+                    }));
+                } else {
+                    panic!("Cannot apply `private` to expression `{:?}`", expr.value);
+                }
+            }
+            _ => todo!("Cannot mix `private` with {current_token:?} right now...")
+        }
+
+        // let value = self.parse_expression(0)?;
+
+        // Ok(ast::Statement::Return {
+        //     value: Box::new(value),
+        // })
+
+        unreachable!()
+    }
+
     fn parse_statement(&mut self) -> ParserResult<ast::Statement> {
         self.skip_whitespaces();
 
@@ -625,6 +658,7 @@ impl Parser {
                 TokenValue::Return => Ok(self.parse_return()?),
                 TokenValue::OpenBrace => Ok(self.parse_block()?),
                 TokenValue::Break | TokenValue::Continue => Ok(self.parse_break_or_continue()?),
+                TokenValue::Private => Ok(self.parse_private()?),
                 TokenValue::Use => Ok(self.parse_use()?),
                 _ /* tok */ => {
                     // eprintln!("Entering expression with token: {tok:?}");

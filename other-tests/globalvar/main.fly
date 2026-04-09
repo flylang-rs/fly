@@ -4,4 +4,8 @@ print(mod1::val)
 
 mod1::do()
 
-print(mod1::val, mod1::get())
+# Important note: mod1::val will be 0, because global variables are being calculated during the import.
+# When module import finishes, atomic values (like nil, integers, booleans, floats) will be immutable.
+# If you're working with global values a lot and want them to accessible, make getters.
+
+print(mod1::val, mod1::get())   # 0 7

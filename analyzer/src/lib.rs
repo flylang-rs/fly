@@ -69,6 +69,7 @@ impl<'a> Analyzer<'a> {
                         | ExprKind::Array(_)
                         | ExprKind::IndexedAccess { .. }
                         | ExprKind::PropertyAccess { .. }
+                        // | ExprKind::Path { .. }
                 ) {
                     self.diag.error(
                         "This kind of expression is not allowed as LHS",
