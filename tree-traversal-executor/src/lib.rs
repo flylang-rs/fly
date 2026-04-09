@@ -62,6 +62,7 @@ impl Interpreter {
         let natives = core::iter::empty()
             .chain(runtime::arrays::EXPORT.iter())
             .chain(runtime::booleans::EXPORT.iter())
+            .chain(runtime::exit::EXPORT.iter())
             .chain(runtime::floats::EXPORT.iter())
             .chain(runtime::integers::EXPORT.iter())
             .chain(runtime::nil::EXPORT.iter())

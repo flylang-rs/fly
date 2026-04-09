@@ -5,7 +5,10 @@ use crate::{
     types,
 };
 
-pub static EXPORT: &[(&str, RustInteropFn)] = &[("print", inner_print)];
+#[rustfmt::skip]
+pub static EXPORT: &[(&str, RustInteropFn)] = &[
+    ("print", inner_print)
+];
 
 fn inner_print(interpreter: &mut Interpreter, realm: SharedRealm, args: &[Value]) -> ControlFlow {
     let len = args.len();
