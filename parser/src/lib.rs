@@ -237,6 +237,14 @@ impl Parser {
             .ok_or_else(|| ParserError::UnexpectedEOF(self.eof_addr.clone()))?;
 
         let mut lhs = match self.next_token() {
+            // nil
+            Some(Token {
+                value: TokenValue::Nil,
+                address,
+            }) => Spanned {
+                value: ast::ExprKind::Nil,
+                address
+            },
             // Number
             Some(Token {
                 value: TokenValue::Number(nr),
@@ -661,33 +669,7 @@ impl Parser {
                 TokenValue::Private => Ok(self.parse_private()?),
                 TokenValue::Use => Ok(self.parse_use()?),
                 _ /* tok */ => {
-                    // eprintln!("Entering expression with token: {tok:?}");
-
-                    // Parse the left side speculatively as an expression
                     let lhs = self.parse_expression(0)?;
-
-                    // Now decide what kind of statement this is
-                    if self.peek() == Some(&TokenValue::Assign) {
-                        unreachable!(
-                            "There was an old code that used to work with assignments. Now, it's moved to expressions parser."
-                        );
-                        // self.next_token();
-                        // let val  = self.parse_expression(0);
-
-                        // eprintln!("Value: {:#?}", lhs.value);
-
-                        // match &lhs.value {
-                        //     ExprKind::Identifier(_) => Some(ast::Statement::Expr(Spanned {
-                        //         address: lhs.address.clone(),
-                        //         value: ast::ExprKind::Assignment {
-                        //                 name: Box::new(lhs.clone()),
-                        //                 value: Box::new(val),
-                        //             }
-                        //         }
-                        //     )),
-                        //     _ => panic!("invalid assignment target"),
-                        // }
-                    }
 
                     Ok(ast::Statement::Expr(lhs))
                 }

@@ -478,6 +478,9 @@ impl Interpreter {
             ExprKind::Neg(val) => {
                 ControlFlow::Value(self.unary_op_helper(realm, "-", val)?.unwrap())
             }
+            ExprKind::Nil => {
+                ControlFlow::Value(Value::Nil)
+            }
             ExprKind::Identifier(id) => {
                 debug!("Looking for {id:#?} from realm module ...");
 

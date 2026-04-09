@@ -47,6 +47,8 @@ pub enum ExprKind {
     Block(Vec<Statement>),
     Array(Vec<Expression>),
 
+    Nil,
+
     True,
     False,
 
