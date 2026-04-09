@@ -7,6 +7,14 @@ Requirements:
 
 To build and launch Flylang you have to clone Git repo:
 
+You have to options:
+
+1. Download pinned version (for example `v0.1.0`):
+```
+git clone https://github.com/flylang-rs/fly -b <version>
+```
+
+2. Or download latest commit:
 ```
 git clone https://github.com/flylang-rs/fly
 ```
