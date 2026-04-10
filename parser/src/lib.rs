@@ -331,7 +331,7 @@ impl Parser {
             }) => {
                 let inner = self.parse_expression(0)?;
                 let close = self.expect(TokenValue::CloseParen);
-                let merged = start_addr.merge(&close.address);
+                let merged = start_addr.clone().merge(&close.address);
 
                 Spanned {
                     value: inner.value,
@@ -427,7 +427,15 @@ impl Parser {
 
                 eprintln!("RHS: {rhs:?}");
 
-                todo!("HAHAH!");
+                let merged_addr = start_addr.merge(&rhs.address);
+
+                return Ok(Spanned {
+                	value: ast::ExprKind::AnonymousFunction {
+                		arguments,
+                		body: rhs.into()
+                	},
+                	address: merged_addr
+                });
             }
 
             let (left_bp, right_bp) = match op {
