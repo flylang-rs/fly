@@ -46,12 +46,21 @@ impl DiagnosticsReport for ParserError {
             ParserError::InvalidArgumentKind(address) => {
                 Diagnostics {}.error_ext(
                     &mut report,
-                    &format!("Invalid argument kind!"),
+                    &format!("Invalid argument kind"),
                     &address,
                     &[Note::new(address.clone(), "only identifier and argument list by using arrays supported.")],
                     &[],
                 );
             },
+            ParserError::InvalidArgumentKindOnlyId(address) => {
+            	Diagnostics {}.error_ext(
+            		&mut report,
+            		&format!("Invalid argument kind"),
+            		&address,
+            		&[Note::new(address.clone(), "only identifiers supported.")],
+            		&[]
+            	)
+            }
         }
 
         report
