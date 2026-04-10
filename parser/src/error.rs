@@ -1,4 +1,4 @@
-use flylang_common::{Address};
+use flylang_common::Address;
 use flylang_diagnostics::{Diagnostics, additions::Note, error::DiagnosticsReport};
 use flylang_lexer::token::Token;
 
@@ -8,7 +8,7 @@ pub enum ParserError {
     UnexpectedTokenInExpression { token: Token },
     ParsingNumberFailed { number: String, address: Address },
     InvalidArgumentKind(Address),
-    InvalidArgumentKindOnlyId(Address)
+    InvalidArgumentKindOnlyId(Address),
 }
 
 impl DiagnosticsReport for ParserError {
@@ -17,13 +17,7 @@ impl DiagnosticsReport for ParserError {
 
         match self {
             ParserError::UnexpectedEOF(addr) => {
-                Diagnostics {}.error_ext(
-                    &mut report,
-                    "Unexpected EOF",
-                    addr,
-                    &[],
-                    &[],
-                );
+                Diagnostics {}.error_ext(&mut report, "Unexpected EOF", addr, &[], &[]);
             }
             ParserError::UnexpectedTokenInExpression { token } => {
                 Diagnostics {}.error_ext(
@@ -42,25 +36,26 @@ impl DiagnosticsReport for ParserError {
                     &[Note::new(address.clone(), "here")],
                     &[],
                 );
-            },
+            }
             ParserError::InvalidArgumentKind(address) => {
                 Diagnostics {}.error_ext(
                     &mut report,
                     &format!("Invalid argument kind"),
                     &address,
-                    &[Note::new(address.clone(), "only identifier and argument list by using arrays supported.")],
+                    &[Note::new(
+                        address.clone(),
+                        "only identifier and argument list by using arrays supported.",
+                    )],
                     &[],
                 );
-            },
-            ParserError::InvalidArgumentKindOnlyId(address) => {
-            	Diagnostics {}.error_ext(
-            		&mut report,
-            		&format!("Invalid argument kind"),
-            		&address,
-            		&[Note::new(address.clone(), "only identifiers supported.")],
-            		&[]
-            	)
             }
+            ParserError::InvalidArgumentKindOnlyId(address) => Diagnostics {}.error_ext(
+                &mut report,
+                &format!("Invalid argument kind"),
+                &address,
+                &[Note::new(address.clone(), "only identifiers supported.")],
+                &[],
+            ),
         }
 
         report

@@ -17,10 +17,10 @@ fn run_file(source: Source) {
         Ok(st) => st,
         Err(LoadingError::AnalyzeFailed) => {
             std::process::exit(1);
-        },
+        }
         Err(e) => {
             eprintln!("{}", e.render());
-            
+
             std::process::exit(1)
         }
     };
@@ -39,16 +39,13 @@ fn run_file(source: Source) {
                     String::new()
                 };
 
-                flylang_diagnostics::report_simple_error(
-                    
-                    &format!(
-                        "  - #{}: {} in {}{}",
-                        nr + 1,
-                        i.func_name,
-                        i.address_filename,
-                        addr
-                    )
-                );
+                flylang_diagnostics::report_simple_error(&format!(
+                    "  - #{}: {} in {}{}",
+                    nr + 1,
+                    i.func_name,
+                    i.address_filename,
+                    addr
+                ));
             }
 
             eprintln!();
@@ -56,7 +53,7 @@ fn run_file(source: Source) {
             eprintln!("{}", e.render());
 
             std::process::exit(1)
-        },
+        }
     };
 
     info!("Program finished with result: {result:?}");

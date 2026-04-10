@@ -722,7 +722,18 @@ impl Interpreter {
             ExprKind::True => ControlFlow::Value(Value::Bool(true)),
             ExprKind::False => ControlFlow::Value(Value::Bool(false)),
             ExprKind::AnonymousFunction { arguments, body } => {
-                todo!("Anonymous functions!")
+            /*
+            let value = Value::Function(Arc::new(Function {
+            // REPLACE SPANNED::NEW with FunctionName::Anonymous
+                normal_name: Spanned::new(String::from("<anonymous>"), body.address.clone()),
+                params: arguments.iter().map(|x| *x.value.as_id().unwrap()).collect(),
+                body: Statement::Expr(*body.clone()),
+                closure_realm: Arc::clone(&realm),                       
+                }));
+            
+            //Ok(Some(value))
+            */
+                todo!("Anonymous functions! ({value:?})")
             },
         };
 

@@ -2,7 +2,11 @@ use flylang_common::{Address, spanned::Spanned};
 use flylang_lexer::token::{Token, TokenValue};
 use std::iter::Peekable;
 
-use crate::{ast::{ExprKind, VariableDefinition}, error::ParserError, state::ParserState};
+use crate::{
+    ast::{ExprKind, VariableDefinition},
+    error::ParserError,
+    state::ParserState,
+};
 
 // Import tests when necessary
 #[cfg(test)]
@@ -136,9 +140,16 @@ impl Parser {
     }
 
     // Maybe it should be in lexer.
-    fn check_number(&mut self, number_repr: String, address: Address) -> ParserResult<ast::Expression> {
+    fn check_number(
+        &mut self,
+        number_repr: String,
+        address: Address,
+    ) -> ParserResult<ast::Expression> {
         if let Err(_) = number_repr.parse::<f64>() {
-            return Err(ParserError::ParsingNumberFailed { number: number_repr, address });
+            return Err(ParserError::ParsingNumberFailed {
+                number: number_repr,
+                address,
+            });
         } else {
             Ok(Spanned {
                 value: ast::ExprKind::Number(number_repr),
@@ -243,7 +254,7 @@ impl Parser {
                 address,
             }) => Spanned {
                 value: ast::ExprKind::Nil,
-                address
+                address,
             },
             // Number
             Some(Token {
@@ -400,7 +411,7 @@ impl Parser {
             // TODO: Move these magic numbers outta here.
             if min_binding_power < 3 && op == TokenValue::Colon {
                 self.next_token();
-                
+
                 eprintln!("({min_binding_power}) LHS: {lhs:?}");
 
                 let rhs = self.parse_expression(0)?;
@@ -408,7 +419,7 @@ impl Parser {
                 let arguments: Vec<ast::Expression> = match &lhs.value {
                     ExprKind::Identifier(_) => {
                         vec![lhs.clone()]
-                    },
+                    }
                     ExprKind::Array(arr) => {
                         for i in arr {
                             if !matches!(i.value, ExprKind::Identifier(_)) {
@@ -417,7 +428,7 @@ impl Parser {
                         }
 
                         arr.clone()
-                    },
+                    }
                     _ => {
                         return Err(ParserError::InvalidArgumentKind(lhs.address.clone()));
                     }
@@ -430,11 +441,11 @@ impl Parser {
                 let merged_addr = start_addr.merge(&rhs.address);
 
                 return Ok(Spanned {
-                	value: ast::ExprKind::AnonymousFunction {
-                		arguments,
-                		body: rhs.into()
-                	},
-                	address: merged_addr
+                    value: ast::ExprKind::AnonymousFunction {
+                        arguments,
+                        body: rhs.into(),
+                    },
+                    address: merged_addr,
                 });
             }
 
@@ -694,7 +705,7 @@ impl Parser {
                     panic!("Cannot apply `private` to expression `{:?}`", expr.value);
                 }
             }
-            _ => todo!("Cannot mix `private` with {current_token:?} right now...")
+            _ => todo!("Cannot mix `private` with {current_token:?} right now..."),
         }
 
         // let value = self.parse_expression(0)?;

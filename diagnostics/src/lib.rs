@@ -108,7 +108,8 @@ impl Diagnostics {
             location.0,
             location.1,
             message.if_supports_color(Stream::Stderr, |x| x.bold())
-        ).unwrap();
+        )
+        .unwrap();
         writeln!(output, "     |").unwrap();
         writeln!(output, "{:>4} | {}", location.0, code_line).unwrap();
 
@@ -122,7 +123,8 @@ impl Diagnostics {
                     " ".repeat(location.1 - 1),
                     "^".repeat(pos.span.end - pos.span.start),
                     i.message.if_supports_color(Stream::Stderr, |x| x.bold())
-                ).unwrap();
+                )
+                .unwrap();
             } else {
                 writeln!(
                     output,
@@ -131,7 +133,8 @@ impl Diagnostics {
                         .if_supports_color(Stream::Stderr, |x| x.blue())
                         .if_supports_color(Stream::Stderr, |x| x.bold()),
                     i.message,
-                ).unwrap();
+                )
+                .unwrap();
             }
         }
 
@@ -153,24 +156,53 @@ impl Diagnostics {
                     &n.edits,
                     src.line_start(location.0 - 1)
                 ))
-            ).unwrap();
+            )
+            .unwrap();
         }
 
         writeln!(output, "     |").unwrap();
     }
 
-    pub fn error_ext(&self, output: &mut String, error: &str, address: &Address, notes: &[Note], helps: &[Help]) {
+    pub fn error_ext(
+        &self,
+        output: &mut String,
+        error: &str,
+        address: &Address,
+        notes: &[Note],
+        helps: &[Help],
+    ) {
         self.emit_with_location(output, DiagnosticsKind::Error, error, address, notes, helps);
     }
 
-    pub fn warning_ext(&self, output: &mut String, error: &str, address: &Address, notes: &[Note], helps: &[Help]) {
-        self.emit_with_location(output, DiagnosticsKind::Warning, error, address, notes, helps);
+    pub fn warning_ext(
+        &self,
+        output: &mut String,
+        error: &str,
+        address: &Address,
+        notes: &[Note],
+        helps: &[Help],
+    ) {
+        self.emit_with_location(
+            output,
+            DiagnosticsKind::Warning,
+            error,
+            address,
+            notes,
+            helps,
+        );
     }
 
     pub fn error(&self, error: &str, address: &Address, notes: &[Note], helps: &[Help]) {
         let mut diag = String::new();
 
-        self.emit_with_location(&mut diag, DiagnosticsKind::Error, error, address, notes, helps);
+        self.emit_with_location(
+            &mut diag,
+            DiagnosticsKind::Error,
+            error,
+            address,
+            notes,
+            helps,
+        );
 
         eprintln!("{diag}");
     }
@@ -178,7 +210,14 @@ impl Diagnostics {
     pub fn warning(&self, warning: &str, address: &Address, notes: &[Note], helps: &[Help]) {
         let mut diag = String::new();
 
-        self.emit_with_location(&mut diag, DiagnosticsKind::Warning, warning, address, notes, helps);
+        self.emit_with_location(
+            &mut diag,
+            DiagnosticsKind::Warning,
+            warning,
+            address,
+            notes,
+            helps,
+        );
 
         eprintln!("{diag}");
     }
@@ -200,7 +239,6 @@ pub fn report_simple_error(message: &str) {
         "error"
             .if_supports_color(Stream::Stderr, |x| x.red())
             .if_supports_color(Stream::Stderr, |x| x.bold()),
-        message
-            .if_supports_color(Stream::Stderr, |x| x.bold()),
+        message.if_supports_color(Stream::Stderr, |x| x.bold()),
     );
 }

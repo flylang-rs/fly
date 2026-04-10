@@ -10,9 +10,7 @@ pub struct Spanned<T> {
 
 impl<T> Spanned<T> {
     pub fn new(value: T, address: Address) -> Self {
-        Self {
-            value, address
-        }
+        Self { value, address }
     }
 }
 

@@ -1,20 +1,18 @@
-use std::{
-    io::Write, sync::Arc,
-};
+use std::{io::Write, sync::Arc};
 
 use crossterm::{
     event::{self, Event, KeyCode, KeyModifiers},
     terminal,
 };
 use flylang_common::source::Source;
-use flylang_diagnostics::{error::DiagnosticsReport};
+use flylang_diagnostics::error::DiagnosticsReport;
 use flylang_tte::{Interpreter, control_flow::ControlFlow, object::Value};
 
 use crate::common::{LoadingError, LoadingResult};
 
 pub struct REPL {
     interpreter: Interpreter,
-    line_counter: usize
+    line_counter: usize,
 }
 
 pub enum ReadlineResult {
@@ -27,7 +25,7 @@ impl REPL {
     pub fn new() -> Self {
         Self {
             interpreter: Interpreter::new(),
-            line_counter: 1
+            line_counter: 1,
         }
     }
 
@@ -94,7 +92,10 @@ impl REPL {
 
     pub fn execute(&mut self, line: String) -> LoadingResult<ControlFlow> {
         let ast = crate::common::parse_source(Arc::new(Source::new(String::from("<REPL>"), line)))?;
-        let result = self.interpreter.execute(ast).map_err(|e| LoadingError::InterpreterError(e))?;
+        let result = self
+            .interpreter
+            .execute(ast)
+            .map_err(|e| LoadingError::InterpreterError(e))?;
 
         Ok(result)
     }
@@ -122,27 +123,27 @@ impl REPL {
 
                             let methodname = format!("{ty}::to_displayable");
 
-                            let stringres = match self.interpreter.call_func_extern(&methodname, &[val]) {
-                                Ok(cf) => cf.unwrap(),
-                                Err(e) => {
-                                    eprintln!("{}", e.render());
+                            let stringres =
+                                match self.interpreter.call_func_extern(&methodname, &[val]) {
+                                    Ok(cf) => cf.unwrap(),
+                                    Err(e) => {
+                                        eprintln!("{}", e.render());
 
-                                    continue
-                                }
-                            };
+                                        continue;
+                                    }
+                                };
 
                             if let ControlFlow::Value(Value::String(v)) = stringres {
                                 println!("      = {v}");
                             }
                         }
                         Ok(ControlFlow::Nothing) => (),
-                        _ => panic!("Don't know what to show for CF = {result:?}")
+                        _ => panic!("Don't know what to show for CF = {result:?}"),
                     }
 
                     self.line_counter += 1;
                 }
             }
         }
-
     }
 }

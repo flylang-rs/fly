@@ -9,13 +9,18 @@ pub struct Note<'a> {
 
 impl<'a> Note<'a> {
     pub fn new(position: Address, message: &'a str) -> Self {
-        Self { position: Some(position), message }
+        Self {
+            position: Some(position),
+            message,
+        }
     }
 
     pub fn message(message: &'a str) -> Self {
-        Self { position: None, message }
+        Self {
+            position: None,
+            message,
+        }
     }
-
 }
 
 #[derive(Debug, Clone)]

@@ -4,7 +4,7 @@ use flylang_common::source::Source;
 use flylang_diagnostics::error::DiagnosticsReport;
 use flylang_lexer::{error::LexerError, token::Token};
 use flylang_parser::{Parser, ast::Statement, error::ParserError, state::ParserState};
-use flylang_tte::{error::InterpreterError};
+use flylang_tte::error::InterpreterError;
 
 pub type LoadingResult<T> = Result<T, LoadingError>;
 

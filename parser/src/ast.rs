@@ -80,7 +80,7 @@ pub enum ExprKind {
     AnonymousFunction {
         arguments: Vec<Expression>,
         body: Box<Expression>,
-    }
+    },
 }
 
 impl ExprKind {
@@ -159,7 +159,7 @@ pub struct VariableDefinition {
 #[derive(Debug, Clone)]
 pub enum VariableVisibility {
     Local,
-    Global
+    Global,
 }
 
 #[derive(Debug, Copy, Clone)]

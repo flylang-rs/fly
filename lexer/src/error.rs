@@ -32,7 +32,7 @@ impl DiagnosticsReport for LexerError {
                     &[Note::new(span.clone(), "here")],
                     &[],
                 );
-            },
+            }
             LexerError::InvalidDigitForNumberBase { base, span } => {
                 Diagnostics {}.error_ext(
                     &mut report,
@@ -41,7 +41,7 @@ impl DiagnosticsReport for LexerError {
                     &[Note::new(span.clone(), "here")],
                     &[],
                 );
-            },
+            }
             LexerError::UnexpectedEOF { span } => {
                 Diagnostics {}.error_ext(
                     &mut report,
@@ -50,8 +50,10 @@ impl DiagnosticsReport for LexerError {
                     &[Note::new(span.clone(), "here")],
                     &[],
                 );
-            },
-            LexerError::EOF => unreachable!("Not an error, it's a signal for driver that output is reached the end. This is expected EOF."),
+            }
+            LexerError::EOF => unreachable!(
+                "Not an error, it's a signal for driver that output is reached the end. This is expected EOF."
+            ),
         }
 
         report
