@@ -721,6 +721,9 @@ impl Interpreter {
 
             ExprKind::True => ControlFlow::Value(Value::Bool(true)),
             ExprKind::False => ControlFlow::Value(Value::Bool(false)),
+            ExprKind::AnonymousFunction { arguments, body } => {
+                todo!("Anonymous functions!")
+            },
         };
 
         Ok(result)

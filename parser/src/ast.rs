@@ -76,6 +76,11 @@ pub enum ExprKind {
         origin: Box<Expression>,
         index: Box<Expression>,
     },
+
+    AnonymousFunction {
+        arguments: Vec<Expression>,
+        body: Box<Expression>,
+    }
 }
 
 impl ExprKind {

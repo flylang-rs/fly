@@ -248,7 +248,7 @@ impl Lexer {
     }
 
     /// Lexes `/`, `/=`, `/+`, `/-`, `/+=` and `/-=`
-    fn lex_division(&mut self, start: usize) -> (TokenValue, usize) {
+    fn lex_slash(&mut self, start: usize) -> (TokenValue, usize) {
         match self.peek_symbol() {
             // /=
             Some((offset, '=')) => {
@@ -422,6 +422,17 @@ impl Lexer {
         }
     }
 
+    fn lex_bar(&mut self, position: usize) -> (TokenValue, usize) {
+        match self.peek_symbol() {
+            Some((offset, '|')) => {
+                self.next_character();
+
+                (TokenValue::LogicalOr, offset + 1)
+            }
+            _ => (TokenValue::Bar, position + 1),
+        }
+    }
+
     fn lex_colon(&mut self, position: usize) -> (TokenValue, usize) {
         match self.peek_symbol() {
             Some((offset, ':')) => {
@@ -445,7 +456,7 @@ impl Lexer {
             '=' => self.lex_equality_sign(position),
             '+' => self.lex_plus(position),
             '-' => self.lex_minus(position),
-            '/' => self.lex_division(position),
+            '/' => self.lex_slash(position),
             '*' => self.lex_asterisk(position),
             '\\' => (TokenValue::Backslash, position + 1),
             '(' => (TokenValue::OpenParen, position + 1),
@@ -456,6 +467,7 @@ impl Lexer {
             '}' => (TokenValue::CloseBrace, position + 1),
             '.' => self.lex_dot(position),
             '&' => self.lex_ampersand(position),
+            '|' => self.lex_bar(position),
             ',' => (TokenValue::Comma, position + 1),
             ':' => self.lex_colon(position),
             ';' => (TokenValue::Semicolon, position + 1),

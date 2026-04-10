@@ -6,7 +6,9 @@ use flylang_lexer::token::Token;
 pub enum ParserError {
     UnexpectedEOF(Address),
     UnexpectedTokenInExpression { token: Token },
-    ParsingNumberFailed { number: String, address: Address }
+    ParsingNumberFailed { number: String, address: Address },
+    InvalidArgumentKind(Address),
+    InvalidArgumentKindOnlyId(Address)
 }
 
 impl DiagnosticsReport for ParserError {
@@ -38,6 +40,15 @@ impl DiagnosticsReport for ParserError {
                     &format!("Failed to parse a number: {number:?}"),
                     &address,
                     &[Note::new(address.clone(), "here")],
+                    &[],
+                );
+            },
+            ParserError::InvalidArgumentKind(address) => {
+                Diagnostics {}.error_ext(
+                    &mut report,
+                    &format!("Invalid argument kind!"),
+                    &address,
+                    &[Note::new(address.clone(), "only identifier and argument list by using arrays supported.")],
                     &[],
                 );
             },

@@ -385,12 +385,57 @@ impl Parser {
                 continue; // don't fall through to infix handling
             }
 
+            // If we have something like `... : ...` (with colon), it's an anon function!
+            // It's a special case, parse it here.
+            // Why `min_binding_power < 3`? Because 3 is a binding power that separates assignment and most precedent operation
+            // Most precedent operations are `&&` and `||`,
+            // So using that condition here will give us (curly braces are a parser scope):
+            //   f = { x && 1 }: ...
+            //
+            // Not:
+            //   { f = x && 1 }: ...
+            // and
+            //    f = x && { 1 }: ...
+            // So we can process errors properly.
+            // TODO: Move these magic numbers outta here.
+            if min_binding_power < 3 && op == TokenValue::Colon {
+                self.next_token();
+                
+                eprintln!("({min_binding_power}) LHS: {lhs:?}");
+
+                let rhs = self.parse_expression(0)?;
+
+                let arguments: Vec<ast::Expression> = match &lhs.value {
+                    ExprKind::Identifier(_) => {
+                        vec![lhs.clone()]
+                    },
+                    ExprKind::Array(arr) => {
+                        for i in arr {
+                            if !matches!(i.value, ExprKind::Identifier(_)) {
+                                return Err(ParserError::InvalidArgumentKind(i.address.clone()));
+                            }
+                        }
+
+                        arr.clone()
+                    },
+                    _ => {
+                        return Err(ParserError::InvalidArgumentKind(lhs.address.clone()));
+                    }
+                };
+
+                eprintln!("Arguments: {arguments:?}");
+
+                eprintln!("RHS: {rhs:?}");
+
+                todo!("HAHAH!");
+            }
+
             let (left_bp, right_bp) = match op {
                 TokenValue::Assign => (1, 2),
                 TokenValue::LogicalAnd => (2, 3),
                 TokenValue::LogicalOr => (2, 3),
-                TokenValue::BitAnd => (3, 4),
-                TokenValue::BitOr => (3, 4),
+                TokenValue::Ampersand => (3, 4),
+                TokenValue::Bar => (3, 4),
                 TokenValue::BitShiftLeft => (4, 5),
                 TokenValue::BitShiftRight => (4, 5),
                 TokenValue::Equals
@@ -485,8 +530,8 @@ impl Parser {
                     }
                     TokenValue::LogicalAnd => ast::ExprKind::And(Box::new(lhs), Box::new(rhs)),
                     TokenValue::LogicalOr => ast::ExprKind::Or(Box::new(lhs), Box::new(rhs)),
-                    TokenValue::BitAnd => ast::ExprKind::BitAnd(Box::new(lhs), Box::new(rhs)),
-                    TokenValue::BitOr => ast::ExprKind::BitOr(Box::new(lhs), Box::new(rhs)),
+                    TokenValue::Ampersand => ast::ExprKind::BitAnd(Box::new(lhs), Box::new(rhs)),
+                    TokenValue::Bar => ast::ExprKind::BitOr(Box::new(lhs), Box::new(rhs)),
                     TokenValue::BitShiftLeft => {
                         ast::ExprKind::BitShiftLeft(Box::new(lhs), Box::new(rhs))
                     }
