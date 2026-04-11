@@ -4,7 +4,7 @@ use std::iter::Peekable;
 
 use crate::{
     ast::{ExprKind, VariableDefinition},
-    error::ParserError,
+    error::{InvalidArgumentKindDomain, ParserError},
     state::ParserState,
 };
 
@@ -412,8 +412,6 @@ impl Parser {
             if min_binding_power < 3 && op == TokenValue::Colon {
                 self.next_token();
 
-                eprintln!("({min_binding_power}) LHS: {lhs:?}");
-
                 let rhs = self.parse_expression(0)?;
 
                 let arguments: Vec<ast::Expression> = match &lhs.value {
@@ -423,20 +421,22 @@ impl Parser {
                     ExprKind::Array(arr) => {
                         for i in arr {
                             if !matches!(i.value, ExprKind::Identifier(_)) {
-                                return Err(ParserError::InvalidArgumentKind(i.address.clone()));
+                                return Err(ParserError::InvalidArgumentKind {
+                                    address: i.address.clone(),
+                                    domain: InvalidArgumentKindDomain::OnlyId
+                                });
                             }
                         }
 
                         arr.clone()
                     }
                     _ => {
-                        return Err(ParserError::InvalidArgumentKind(lhs.address.clone()));
+                        return Err(ParserError::InvalidArgumentKind{
+                            address: lhs.address.clone(),
+                            domain: InvalidArgumentKindDomain::WholeExpression
+                        });
                     }
                 };
-
-                eprintln!("Arguments: {arguments:?}");
-
-                eprintln!("RHS: {rhs:?}");
 
                 let merged_addr = start_addr.merge(&rhs.address);
 

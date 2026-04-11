@@ -12,7 +12,7 @@ use crate::{
     calltrace::CallFrame,
     control_flow::ControlFlow,
     error::InterpreterError,
-    function::Function,
+    function::{Function, FunctionNameKind},
     object::{LValue, Value},
     realm::Realm,
 };
@@ -231,7 +231,7 @@ impl Interpreter {
                 let name = &function.name.value;
 
                 let value = Value::Function(Arc::new(Function {
-                    normal_name: function.name.clone(),
+                    normal_name: FunctionNameKind::Normal(function.name.clone()),
                     params: function
                         .arguments
                         .iter()
@@ -722,18 +722,15 @@ impl Interpreter {
             ExprKind::True => ControlFlow::Value(Value::Bool(true)),
             ExprKind::False => ControlFlow::Value(Value::Bool(false)),
             ExprKind::AnonymousFunction { arguments, body } => {
-            /*
-            let value = Value::Function(Arc::new(Function {
-            // REPLACE SPANNED::NEW with FunctionName::Anonymous
-                normal_name: Spanned::new(String::from("<anonymous>"), body.address.clone()),
-                params: arguments.iter().map(|x| *x.value.as_id().unwrap()).collect(),
-                body: Statement::Expr(*body.clone()),
-                closure_realm: Arc::clone(&realm),                       
+                let value = Value::Function(Arc::new(Function {
+                    normal_name: FunctionNameKind::Anonymous,
+                    params: arguments.iter().map(|x| x.value.as_id().unwrap().to_owned()).collect(),
+                    body: Statement::Expr(*body.clone()),
+                    closure_realm: Arc::clone(&realm),                       
                 }));
             
-            //Ok(Some(value))
-            */
-                todo!("Anonymous functions! ({value:?})")
+                ControlFlow::Value(value)
+                // todo!("Anonymous functions! ({value:?})")
             },
         };
 
@@ -742,7 +739,23 @@ impl Interpreter {
 
     fn push_call_frame(&mut self, callee: &Expression, func: &Value) {
         let name: Spanned<String> = match &func {
-            Value::Function(function) => function.normal_name.clone(),
+            Value::Function(function) => {
+                match &function.normal_name {
+                    FunctionNameKind::Normal(spanned) => spanned.clone(),
+                    FunctionNameKind::Anonymous => {
+                        if let Spanned {
+                            value: ExprKind::Identifier(id),
+                            address: saddr,
+                        } = callee
+                        {
+                            Spanned::new(id.clone() + " (anonymous)", saddr.clone())
+                        } else {
+                            Spanned::new(String::from("<anonymous>"), callee.address.clone())
+                            // todo!("Make a stringified value of NON-native func {callee:?}")
+                        }
+                    },
+                }
+            },
             Value::Native(_) => {
                 if let Spanned {
                     value: ExprKind::Identifier(id),
@@ -802,7 +815,7 @@ impl Interpreter {
             let parameters = &func.params;
 
             if parameters.len() != args.len() {
-                panic!("Insufficent arguments!");
+                panic!("Insufficent arguments! ({} vs {})", parameters.len(), args.len());
             }
 
             // Arguments are just temporary variables

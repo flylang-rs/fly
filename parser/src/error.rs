@@ -7,8 +7,16 @@ pub enum ParserError {
     UnexpectedEOF(Address),
     UnexpectedTokenInExpression { token: Token },
     ParsingNumberFailed { number: String, address: Address },
-    InvalidArgumentKind(Address),
-    InvalidArgumentKindOnlyId(Address),
+    InvalidArgumentKind {
+        address:Address,
+        domain: InvalidArgumentKindDomain
+    },
+}
+
+#[derive(Clone, Debug)]
+pub enum InvalidArgumentKindDomain {
+    WholeExpression,
+    OnlyId,
 }
 
 impl DiagnosticsReport for ParserError {
@@ -37,25 +45,23 @@ impl DiagnosticsReport for ParserError {
                     &[],
                 );
             }
-            ParserError::InvalidArgumentKind(address) => {
+            ParserError::InvalidArgumentKind { address, domain } => {
+                let note_msg = match domain {
+                    InvalidArgumentKindDomain::WholeExpression => "only identifier and argument list by using arrays supported here",
+                    InvalidArgumentKindDomain::OnlyId => "only identifiers supported here",
+                };
+
                 Diagnostics {}.error_ext(
                     &mut report,
                     &format!("Invalid argument kind"),
                     &address,
                     &[Note::new(
                         address.clone(),
-                        "only identifier and argument list by using arrays supported.",
+                        note_msg,
                     )],
                     &[],
                 );
             }
-            ParserError::InvalidArgumentKindOnlyId(address) => Diagnostics {}.error_ext(
-                &mut report,
-                &format!("Invalid argument kind"),
-                &address,
-                &[Note::new(address.clone(), "only identifiers supported.")],
-                &[],
-            ),
         }
 
         report

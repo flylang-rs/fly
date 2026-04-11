@@ -1,0 +1,33 @@
+# Anonymous functions
+
+# Here's a function f(x) = x^2 and its derivative f'(x) = (x^2)' = 2x
+
+_f = x: x * x
+_df = x: 2 * x
+
+# Note: If you need arity that doesn't equal 1 (n != 1), use array notation instead:
+# Here is a zero-arity anonymous function
+
+_g = []: print("Hi!")
+
+# Here are anonymous functions with arity of two
+# f(x, y) = (xy)^2
+# f'x(x, y) = 2x * (y^2)
+# f'y(x, y) = 2 * (x^2) * y
+
+_h = [x, y]: (x * y) * (x * y)
+_dh_x = [x, y]: 2 * x * (y * y)
+_dh_y = [x, y]: 2 * (x * x) * y
+
+pair_f = x: [_f(x), _df(x)]
+pair_h = [x, y]: [_h(x, y), _dh_x(x, y), _dh_y(x, y)]
+
+_g()   # Hi!
+print(pair_f(4))    # [16, 8]
+print(pair_h(4, 9)) # [1296, 648, 288]
+
+
+# Also you can call it instantly
+
+result = ([x, y, z]: x + y + z)(4, 9, 26)
+print(result)

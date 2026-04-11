@@ -7,10 +7,16 @@ use crate::realm::Realm;
 
 #[derive(Clone)]
 pub struct Function {
-    pub normal_name: Spanned<String>,
+    pub normal_name: FunctionNameKind,
     pub params: Vec<String>,
     pub body: Statement,
     pub closure_realm: Arc<RwLock<Realm>>, // captured at definition time
+}
+
+#[derive(Clone)]
+pub enum FunctionNameKind {
+    Normal(Spanned<String>),
+    Anonymous
 }
 
 // It will avoid stack overflowing

@@ -1,6 +1,0 @@
-_f = x: x * x
-_df = x: 2 * x
-
-pair = (x): [_f(x), _df(x)]
-
-print(pair(4))
