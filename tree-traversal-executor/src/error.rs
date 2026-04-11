@@ -15,10 +15,35 @@ pub enum InterpreterError {
         lhs_type: String,
         rhs_type: String,
     },
+    CallError(CallError)
+}
+
+impl InterpreterError {
+    pub fn try_get_error_loc(&self) -> Option<&Address> {
+        match self {
+            InterpreterError::NameNotDefined { address, .. } => Some(address),
+            InterpreterError::IncompatibleTypesForOperation { lhs_addr, .. } => Some(lhs_addr),
+            InterpreterError::CallError(call_error) => call_error.try_get_error_loc(),
+        }
+    }
+}
+
+/// Errors that happen when preparing to call a function.
+#[rustfmt::skip]
+#[derive(Debug, Clone)]
+pub enum CallError {
     InsufficentArguments {
         callee_address: Address,
         expected_count: usize,
         given_count: usize,
+    }
+}
+
+impl CallError {
+    pub fn try_get_error_loc(&self) -> Option<&Address> {
+        match self {
+            CallError::InsufficentArguments { callee_address, .. } => Some(callee_address),
+        }
     }
 }
 
@@ -56,18 +81,22 @@ impl DiagnosticsReport for InterpreterError {
                 ],
                 &[],
             ),
-            InterpreterError::InsufficentArguments { callee_address, expected_count, given_count } => {
-                flylang_diagnostics::Diagnostics {}.error_ext(
-                    &mut result,
-                    &format!(
-                        "Insufficent argument for a function call ({expected_count} expected, {given_count} given)"
-                    ),
-                    &callee_address,
-                    &[
-                        Note::new(callee_address.clone(), &format!("here")),
-                    ],
-                    &[],
-                )
+            InterpreterError::CallError(err) => {
+                match err {
+                    CallError::InsufficentArguments { callee_address, expected_count, given_count } => {
+                        flylang_diagnostics::Diagnostics {}.error_ext(
+                            &mut result,
+                            &format!(
+                                "Insufficent argument for a function call ({expected_count} expected, {given_count} given)"
+                            ),
+                            &callee_address,
+                            &[
+                                Note::new(callee_address.clone(), &format!("here")),
+                            ],
+                            &[],
+                        )
+                    }
+                }
             }
         }
 

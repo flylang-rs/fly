@@ -9,9 +9,9 @@ use flylang_parser::ast::{DivisionKind, ExprKind, Expression, Statement, While};
 use log::debug;
 
 use crate::{
-    calltrace::CallFrame,
+    calltrace::{CallFrame, CallSegment},
     control_flow::ControlFlow,
-    error::InterpreterError,
+    error::{CallError, InterpreterError},
     function::{Function, FunctionNameKind},
     object::{LValue, Value},
     realm::Realm,
@@ -108,9 +108,11 @@ impl Interpreter {
         ast: Vec<Statement>,
     ) -> InterpreterResult<ControlFlow> {
         self.call_trace.push_back(CallFrame {
-            func_name: "<main>".to_string(),
-            address_filename: source.filepath.clone(),
-            address_line_col: None,
+            what_calls: CallSegment {
+                func_name: "<main>".to_string(),
+                address_filename: source.filepath.clone(),
+                address_line_col: None,
+            },
         });
 
         self.exec_inner(Arc::clone(&self.world), &ast, false)
@@ -164,7 +166,7 @@ impl Interpreter {
         let mut path = PathBuf::from(importer)
             .parent()
             .map(|x| x.to_path_buf())
-            .unwrap();  // TODO: Checks
+            .unwrap(); // TODO: Checks
 
         path = path.join(&filename);
 
@@ -379,7 +381,7 @@ impl Interpreter {
                 let target = match self.resolve_lvalue(Arc::clone(&realm), &var.name)? {
                     LValue::Identifier(id) => LValue::PrivateIdentifier(id),
                     piv @ LValue::PrivateIdentifier(_) => piv,
-                    _ => unreachable!("Cannot do private indexed or property assignments.")
+                    _ => unreachable!("Cannot do private indexed or property assignments."),
                 };
 
                 let rhs = self.evaluate_expression(Arc::clone(&realm), &var.value, false)?;
@@ -413,11 +415,14 @@ impl Interpreter {
         expr: &Expression,
         is_subexpression: bool,
     ) -> InterpreterResult<ControlFlow> {
-        let Spanned { value, address } = expr;
+        let Spanned {
+            value: expression_kind,
+            address,
+        } = expr;
 
         debug!("Eval: {expr:?}");
 
-        let result = match value {
+        let result = match expression_kind {
             ExprKind::Add(lhs, rhs) => {
                 ControlFlow::Value(self.binary_op_helper(realm, "+", lhs, rhs)?.unwrap())
             }
@@ -478,9 +483,7 @@ impl Interpreter {
             ExprKind::Neg(val) => {
                 ControlFlow::Value(self.unary_op_helper(realm, "-", val)?.unwrap())
             }
-            ExprKind::Nil => {
-                ControlFlow::Value(Value::Nil)
-            }
+            ExprKind::Nil => ControlFlow::Value(Value::Nil),
             ExprKind::Identifier(id) => {
                 debug!("Looking for {id:#?} from realm module ...");
 
@@ -724,14 +727,17 @@ impl Interpreter {
             ExprKind::AnonymousFunction { arguments, body } => {
                 let value = Value::Function(Arc::new(Function {
                     normal_name: FunctionNameKind::Anonymous,
-                    params: arguments.iter().map(|x| x.value.as_id().unwrap().to_owned()).collect(),
+                    params: arguments
+                        .iter()
+                        .map(|x| x.value.as_id().unwrap().to_owned())
+                        .collect(),
                     body: Statement::Expr(*body.clone()),
-                    closure_realm: Arc::clone(&realm),                       
+                    closure_realm: Arc::clone(&realm),
                 }));
-            
+
                 ControlFlow::Value(value)
                 // todo!("Anonymous functions! ({value:?})")
-            },
+            }
         };
 
         Ok(result)
@@ -753,9 +759,9 @@ impl Interpreter {
                             Spanned::new(String::from("<anonymous>"), callee.address.clone())
                             // todo!("Make a stringified value of NON-native func {callee:?}")
                         }
-                    },
+                    }
                 }
-            },
+            }
             Value::Native(_) => {
                 if let Spanned {
                     value: ExprKind::Identifier(id),
@@ -771,26 +777,32 @@ impl Interpreter {
         };
 
         self.call_trace.push_back(CallFrame {
-            func_name: name.value,
-            address_filename: name.address.source.filepath.clone(),
-            address_line_col: name
-                .address
-                .source
-                .location(callee.address.span.start)
-                .into(),
+            what_calls: CallSegment {
+                func_name: name.value,
+                address_filename: name.address.source.filepath.clone(),
+                address_line_col: name
+                    .address
+                    .source
+                    .location(callee.address.span.start)
+                    .into(),
+            },
         });
     }
 
     fn push_call_frame_for_methodcall(&mut self, method_key: String, callee: &Expression) {
         self.call_trace.push_back(CallFrame {
-            func_name: method_key.clone(),
-            address_filename: callee.address.source.filepath.clone(),
-            address_line_col: callee
-                .address
-                .source
-                .location(callee.address.span.start)
-                .into(),
+            what_calls: CallSegment {
+                func_name: method_key.clone(),
+                address_filename: callee.address.source.filepath.clone(),
+                address_line_col: callee
+                    .address
+                    .source
+                    .location(callee.address.span.start)
+                    .into(),
+            },
         });
+
+        todo!()
     }
 
     // Performs a function call.
@@ -816,11 +828,13 @@ impl Interpreter {
             let parameters = &func.params;
 
             if parameters.len() != args.len() {
-                return Err(InterpreterError::InsufficentArguments {
-                    callee_address: callee_addr.unwrap().clone(),
-                    expected_count: parameters.len(),
-                    given_count: args.len()
-                });
+                return Err(InterpreterError::CallError(
+                    CallError::InsufficentArguments {
+                        callee_address: callee_addr.unwrap().clone(),
+                        expected_count: parameters.len(),
+                        given_count: args.len(),
+                    },
+                ));
             }
 
             // Arguments are just temporary variables
@@ -944,7 +958,9 @@ impl Interpreter {
                 rhs_type: r_type.to_owned(),
             })?;
 
-        if let ControlFlow::Value(va) = self.call_func(realm, None, method, &[lhs.value, rhs.value])? {
+        if let ControlFlow::Value(va) =
+            self.call_func(realm, None, method, &[lhs.value, rhs.value])?
+        {
             return Ok(Some(va));
         } else {
             panic!("Failed to get a return value from function call.");
@@ -1020,7 +1036,6 @@ impl Interpreter {
 
             //     Ok(LValue::Identifier(fullpath))
             // }
-
             _ => panic!("Invalid assignment target"),
         }
     }

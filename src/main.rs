@@ -33,7 +33,7 @@ fn run_file(source: Source) {
             flylang_diagnostics::report_simple_error("Exception occured, showing traceback...");
 
             for (nr, i) in interpreter.calltrace().iter().enumerate() {
-                let addr = if let Some((l, c)) = i.address_line_col {
+                let addr = if let Some((l, c)) = i.what_calls.address_line_col {
                     format!(":{l}:{c}")
                 } else {
                     String::new()
@@ -42,9 +42,9 @@ fn run_file(source: Source) {
                 flylang_diagnostics::report_simple_error(&format!(
                     "  - #{}: {} in {}{}",
                     nr + 1,
-                    i.func_name,
-                    i.address_filename,
-                    addr
+                    i.what_calls.func_name,
+                    i.what_calls.address_filename,
+                    addr,
                 ));
             }
 
