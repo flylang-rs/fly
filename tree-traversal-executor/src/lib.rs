@@ -4,7 +4,7 @@ use std::{
     sync::{Arc, Mutex, RwLock},
 };
 
-use flylang_common::{source::Source, spanned::Spanned};
+use flylang_common::{Address, source::Source, spanned::Spanned};
 use flylang_parser::ast::{DivisionKind, ExprKind, Expression, Statement, While};
 use log::debug;
 
@@ -567,7 +567,7 @@ impl Interpreter {
 
                     self.push_call_frame_for_methodcall(method_key.clone(), callee);
 
-                    let value = self.call_func(realm, method, &args);
+                    let value = self.call_func(realm, Some(&callee.address), method, &args);
 
                     self.call_trace.pop_back();
 
@@ -600,7 +600,7 @@ impl Interpreter {
 
                 self.push_call_frame(callee, &func);
 
-                let value = self.call_func(realm, func, &args)?;
+                let value = self.call_func(realm, Some(&callee.address), func, &args)?;
 
                 self.call_trace.pop_back();
 
@@ -798,6 +798,7 @@ impl Interpreter {
     fn call_func(
         &mut self,
         realm: SharedRealm,
+        callee_addr: Option<&Address>,
         func: Value,
         args: &[Value],
     ) -> InterpreterResult<ControlFlow> {
@@ -815,7 +816,11 @@ impl Interpreter {
             let parameters = &func.params;
 
             if parameters.len() != args.len() {
-                panic!("Insufficent arguments! ({} vs {})", parameters.len(), args.len());
+                return Err(InterpreterError::InsufficentArguments {
+                    callee_address: callee_addr.unwrap().clone(),
+                    expected_count: parameters.len(),
+                    given_count: args.len()
+                });
             }
 
             // Arguments are just temporary variables
@@ -939,7 +944,7 @@ impl Interpreter {
                 rhs_type: r_type.to_owned(),
             })?;
 
-        if let ControlFlow::Value(va) = self.call_func(realm, method, &[lhs.value, rhs.value])? {
+        if let ControlFlow::Value(va) = self.call_func(realm, None, method, &[lhs.value, rhs.value])? {
             return Ok(Some(va));
         } else {
             panic!("Failed to get a return value from function call.");
@@ -968,7 +973,7 @@ impl Interpreter {
             .lookup(&method_name)
             .unwrap_or_else(|| panic!("Incompatible type for operation `{op}`: `{ty}`"));
 
-        if let ControlFlow::Value(va) = self.call_func(realm, method, &[expr_val])? {
+        if let ControlFlow::Value(va) = self.call_func(realm, None, method, &[expr_val])? {
             return Ok(Some(va));
         } else {
             panic!("Failed to get a return value from function call.");

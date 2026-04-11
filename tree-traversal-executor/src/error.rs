@@ -14,6 +14,11 @@ pub enum InterpreterError {
         rhs_addr: Address,
         lhs_type: String,
         rhs_type: String,
+    },
+    InsufficentArguments {
+        callee_address: Address,
+        expected_count: usize,
+        given_count: usize,
     }
 }
 
@@ -51,6 +56,19 @@ impl DiagnosticsReport for InterpreterError {
                 ],
                 &[],
             ),
+            InterpreterError::InsufficentArguments { callee_address, expected_count, given_count } => {
+                flylang_diagnostics::Diagnostics {}.error_ext(
+                    &mut result,
+                    &format!(
+                        "Insufficent argument for a function call ({expected_count} expected, {given_count} given)"
+                    ),
+                    &callee_address,
+                    &[
+                        Note::new(callee_address.clone(), &format!("here")),
+                    ],
+                    &[],
+                )
+            }
         }
 
         result

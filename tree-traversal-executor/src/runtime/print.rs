@@ -22,7 +22,7 @@ fn inner_print(interpreter: &mut Interpreter, realm: SharedRealm, args: &[Value]
 
         if let Some(method) = method {
             let string_value = interpreter
-                .call_func(Arc::clone(&realm), method, &[i.clone()])
+                .call_func(Arc::clone(&realm), None, method, &[i.clone()])
                 .unwrap_or_else(|e| panic!("Unhandled interpreter error. ({e:?})"));
 
             let ControlFlow::Value(Value::String(display_value)) = string_value else {
