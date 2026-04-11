@@ -1,0 +1,18 @@
+func d() {
+    return x
+}
+
+func c() {
+    d()
+}
+
+func b() {
+    c()
+}
+
+func a() {
+    b()
+}
+
+print("?")
+a()

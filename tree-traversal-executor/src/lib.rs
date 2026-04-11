@@ -107,13 +107,13 @@ impl Interpreter {
         source: Arc<Source>,
         ast: Vec<Statement>,
     ) -> InterpreterResult<ControlFlow> {
-        self.call_trace.push_back(CallFrame {
-            what_calls: CallSegment {
-                func_name: "<main>".to_string(),
-                address_filename: source.filepath.clone(),
-                address_line_col: None,
-            },
-        });
+        // self.call_trace.push_back(CallFrame {
+        //     what_calls: CallSegment {
+        //         func_name: "<main>".to_string(),
+        //         address_filename: source.filepath.clone(),
+        //         address_line_col: None,
+        //     },
+        // });
 
         self.exec_inner(Arc::clone(&self.world), &ast, false)
     }
@@ -745,23 +745,20 @@ impl Interpreter {
 
     fn push_call_frame(&mut self, callee: &Expression, func: &Value) {
         let name: Spanned<String> = match &func {
-            Value::Function(function) => {
-                match &function.normal_name {
-                    FunctionNameKind::Normal(spanned) => spanned.clone(),
-                    FunctionNameKind::Anonymous => {
-                        if let Spanned {
-                            value: ExprKind::Identifier(id),
-                            address: saddr,
-                        } = callee
-                        {
-                            Spanned::new(id.clone() + " (anonymous)", saddr.clone())
-                        } else {
-                            Spanned::new(String::from("<anonymous>"), callee.address.clone())
-                            // todo!("Make a stringified value of NON-native func {callee:?}")
-                        }
+            Value::Function(function) => match &function.normal_name {
+                FunctionNameKind::Normal(spanned) => spanned.clone(),
+                FunctionNameKind::Anonymous => {
+                    if let Spanned {
+                        value: ExprKind::Identifier(id),
+                        address: saddr,
+                    } = callee
+                    {
+                        Spanned::new(id.clone() + " (anonymous)", saddr.clone())
+                    } else {
+                        Spanned::new(String::from("<anonymous>"), callee.address.clone())
                     }
                 }
-            }
+            },
             Value::Native(_) => {
                 if let Spanned {
                     value: ExprKind::Identifier(id),
@@ -776,11 +773,19 @@ impl Interpreter {
             _ => todo!(),
         };
 
+        let last = self
+            .call_trace
+            .iter()
+            .last()
+            .map(|x| x.function_name.clone())
+            .unwrap_or_else(|| "<main>".to_string());
+
         self.call_trace.push_back(CallFrame {
-            what_calls: CallSegment {
-                func_name: name.value,
-                address_filename: name.address.source.filepath.clone(),
-                address_line_col: name
+            function_name: name.value, // the function being called
+            from: last.to_string().into(),
+            call_site: CallSegment {
+                address_filename: callee.address.source.filepath.clone(),
+                address_line_col: callee
                     .address
                     .source
                     .location(callee.address.span.start)
@@ -790,9 +795,17 @@ impl Interpreter {
     }
 
     fn push_call_frame_for_methodcall(&mut self, method_key: String, callee: &Expression) {
+        let last = self
+            .call_trace
+            .iter()
+            .last()
+            .map(|x| x.function_name.clone())
+            .unwrap_or_else(|| "<main>".to_string());
+
         self.call_trace.push_back(CallFrame {
-            what_calls: CallSegment {
-                func_name: method_key.clone(),
+            function_name: method_key.clone(),
+            from: last.to_string().into(),
+            call_site: CallSegment {
                 address_filename: callee.address.source.filepath.clone(),
                 address_line_col: callee
                     .address
