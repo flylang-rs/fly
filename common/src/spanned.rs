@@ -12,6 +12,13 @@ impl<T> Spanned<T> {
     pub fn new(value: T, address: Address) -> Self {
         Self { value, address }
     }
+
+    pub fn map<R>(self, f: fn(T) -> R) -> Spanned<R> {
+        Spanned {
+            value: f(self.value),
+            address: self.address.clone(),
+        }
+    }
 }
 
 impl<T: Debug> Debug for Spanned<T> {

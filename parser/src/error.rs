@@ -5,7 +5,7 @@ use flylang_lexer::token::Token;
 #[derive(Clone, Debug)]
 pub enum ParserError {
     UnexpectedEOF(Address),
-    UnexpectedTokenInExpression { token: Token },
+    UnexpectedToken { token: Token },
     ParsingNumberFailed { number: String, address: Address },
     InvalidArgumentKind {
         address:Address,
@@ -27,7 +27,7 @@ impl DiagnosticsReport for ParserError {
             ParserError::UnexpectedEOF(addr) => {
                 Diagnostics {}.error_ext(&mut report, "Unexpected EOF", addr, &[], &[]);
             }
-            ParserError::UnexpectedTokenInExpression { token } => {
+            ParserError::UnexpectedToken { token } => {
                 Diagnostics {}.error_ext(
                     &mut report,
                     "Unexpected token",

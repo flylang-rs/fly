@@ -2,7 +2,7 @@ use crate::object::Value;
 
 pub const TYPE_ARRAY: &str = "array";
 pub const TYPE_BOOL: &str = "bool";
-pub const TYPE_FLOAT: &str = "float";
+pub const TYPE_REAL: &str = "real";
 pub const TYPE_FUNCTION: &str = "func";
 pub const TYPE_INTEGER: &str = "integer";
 pub const TYPE_NATIVE: &str = "native";
@@ -13,7 +13,7 @@ pub fn value_to_internal_type(val: &Value) -> Option<&'static str> {
     match val {
         Value::Array(_) => Some(TYPE_ARRAY),
         Value::Bool(_) => Some(TYPE_BOOL),
-        Value::Float(_) => Some(TYPE_FLOAT),
+        Value::Real(_) => Some(TYPE_REAL),
         Value::Function(_) => Some(TYPE_FUNCTION),
         Value::Integer(_) => Some(TYPE_INTEGER),
         Value::Native(_) => Some(TYPE_NATIVE),

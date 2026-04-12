@@ -10,6 +10,7 @@ Ok(
                     "fly",
                     6..9,
                 ),
+                visibility: Global,
                 arguments: [],
                 body: Expr(
                     Spanned(

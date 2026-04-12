@@ -112,6 +112,8 @@ pub enum Statement {
     If(If),
     While(While),
 
+    RecordDefinition(RecordDefinition),
+
     ModuleUsageDeclaration {
         path: Box<Expression>,
     },
@@ -131,6 +133,7 @@ pub enum Statement {
 #[derive(Debug, Clone)]
 pub struct Function {
     pub name: Spanned<String>,
+    pub visibility: Visibility,
     pub arguments: Vec<Expression>,
     pub body: Box<Statement>,
 }
@@ -150,14 +153,21 @@ pub struct While {
 
 #[derive(Debug, Clone)]
 pub struct VariableDefinition {
-    pub name: Box<Expression>,
-    pub visibility: VariableVisibility,
+    pub name: Spanned<String>,
+    pub visibility: Visibility,
     pub type_annotation: Option<Box<Expression>>,
-    pub value: Box<Expression>,
+    pub value: Option<Box<Expression>>,
 }
 
 #[derive(Debug, Clone)]
-pub enum VariableVisibility {
+pub struct RecordDefinition {
+    pub name: Spanned<String>,
+    pub visibility: Visibility,
+    pub fields: Spanned<Vec<Statement>>,
+}
+
+#[derive(Debug, Clone)]
+pub enum Visibility {
     Local,
     Global,
 }

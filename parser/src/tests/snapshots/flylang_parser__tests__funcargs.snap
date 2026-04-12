@@ -10,6 +10,7 @@ Ok(
                     "multiarg",
                     6..14,
                 ),
+                visibility: Global,
                 arguments: [
                     Spanned(
                         Identifier(

@@ -1,0 +1,13 @@
+record City {
+	public name;
+	public latitude;
+	public longitude;
+}
+
+helsinki = new City {
+	name: "Helsinki",
+	latitude: 60.192059,
+	longitude: 24.945831
+}
+
+print(helsinki.name)

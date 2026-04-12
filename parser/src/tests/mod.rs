@@ -277,6 +277,45 @@ fn comparison_with_expr() {
 }
 
 #[test]
+fn empty_record() {
+    let code = utils::code2ast(
+        r#"
+record Test {}
+    "#,
+    );
+
+    insta::assert_debug_snapshot!(code);
+}
+
+#[test]
+fn record_with_one_pub_field() {
+    let code = utils::code2ast(
+        r#"
+record Test { public x }
+    "#,
+    );
+
+    insta::assert_debug_snapshot!(code);
+}
+
+#[test]
+fn record_with_multiple_fields() {
+    let code = utils::code2ast(
+        r#"
+record Test {
+	public x
+	public y
+	public z
+}
+    "#,
+    );
+
+    insta::assert_debug_snapshot!(code);
+}
+
+
+
+#[test]
 fn error_01() {
     let code = utils::code2ast(
         r#"

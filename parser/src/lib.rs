@@ -3,7 +3,7 @@ use flylang_lexer::token::{Token, TokenValue};
 use std::iter::Peekable;
 
 use crate::{
-    ast::{ExprKind, VariableDefinition},
+    ast::{ExprKind, Expression, RecordDefinition, VariableDefinition, Visibility},
     error::{InvalidArgumentKindDomain, ParserError},
     state::ParserState,
 };
@@ -45,6 +45,11 @@ impl Parser {
     fn peek(&mut self) -> Option<&TokenValue> {
         self.skip_comments();
         self.tokens.peek().map(|t| &t.value)
+    }
+
+    fn peek_whole(&mut self) -> Option<&Token> {
+        self.skip_comments();
+        self.tokens.peek()
     }
 
     fn peek_address(&mut self) -> Option<Address> {
@@ -135,6 +140,7 @@ impl Parser {
         Ok(ast::Statement::Function(ast::Function {
             name,
             arguments,
+            visibility: ast::Visibility::Global,
             body: Box::new(body),
         }))
     }
@@ -351,7 +357,7 @@ impl Parser {
             }
             None => todo!("EOF while parsing expression! Handle error gracefully!"),
             value => {
-                return Err(ParserError::UnexpectedTokenInExpression {
+                return Err(ParserError::UnexpectedToken {
                     token: value.unwrap(),
                 });
             }
@@ -423,7 +429,7 @@ impl Parser {
                             if !matches!(i.value, ExprKind::Identifier(_)) {
                                 return Err(ParserError::InvalidArgumentKind {
                                     address: i.address.clone(),
-                                    domain: InvalidArgumentKindDomain::OnlyId
+                                    domain: InvalidArgumentKindDomain::OnlyId,
                                 });
                             }
                         }
@@ -431,9 +437,9 @@ impl Parser {
                         arr.clone()
                     }
                     _ => {
-                        return Err(ParserError::InvalidArgumentKind{
+                        return Err(ParserError::InvalidArgumentKind {
                             address: lhs.address.clone(),
-                            domain: InvalidArgumentKindDomain::WholeExpression
+                            domain: InvalidArgumentKindDomain::WholeExpression,
                         });
                     }
                 };
@@ -695,11 +701,21 @@ impl Parser {
                 let expr = self.parse_expression(0)?;
 
                 if let ExprKind::Assignment { name, value } = expr.value {
+                    let name_string = name
+                        .clone()
+                        .map(|x| x.as_id().map(|x| x.to_string()));
+
+                    if name_string.value.is_none() {
+                        panic!("Expected identifier, got {:?}", &name.value);
+                    }
+
+                    let name_string = name_string.map(|x| x.unwrap());
+
                     return Ok(ast::Statement::VariableDefinition(VariableDefinition {
-                        name,
-                        visibility: ast::VariableVisibility::Local,
+                        name: name_string,
+                        visibility: ast::Visibility::Local,
                         type_annotation: None,
-                        value,
+                        value: Some(value),
                     }));
                 } else {
                     panic!("Cannot apply `private` to expression `{:?}`", expr.value);
@@ -708,13 +724,84 @@ impl Parser {
             _ => todo!("Cannot mix `private` with {current_token:?} right now..."),
         }
 
-        // let value = self.parse_expression(0)?;
-
-        // Ok(ast::Statement::Return {
-        //     value: Box::new(value),
-        // })
-
         unreachable!()
+    }
+
+    fn parse_record(&mut self, visibility: Visibility) -> ParserResult<ast::Statement> {
+        self.next_token();
+
+        let name = self
+            .next_token()
+            .ok_or_else(|| ParserError::UnexpectedEOF(self.eof_address().clone()))?;
+
+        let name = match &name.value {
+            TokenValue::Identifier(id) => Spanned::new(id.to_string(), name.address),
+            _ => return Err(ParserError::UnexpectedToken { token: name })
+        };
+
+        let fields = self.parse_record_block()?;
+
+        eprintln!("{fields:?}");
+
+        Ok(ast::Statement::RecordDefinition(RecordDefinition {
+            name,
+            visibility,
+            fields,
+        }))
+    }
+
+    fn parse_record_block(&mut self) -> ParserResult<Spanned<Vec<ast::Statement>>> {
+        let open_token_addr = self.expect(TokenValue::OpenBrace).address;
+        
+        let mut fields: Vec<ast::Statement> = vec![];
+        
+        loop {
+            self.skip_whitespaces();
+
+            let token = self
+                .peek_whole()
+                .cloned()
+                .ok_or_else(|| ParserError::UnexpectedEOF(self.eof_address().clone()))?;
+
+            match &token.value {
+                // Value field declaration
+                // `public name`
+                // `private name`
+                vis @ (TokenValue::Public | TokenValue::Private) => {
+                    self.next_token();
+
+                    let name = self
+                        .next_token()
+                        .ok_or_else(|| ParserError::UnexpectedEOF(self.eof_address().clone()))?;
+
+                    let name = match &name.value {
+                        TokenValue::Identifier(id) => Spanned::new(id.clone(), name.address.clone()),
+                        _ => return Err(ParserError::UnexpectedToken { token: name })
+                    };
+
+                    eprintln!("Public or private field with value: {:?}", name);
+
+                    fields.push(ast::Statement::VariableDefinition(VariableDefinition {
+                        name,
+                        visibility: match vis {
+                            TokenValue::Public => Visibility::Global,
+                            TokenValue::Private => Visibility::Local,
+                            _ => unreachable!()
+                        },
+                        type_annotation: None,   // TODO: Parse type annotation
+                        value: None,   // it's just a declaration
+                    }));
+                }
+                // Closing brace
+                TokenValue::CloseBrace => break,
+                // Anything else
+                _ => return Err(ParserError::UnexpectedToken { token: token }),
+            };
+        }
+
+        let close_token_addr = self.expect(TokenValue::CloseBrace).address;
+
+        Ok(Spanned::new(fields, open_token_addr.merge(&close_token_addr)))
     }
 
     fn parse_statement(&mut self) -> ParserResult<ast::Statement> {
@@ -730,8 +817,9 @@ impl Parser {
                 TokenValue::Return => Ok(self.parse_return()?),
                 TokenValue::OpenBrace => Ok(self.parse_block()?),
                 TokenValue::Break | TokenValue::Continue => Ok(self.parse_break_or_continue()?),
-                TokenValue::Private => Ok(self.parse_private()?),
                 TokenValue::Use => Ok(self.parse_use()?),
+                TokenValue::Private => Ok(self.parse_private()?),
+                TokenValue::Record => Ok(self.parse_record(Visibility::Global)?),
                 _ /* tok */ => {
                     let lhs = self.parse_expression(0)?;
 

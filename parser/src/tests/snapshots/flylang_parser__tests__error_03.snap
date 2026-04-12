@@ -3,7 +3,7 @@ source: parser/src/tests/mod.rs
 expression: code
 ---
 Err(
-    UnexpectedTokenInExpression {
+    UnexpectedToken {
         token: Token {
             value: Assign,
             address: Address {

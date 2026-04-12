@@ -43,8 +43,8 @@ common_operation_binary!(
 common_operation_binary!(
     integer_add_float,
     Integer,
-    Float,
-    Float,
+    Real,
+    Real,
     |x: &i128, y: &f64| (*x as f64) + y
 );
 
@@ -58,8 +58,8 @@ common_operation_binary!(
 common_operation_binary!(
     integer_sub_float,
     Integer,
-    Float,
-    Float,
+    Real,
+    Real,
     |x: &i128, y: &f64| (*x as f64) - y
 );
 
@@ -73,8 +73,8 @@ common_operation_binary!(
 common_operation_binary!(
     integer_mul_float,
     Integer,
-    Float,
-    Float,
+    Real,
+    Real,
     |x: &i128, y: &f64| (*x as f64) * y
 );
 
@@ -82,7 +82,7 @@ common_operation_binary!(
     integers_div,
     Integer,
     Integer,
-    Float,
+    Real,
     |x: &i128, y: &i128| (*x as f64) / (*y as f64)
 );
 
