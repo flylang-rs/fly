@@ -3,7 +3,7 @@ use crate::{Interpreter, SharedRealm, control_flow::ControlFlow, object::Value};
 pub mod arrays;
 pub mod booleans;
 pub mod exit;
-pub mod floats;
+pub mod reals;
 pub mod integers;
 pub mod nil;
 pub mod print;

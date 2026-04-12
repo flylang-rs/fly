@@ -10,6 +10,7 @@ Ok(
                     "log",
                     6..9,
                 ),
+                visibility: Global,
                 arguments: [
                     Spanned(
                         Identifier(

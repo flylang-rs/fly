@@ -7,7 +7,7 @@ pub enum Value {
     Nil,
     Bool(bool),
     Integer(i128),
-    Float(f64),
+    Real(f64),
     String(Arc<String>),
     Array(Arc<Mutex<Vec<Value>>>),
     Function(Arc<Function>),
@@ -31,8 +31,8 @@ impl Value {
 		}
 	}
 
-	pub fn as_float(&self) -> Option<f64> {
-		if let Value::Float(f) = self {
+	pub fn as_real(&self) -> Option<f64> {
+		if let Value::Real(f) = self {
 			Some(*f)
 		} else {
 			None
@@ -43,7 +43,7 @@ impl Value {
 #[derive(Debug, Clone)]
 pub enum LValue {
     Identifier(String),
-	PrivateIdentifier(String),
+    PrivateIdentifier(String),
     Index { container: Value, index: Value },
     Property { object: Value, name: String },
 }

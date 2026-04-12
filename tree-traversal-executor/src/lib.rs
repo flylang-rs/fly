@@ -63,7 +63,7 @@ impl Interpreter {
             .chain(runtime::arrays::EXPORT.iter())
             .chain(runtime::booleans::EXPORT.iter())
             .chain(runtime::exit::EXPORT.iter())
-            .chain(runtime::floats::EXPORT.iter())
+            .chain(runtime::reals::EXPORT.iter())
             .chain(runtime::integers::EXPORT.iter())
             .chain(runtime::nil::EXPORT.iter())
             .chain(runtime::print::EXPORT.iter())
@@ -378,13 +378,19 @@ impl Interpreter {
             Statement::Continue => Ok(Some(ControlFlow::Continue)),
             Statement::Break => Ok(Some(ControlFlow::Break)),
             Statement::VariableDefinition(var) => {
-                let target = match self.resolve_lvalue(Arc::clone(&realm), &var.name)? {
+                let lhs = self.resolve_lvalue(Arc::clone(&realm), &var.name.clone().map(|x| ExprKind::Identifier(x)))?;
+
+                let target = match lhs {
                     LValue::Identifier(id) => LValue::PrivateIdentifier(id),
                     piv @ LValue::PrivateIdentifier(_) => piv,
                     _ => unreachable!("Cannot do private indexed or property assignments."),
                 };
 
-                let rhs = self.evaluate_expression(Arc::clone(&realm), &var.value, false)?;
+                let rhs = self.evaluate_expression(
+                    Arc::clone(&realm),
+                    var.value.as_ref().unwrap(),
+                    false
+                )?;
 
                 let ControlFlow::Value(rhs) = rhs else {
                     panic!("Expected RHS as value, got: {rhs:?}");
@@ -502,7 +508,7 @@ impl Interpreter {
                 let is_float = nr.contains('.');
 
                 let val = if is_float {
-                    Value::Float(nr.parse::<f64>().unwrap())
+                    Value::Real(nr.parse::<f64>().unwrap())
                 } else {
                     Value::Integer(nr.parse::<i128>().unwrap())
                 };

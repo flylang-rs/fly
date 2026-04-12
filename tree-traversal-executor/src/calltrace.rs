@@ -14,5 +14,4 @@ pub struct CallSegment {
     // Because (AFAIK) we can't precisely get line_col coords sometimes
     pub address_filename: String,
     pub address_line_col: Option<(usize, usize)>,
-
 }
