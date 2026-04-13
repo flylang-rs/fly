@@ -132,6 +132,7 @@ pub enum Statement {
 
 #[derive(Debug, Clone)]
 pub struct Function {
+	// TODO: Change it back to Box<Expression>
     pub name: Spanned<String>,
     pub visibility: Visibility,
     pub arguments: Vec<Expression>,
