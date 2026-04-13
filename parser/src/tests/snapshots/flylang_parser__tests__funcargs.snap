@@ -7,7 +7,9 @@ Ok(
         Function(
             Function {
                 name: Spanned(
-                    "multiarg",
+                    Identifier(
+                        "multiarg",
+                    ),
                     6..14,
                 ),
                 visibility: Global,

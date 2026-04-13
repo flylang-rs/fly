@@ -24,7 +24,9 @@ Ok(
         Function(
             Function {
                 name: Spanned(
-                    "a",
+                    Identifier(
+                        "a",
+                    ),
                     15..16,
                 ),
                 visibility: Global,
