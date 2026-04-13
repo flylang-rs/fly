@@ -12,6 +12,10 @@ pub enum Value {
     Array(Arc<Mutex<Vec<Value>>>),
     Function(Arc<Function>),
     Native(RustInteropFn),
+
+    // Complex types starting from 0.1.1
+    Record(Arc<Record>),
+    RecordInstance(Arc<Mutex<RecordInstance>>)
 }
 
 impl Value {
@@ -47,3 +51,9 @@ pub enum LValue {
     Index { container: Value, index: Value },
     Property { object: Value, name: String },
 }
+
+#[derive(Debug)]
+pub struct Record;
+
+#[derive(Debug)]
+pub struct RecordInstance;

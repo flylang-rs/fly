@@ -19,6 +19,6 @@ pub fn value_to_internal_type(val: &Value) -> Option<&'static str> {
         Value::Native(_) => Some(TYPE_NATIVE),
         Value::Nil => Some(TYPE_NIL),
         Value::String(_) => Some(TYPE_STRING),
-        // unk => panic!("Cannot convert {unk:?} to internal type."),
+        unk => panic!("Cannot convert {unk:?} to internal type."),
     }
 }
