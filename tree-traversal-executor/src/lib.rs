@@ -232,8 +232,13 @@ impl Interpreter {
             Statement::Function(function) => {
                 let name = &function.name.value;
 
+                let real_name: Spanned<String> = match &function.name.value {
+                	ExprKind::Identifier(id) => Spanned::new(id.clone(), function.name.address.clone()),
+                	fna => todo!("Function name is complex: {fna:?}")
+                };
+
                 let value = Value::Function(Arc::new(Function {
-                    normal_name: FunctionNameKind::Normal(function.name.clone()),
+                    normal_name: FunctionNameKind::Normal(real_name.clone()),
                     params: function
                         .arguments
                         .iter()
@@ -247,7 +252,7 @@ impl Interpreter {
                     .write()
                     .unwrap()
                     .values_mut()
-                    .insert(name.clone(), value);
+                    .insert(real_name.value, value);
 
                 Ok(Some(ControlFlow::Nothing))
             }
