@@ -131,15 +131,14 @@ impl Interpreter {
             debug!("Got: {i:?} => {stmt:?}");
 
             match stmt {
-                Some(cf @ ControlFlow::Return(_)) => return Ok(cf),
-                Some(cf @ ControlFlow::Break) => return Ok(cf),
-                Some(cf @ ControlFlow::Continue) => return Ok(cf),
+                cf @ ControlFlow::Return(_) => return Ok(cf),
+                cf @ ControlFlow::Break => return Ok(cf),
+                cf @ ControlFlow::Continue => return Ok(cf),
 
-                Some(cf @ ControlFlow::Value(_)) if return_on_value => return Ok(cf),
+                cf @ ControlFlow::Value(_) if return_on_value => return Ok(cf),
 
-                Some(ControlFlow::Value(_)) => continue,
-                Some(ControlFlow::Nothing) => continue,
-                None => continue,
+                ControlFlow::Value(_) => continue,
+                ControlFlow::Nothing => continue,
             }
         }
 
@@ -219,15 +218,11 @@ impl Interpreter {
     }
 
     /// Execute the single statement.
-    /// Not all statements are expressions so they can't return a value.
-    /// This is why I make it return `Option<Value>`.
-    ///
-    /// `return nil` will return `Some(Value::Nil)`
     fn exec_single_statement(
         &mut self,
         realm: SharedRealm,
         statement: &Statement,
-    ) -> InterpreterResult<Option<ControlFlow>> {
+    ) -> InterpreterResult<ControlFlow> {
         match statement {
             Statement::Function(function) => {
                 let name = &function.name.value;
@@ -254,7 +249,7 @@ impl Interpreter {
                     .values_mut()
                     .insert(real_name.value, value);
 
-                Ok(Some(ControlFlow::Nothing))
+                Ok(ControlFlow::Nothing)
             }
             Statement::If(stmt) => {
                 // if x < n { ...
@@ -284,7 +279,7 @@ impl Interpreter {
                         // let inner_realm = Arc::new(RwLock::new(Realm::dive(Arc::clone(&realm))));
 
                         // return Some(self.exec_inner(inner_realm, &bk));
-                        return Ok(Some(self.exec_inner(Arc::clone(&realm), &bk, false)?));
+                        return Ok(self.exec_inner(Arc::clone(&realm), &bk, false)?);
                     } else {
                         panic!("Expected a block!")
                     }
@@ -297,7 +292,7 @@ impl Interpreter {
                         // self.exec_single_statement(inner_realm, &else_body);
                         self.exec_single_statement(realm, &else_body)
                     } else {
-                        Ok(Some(ControlFlow::Nothing))
+                        Ok(ControlFlow::Nothing)
                     }
                 }
             }
@@ -308,7 +303,7 @@ impl Interpreter {
 
                 self.import_module(realm, importer, self.path_segments_to_vec(path))?;
 
-                Ok(Some(ControlFlow::Nothing))
+                Ok(ControlFlow::Nothing)
             }
             Statement::Scope { .. } => todo!(),
             Statement::Return { value } => {
@@ -320,7 +315,7 @@ impl Interpreter {
                     panic!("Expected a value in return statement, got: {cf:?}");
                 };
 
-                Ok(Some(ControlFlow::Return(v)))
+                Ok(ControlFlow::Return(v))
             }
             Statement::Expr(expr) => {
                 debug!("Evaluating: {expr:?}");
@@ -329,7 +324,7 @@ impl Interpreter {
 
                 debug!("Expression: {expr:?}");
 
-                Ok(Some(expr))
+                Ok(expr)
             }
             Statement::While(while_loop) => {
                 let While { condition, body } = while_loop;
@@ -368,7 +363,7 @@ impl Interpreter {
                         let block_result = self.exec_inner(Arc::clone(&realm), &bk, false)?;
 
                         match block_result {
-                            ControlFlow::Return(_) => return Ok(Some(block_result)),
+                            ControlFlow::Return(_) => return Ok(block_result),
                             ControlFlow::Break => break,
                             ControlFlow::Continue => continue,
                             _ => (),
@@ -378,10 +373,10 @@ impl Interpreter {
                     }
                 }
 
-                Ok(Some(ControlFlow::Nothing))
+                Ok(ControlFlow::Nothing)
             }
-            Statement::Continue => Ok(Some(ControlFlow::Continue)),
-            Statement::Break => Ok(Some(ControlFlow::Break)),
+            Statement::Continue => Ok(ControlFlow::Continue),
+            Statement::Break => Ok(ControlFlow::Break),
             Statement::VariableDefinition(var) => {
                 let lhs = self.resolve_lvalue(Arc::clone(&realm), &var.name.clone().map(|x| ExprKind::Identifier(x)))?;
 
@@ -403,7 +398,7 @@ impl Interpreter {
 
                 self.assign(Arc::clone(&realm), target, rhs.clone());
 
-                Ok(Some(ControlFlow::Nothing))
+                Ok(ControlFlow::Nothing)
             }
             Statement::RecordDefinition(record) => {
                 let name = &record.name.value;
@@ -430,7 +425,7 @@ impl Interpreter {
                     .values_mut()
                     .insert(name.clone(), Value::Record(value.into()));
 
-                Ok(Some(ControlFlow::Nothing))
+                Ok(ControlFlow::Nothing)
             }
             st => todo!("Unexpected statement: {:?}", st),
         }
@@ -852,8 +847,6 @@ impl Interpreter {
                     .into(),
             },
         });
-
-        todo!()
     }
 
     // Performs a function call.
@@ -895,8 +888,7 @@ impl Interpreter {
             }
 
             let result = self
-                .exec_single_statement(Arc::new(RwLock::new(new_realm)), &func.body)?
-                .unwrap_or(ControlFlow::Nothing);
+                .exec_single_statement(Arc::new(RwLock::new(new_realm)), &func.body)?;
 
             debug!(
                 "Executing func with params {:?} returned {:?}",
@@ -944,8 +936,7 @@ impl Interpreter {
             }
 
             let result = self
-                .exec_single_statement(Arc::new(RwLock::new(new_realm)), &func.body)?
-                .unwrap_or(ControlFlow::Nothing);
+                .exec_single_statement(Arc::new(RwLock::new(new_realm)), &func.body)?;
 
             return Ok(Some(match result {
                 ControlFlow::Return(v) => ControlFlow::Value(v),
