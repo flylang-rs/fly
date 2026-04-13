@@ -1,0 +1,33 @@
+---
+source: parser/src/tests/records.rs
+expression: code
+---
+Ok(
+    [
+        RecordDefinition(
+            RecordDefinition {
+                name: Spanned(
+                    "Test",
+                    8..12,
+                ),
+                visibility: Global,
+                fields: Spanned(
+                    [
+                        VariableDefinition(
+                            VariableDefinition {
+                                name: Spanned(
+                                    "x",
+                                    22..23,
+                                ),
+                                visibility: Global,
+                                type_annotation: None,
+                                value: None,
+                            },
+                        ),
+                    ],
+                    13..25,
+                ),
+            },
+        ),
+    ],
+)
