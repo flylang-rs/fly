@@ -5,6 +5,7 @@ use core::fmt::Debug;
 
 pub mod source;
 pub mod spanned;
+pub mod visibility;
 
 /// An address in source file referencing a token.
 #[derive(Clone, Debug)]

@@ -1,5 +1,7 @@
 use std::sync::{Arc, Mutex};
 
+use flylang_common::visibility::Visibility;
+
 use crate::{function::Function, runtime::RustInteropFn};
 
 #[derive(Debug, Clone)]
@@ -53,7 +55,16 @@ pub enum LValue {
 }
 
 #[derive(Debug)]
-pub struct Record;
+pub struct Record {
+	pub name: String,
+	pub fields: Vec<RecordField>
+}
+
+#[derive(Debug)]
+pub struct RecordField {
+	pub name: String,
+	pub visibility: Visibility
+}
 
 #[derive(Debug)]
 pub struct RecordInstance;

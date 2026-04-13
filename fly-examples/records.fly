@@ -1,0 +1,9 @@
+record City {
+    public name;
+    public latitude;
+    public longitude;
+}
+
+func City::with_heart() {
+    return self.name + " <3"
+}

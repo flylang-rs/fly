@@ -13,7 +13,7 @@ use crate::{
     control_flow::ControlFlow,
     error::{CallError, InterpreterError},
     function::{Function, FunctionNameKind},
-    object::{LValue, Value},
+    object::{LValue, Record, RecordField, Value},
     realm::Realm,
 };
 
@@ -402,6 +402,33 @@ impl Interpreter {
                 };
 
                 self.assign(Arc::clone(&realm), target, rhs.clone());
+
+                Ok(Some(ControlFlow::Nothing))
+            }
+            Statement::RecordDefinition(record) => {
+                let name = &record.name.value;
+                let fields = record.fields.value.iter().map(|x| {
+                    match x {
+                        Statement::VariableDefinition(var) => {
+                            let vis = var.visibility;
+                            let name = var.name.value.clone();
+
+                            RecordField { name, visibility: vis }
+                        }
+                        a => unreachable!("Record field kind check is done in parser. Found: {a:?}")
+                    }
+                }).collect::<Vec<RecordField>>();
+
+                let value = Record {
+                    name: name.clone(),
+                    fields,
+                };
+
+                realm
+                    .write()
+                    .unwrap()
+                    .values_mut()
+                    .insert(name.clone(), Value::Record(value.into()));
 
                 Ok(Some(ControlFlow::Nothing))
             }

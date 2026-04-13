@@ -86,7 +86,6 @@ pub enum TokenValue {
     Record,
     Return,
     SelfRecord,
-    SelfReference,
     Static,
     True,
     Use,

@@ -1,6 +1,6 @@
 use core::fmt::Debug;
 
-use flylang_common::spanned::Spanned;
+use flylang_common::{spanned::Spanned, visibility::Visibility};
 
 pub type Expression = Spanned<ExprKind>;
 
@@ -164,12 +164,6 @@ pub struct RecordDefinition {
     pub name: Spanned<String>,
     pub visibility: Visibility,
     pub fields: Spanned<Vec<Statement>>,
-}
-
-#[derive(Debug, Clone)]
-pub enum Visibility {
-    Local,
-    Global,
 }
 
 #[derive(Debug, Copy, Clone)]

@@ -1,9 +1,9 @@
-use flylang_common::{Address, spanned::Spanned};
+use flylang_common::{Address, spanned::Spanned, visibility::Visibility};
 use flylang_lexer::token::{Token, TokenValue};
 use std::iter::Peekable;
 
 use crate::{
-    ast::{ExprKind, Expression, RecordDefinition, VariableDefinition, Visibility},
+    ast::{ExprKind, RecordDefinition, VariableDefinition},
     error::{InvalidArgumentKindDomain, ParserError},
     state::ParserState,
 };
@@ -144,7 +144,7 @@ impl Parser {
         Ok(ast::Statement::Function(ast::Function {
             name: name.into(),
             arguments,
-            visibility: ast::Visibility::Global,
+            visibility: Visibility::Global,
             body: Box::new(body),
         }))
     }
@@ -717,7 +717,7 @@ impl Parser {
 
                     return Ok(ast::Statement::VariableDefinition(VariableDefinition {
                         name: name_string,
-                        visibility: ast::Visibility::Local,
+                        visibility: Visibility::Local,
                         type_annotation: None,
                         value: Some(value),
                     }));
@@ -744,8 +744,6 @@ impl Parser {
         };
 
         let fields = self.parse_record_block()?;
-
-        eprintln!("{fields:?}");
 
         Ok(ast::Statement::RecordDefinition(RecordDefinition {
             name,
@@ -783,7 +781,7 @@ impl Parser {
                         _ => return Err(ParserError::UnexpectedToken { token: name })
                     };
 
-                    eprintln!("Public or private field with value: {:?}", name);
+                    // eprintln!("Public or private field with value: {:?}", name);
 
                     fields.push(ast::Statement::VariableDefinition(VariableDefinition {
                         name,

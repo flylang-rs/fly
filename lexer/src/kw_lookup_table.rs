@@ -23,7 +23,6 @@ pub(crate) static KEYWORDS: LazyLock<HashMap<&'static str, crate::TokenValue>> =
             ("record", TokenValue::Record),
             ("return", TokenValue::Return),
             ("Self", TokenValue::SelfRecord),
-            ("self", TokenValue::SelfReference),
             ("static", TokenValue::Static),
             ("true", TokenValue::True),
             ("use", TokenValue::Use),
