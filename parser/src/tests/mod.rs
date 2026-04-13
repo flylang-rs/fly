@@ -343,6 +343,23 @@ record Test {
 }
 
 #[test]
+fn private_variables() {
+    let code = utils::code2ast(
+        r#"
+a = nil
+
+func a() {
+	private a = 7
+}
+
+private b = 6
+    "#,
+    );
+
+    insta::assert_debug_snapshot!(code);
+}
+
+#[test]
 fn error_01() {
     let code = utils::code2ast(
         r#"
