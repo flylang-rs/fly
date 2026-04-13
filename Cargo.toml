@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [workspace]
-members = ["analyzer","common", "diagnostics","lexer", "parser", "tree-traversal-executor"]
+members = ["analyzer","common", "diagnostics","lexer", "lexparse-glue", "parser", "tree-traversal-executor"]
 
 [dependencies]
 flylang-common = { path = "common/" }

@@ -1,5 +1,7 @@
 pub mod utils;
 
+pub mod records;
+
 #[test]
 fn addition() {
     let code = utils::code2ast("2 + 4");
@@ -270,6 +272,23 @@ fn comparison_with_expr() {
     let code = utils::code2ast(
         r#"
 2 % 4 == 0
+    "#,
+    );
+
+    insta::assert_debug_snapshot!(code);
+}
+
+#[test]
+fn private_variables() {
+    let code = utils::code2ast(
+        r#"
+a = nil
+
+func a() {
+	private a = 7
+}
+
+private b = 6
     "#,
     );
 

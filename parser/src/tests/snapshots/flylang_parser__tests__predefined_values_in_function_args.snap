@@ -7,7 +7,9 @@ Ok(
         Function(
             Function {
                 name: Spanned(
-                    "log",
+                    Identifier(
+                        "log",
+                    ),
                     6..9,
                 ),
                 visibility: Global,

@@ -1,16 +1,40 @@
 ---
-source: parser/src/tests/mod.rs
+source: parser/src/tests/records.rs
 expression: code
 ---
 Ok(
     [
+        RecordDefinition(
+            RecordDefinition {
+                name: Spanned(
+                    "Test",
+                    8..12,
+                ),
+                visibility: Global,
+                fields: Spanned(
+                    [],
+                    13..15,
+                ),
+            },
+        ),
         Function(
             Function {
                 name: Spanned(
-                    Identifier(
-                        "main",
-                    ),
-                    6..10,
+                    Path {
+                        parent: Spanned(
+                            Identifier(
+                                "Test",
+                            ),
+                            22..26,
+                        ),
+                        value: Spanned(
+                            Identifier(
+                                "say_hi",
+                            ),
+                            28..34,
+                        ),
+                    },
+                    22..34,
                 ),
                 visibility: Global,
                 arguments: [],
@@ -25,31 +49,23 @@ Ok(
                                                 Identifier(
                                                     "print",
                                                 ),
-                                                19..24,
+                                                40..45,
                                             ),
                                             parameters: [
                                                 Spanned(
                                                     String(
-                                                        "Hello, world!",
+                                                        "Hi",
                                                     ),
-                                                    25..39,
+                                                    46..49,
                                                 ),
                                             ],
                                         },
-                                        25..41,
+                                        46..51,
                                     ),
                                 ),
-                                Return {
-                                    value: Spanned(
-                                        Number(
-                                            "0",
-                                        ),
-                                        55..56,
-                                    ),
-                                },
                             ],
                         ),
-                        13..59,
+                        37..53,
                     ),
                 ),
             },

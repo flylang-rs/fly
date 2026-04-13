@@ -132,7 +132,7 @@ pub enum Statement {
 
 #[derive(Debug, Clone)]
 pub struct Function {
-    pub name: Spanned<String>,
+    pub name: Box<Expression>,
     pub visibility: Visibility,
     pub arguments: Vec<Expression>,
     pub body: Box<Statement>,

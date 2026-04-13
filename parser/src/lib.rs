@@ -123,6 +123,9 @@ impl Parser {
     fn parse_func(&mut self) -> ParserResult<ast::Statement> {
         self.expect(TokenValue::Func);
 
+        let name = self.parse_expression(31)?;
+
+		/*
         let name = self.next_token().unwrap();
 
         if !name.is_identifier() {
@@ -130,6 +133,7 @@ impl Parser {
         }
 
         let name = name.into_spanned_identifier().unwrap();
+        */
 
         self.expect(TokenValue::OpenParen);
 
@@ -138,7 +142,7 @@ impl Parser {
         let body = self.parse_block()?;
 
         Ok(ast::Statement::Function(ast::Function {
-            name,
+            name: name.into(),
             arguments,
             visibility: ast::Visibility::Global,
             body: Box::new(body),

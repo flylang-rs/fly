@@ -13,7 +13,7 @@ impl<T> Spanned<T> {
         Self { value, address }
     }
 
-    pub fn map<R>(self, f: fn(T) -> R) -> Spanned<R> {
+    pub fn map<R>(self, f: impl FnOnce(T) -> R) -> Spanned<R> {
         Spanned {
             value: f(self.value),
             address: self.address.clone(),

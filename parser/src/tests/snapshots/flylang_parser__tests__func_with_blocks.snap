@@ -7,7 +7,9 @@ Ok(
         Function(
             Function {
                 name: Spanned(
-                    "fly",
+                    Identifier(
+                        "fly",
+                    ),
                     6..9,
                 ),
                 visibility: Global,

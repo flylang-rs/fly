@@ -1,0 +1,82 @@
+---
+source: parser/src/tests/mod.rs
+expression: code
+---
+Ok(
+    [
+        Expr(
+            Spanned(
+                Assignment {
+                    name: Spanned(
+                        Identifier(
+                            "a",
+                        ),
+                        1..2,
+                    ),
+                    value: Spanned(
+                        Nil,
+                        5..8,
+                    ),
+                },
+                1..8,
+            ),
+        ),
+        Function(
+            Function {
+                name: Spanned(
+                    Identifier(
+                        "a",
+                    ),
+                    15..16,
+                ),
+                visibility: Global,
+                arguments: [],
+                body: Expr(
+                    Spanned(
+                        Block(
+                            [
+                                VariableDefinition(
+                                    VariableDefinition {
+                                        name: Spanned(
+                                            "a",
+                                            30..31,
+                                        ),
+                                        visibility: Local,
+                                        type_annotation: None,
+                                        value: Some(
+                                            Spanned(
+                                                Number(
+                                                    "7",
+                                                ),
+                                                34..35,
+                                            ),
+                                        ),
+                                    },
+                                ),
+                            ],
+                        ),
+                        19..37,
+                    ),
+                ),
+            },
+        ),
+        VariableDefinition(
+            VariableDefinition {
+                name: Spanned(
+                    "b",
+                    47..48,
+                ),
+                visibility: Local,
+                type_annotation: None,
+                value: Some(
+                    Spanned(
+                        Number(
+                            "6",
+                        ),
+                        51..52,
+                    ),
+                ),
+            },
+        ),
+    ],
+)
