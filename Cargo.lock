@@ -211,7 +211,7 @@ checksum = "37909eebbb50d72f9059c3b6d82c0463f2ff062c9e95845c43a6c9c0355411be"
 
 [[package]]
 name = "flylang"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "crossterm",
  "env_logger",
@@ -226,7 +226,7 @@ dependencies = [
 
 [[package]]
 name = "flylang-ast-analyzer"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "flylang-common",
  "flylang-diagnostics",
@@ -236,11 +236,11 @@ dependencies = [
 
 [[package]]
 name = "flylang-common"
-version = "0.1.0"
+version = "0.1.1"
 
 [[package]]
 name = "flylang-diagnostics"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "diff",
  "flylang-common",
@@ -249,7 +249,7 @@ dependencies = [
 
 [[package]]
 name = "flylang-lexer"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "flylang-common",
  "flylang-diagnostics",
@@ -258,7 +258,7 @@ dependencies = [
 
 [[package]]
 name = "flylang-parser"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "flylang-common",
  "flylang-diagnostics",
@@ -268,7 +268,7 @@ dependencies = [
 
 [[package]]
 name = "flylang-tte"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "flylang-ast-analyzer",
  "flylang-common",
@@ -357,7 +357,7 @@ dependencies = [
 
 [[package]]
 name = "lexparse-glue"
-version = "0.1.0"
+version = "0.1.1"
 
 [[package]]
 name = "libc"
