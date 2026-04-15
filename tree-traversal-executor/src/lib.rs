@@ -769,6 +769,9 @@ impl Interpreter {
 
                 ControlFlow::Value(value)
                 // todo!("Anonymous functions! ({value:?})")
+            },
+            ExprKind::New(new_decl) => {
+                todo!("NEW DECL!")
             }
         };
 

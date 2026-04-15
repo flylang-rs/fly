@@ -81,6 +81,8 @@ pub enum ExprKind {
         arguments: Vec<Expression>,
         body: Box<Expression>,
     },
+
+    New(NewObjectDeclaration),
 }
 
 impl ExprKind {
@@ -164,6 +166,14 @@ pub struct RecordDefinition {
     pub name: Spanned<String>,
     pub visibility: Visibility,
     pub fields: Spanned<Vec<Statement>>,
+}
+
+pub type KeyValueMapWithDuplicates = Vec<(Spanned<String>, Expression)>;
+
+#[derive(Debug, Clone)]
+pub struct NewObjectDeclaration {
+    pub name: Box<Expression>,
+    pub fields: KeyValueMapWithDuplicates
 }
 
 #[derive(Debug, Copy, Clone)]

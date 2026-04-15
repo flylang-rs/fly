@@ -3,7 +3,7 @@ use flylang_lexer::token::{Token, TokenValue};
 use std::iter::Peekable;
 
 use crate::{
-    ast::{ExprKind, RecordDefinition, VariableDefinition},
+    ast::{ExprKind, KeyValueMapWithDuplicates, RecordDefinition, VariableDefinition},
     error::{InvalidArgumentKindDomain, ParserError},
     state::ParserState,
 };
@@ -247,7 +247,9 @@ impl Parser {
             .peek_address()
             .ok_or_else(|| ParserError::UnexpectedEOF(self.eof_addr.clone()))?;
 
-        let next_token = self.next_token().unwrap_or_else(|| todo!("EOF while parsing expression! Handle error gracefully!"));
+        let next_token = self
+            .next_token()
+            .unwrap_or_else(|| todo!("EOF while parsing expression! Handle error gracefully!"));
 
         let mut lhs = match next_token {
             // nil
@@ -351,10 +353,16 @@ impl Parser {
                     address: merged,
                 }
             }
+            Token {
+                value: TokenValue::New,
+                ..
+            } => {
+                let new_obj = self.parse_new_object_declaration()?;
+
+                Spanned::new(ExprKind::New(new_obj.value), new_obj.address)
+            }
             value => {
-                return Err(ParserError::UnexpectedToken {
-                    token: value,
-                });
+                return Err(ParserError::UnexpectedToken { token: value });
             }
         };
 
@@ -586,6 +594,67 @@ impl Parser {
         Ok(lhs)
     }
 
+    fn parse_new_object_declaration(&mut self) -> ParserResult<Spanned<ast::NewObjectDeclaration>> {
+        let name = self.parse_expression(31)?;
+
+        let (fields, final_addr) = self.parse_new_object_block()?;
+
+        let addr = name.address.clone().merge(&final_addr);
+
+        Ok(Spanned::new(
+            ast::NewObjectDeclaration {
+                name: name.into(),
+                fields,
+            },
+            addr,
+        ))
+    }
+
+    fn parse_new_object_block(&mut self) -> ParserResult<(KeyValueMapWithDuplicates, Address)> {
+        let op_brace_addr = self.expect(TokenValue::OpenBrace).address;
+
+        let mut fields = KeyValueMapWithDuplicates::new();
+
+        loop {
+            self.skip_whitespaces();
+
+            let id = self
+                .peek_whole()
+                .cloned()
+                .ok_or_else(|| ParserError::UnexpectedEOF(self.eof_addr.clone()))?;
+
+            let id = match id.value {
+                TokenValue::Identifier(val) => Spanned::new(val, id.address),
+                _ => panic!("Expected identifier, got: {id:?}"),
+            };
+
+            self.next_token();
+
+            self.expect(TokenValue::Colon);
+
+            let value = self.parse_expression(0)?;
+
+            fields.push((id, value));
+
+            // If we DON'T have a trailing comma, break out
+            if !self
+                .peek()
+                .map(|x| *x == TokenValue::Comma)
+                .unwrap_or_default()
+            {
+                break;
+            } else {
+                self.next_token();
+            }
+        }
+
+        self.skip_whitespaces();
+
+        let cl_brace_addr = self.expect(TokenValue::CloseBrace).address;
+
+        Ok((fields, op_brace_addr.merge(&cl_brace_addr)))
+    }
+
     fn parse_return(&mut self) -> ParserResult<ast::Statement> {
         self.next_token();
 
@@ -696,9 +765,7 @@ impl Parser {
                 let expr = self.parse_expression(0)?;
 
                 if let ExprKind::Assignment { name, value } = expr.value {
-                    let name_string = name
-                        .clone()
-                        .map(|x| x.as_id().map(|x| x.to_string()));
+                    let name_string = name.clone().map(|x| x.as_id().map(|x| x.to_string()));
 
                     if name_string.value.is_none() {
                         panic!("Expected identifier, got {:?}", &name.value);
@@ -731,7 +798,7 @@ impl Parser {
 
         let name = match &name.value {
             TokenValue::Identifier(id) => Spanned::new(id.to_string(), name.address),
-            _ => return Err(ParserError::UnexpectedToken { token: name })
+            _ => return Err(ParserError::UnexpectedToken { token: name }),
         };
 
         let fields = self.parse_record_block()?;
@@ -745,9 +812,9 @@ impl Parser {
 
     fn parse_record_block(&mut self) -> ParserResult<Spanned<Vec<ast::Statement>>> {
         let open_token_addr = self.expect(TokenValue::OpenBrace).address;
-        
+
         let mut fields: Vec<ast::Statement> = vec![];
-        
+
         loop {
             self.skip_whitespaces();
 
@@ -768,8 +835,10 @@ impl Parser {
                         .ok_or_else(|| ParserError::UnexpectedEOF(self.eof_address().clone()))?;
 
                     let name = match &name.value {
-                        TokenValue::Identifier(id) => Spanned::new(id.clone(), name.address.clone()),
-                        _ => return Err(ParserError::UnexpectedToken { token: name })
+                        TokenValue::Identifier(id) => {
+                            Spanned::new(id.clone(), name.address.clone())
+                        }
+                        _ => return Err(ParserError::UnexpectedToken { token: name }),
                     };
 
                     // eprintln!("Public or private field with value: {:?}", name);
@@ -779,10 +848,10 @@ impl Parser {
                         visibility: match vis {
                             TokenValue::Public => Visibility::Global,
                             TokenValue::Private => Visibility::Local,
-                            _ => unreachable!()
+                            _ => unreachable!(),
                         },
-                        type_annotation: None,   // TODO: Parse type annotation
-                        value: None,   // it's just a declaration
+                        type_annotation: None, // TODO: Parse type annotation
+                        value: None,           // it's just a declaration
                     }));
                 }
                 // Closing brace
@@ -794,7 +863,10 @@ impl Parser {
 
         let close_token_addr = self.expect(TokenValue::CloseBrace).address;
 
-        Ok(Spanned::new(fields, open_token_addr.merge(&close_token_addr)))
+        Ok(Spanned::new(
+            fields,
+            open_token_addr.merge(&close_token_addr),
+        ))
     }
 
     fn parse_statement(&mut self) -> ParserResult<ast::Statement> {
