@@ -78,6 +78,7 @@ pub enum TokenValue {
     For,
     Func,
     If,
+    New,
     Nil,
     Operator,
     Override,

@@ -15,6 +15,7 @@ pub(crate) static KEYWORDS: LazyLock<HashMap<&'static str, crate::TokenValue>> =
             ("for", TokenValue::For),
             ("func", TokenValue::Func),
             ("if", TokenValue::If),
+            ("new", TokenValue::New),
             ("nil", TokenValue::Nil),
             ("operator", TokenValue::Operator),
             ("override", TokenValue::Override),

@@ -125,16 +125,6 @@ impl Parser {
 
         let name = self.parse_expression(31)?;
 
-		/*
-        let name = self.next_token().unwrap();
-
-        if !name.is_identifier() {
-            panic!("Name is not an identifier!");
-        }
-
-        let name = name.into_spanned_identifier().unwrap();
-        */
-
         self.expect(TokenValue::OpenParen);
 
         let (arguments, _) = self.parse_argument_list()?;
@@ -257,57 +247,59 @@ impl Parser {
             .peek_address()
             .ok_or_else(|| ParserError::UnexpectedEOF(self.eof_addr.clone()))?;
 
-        let mut lhs = match self.next_token() {
+        let next_token = self.next_token().unwrap_or_else(|| todo!("EOF while parsing expression! Handle error gracefully!"));
+
+        let mut lhs = match next_token {
             // nil
-            Some(Token {
+            Token {
                 value: TokenValue::Nil,
                 address,
-            }) => Spanned {
+            } => Spanned {
                 value: ast::ExprKind::Nil,
                 address,
             },
             // Number
-            Some(Token {
+            Token {
                 value: TokenValue::Number(nr),
                 address,
-            }) => self.check_number(nr, address)?,
+            } => self.check_number(nr, address)?,
             // Idenitifer
-            Some(Token {
+            Token {
                 value: TokenValue::Identifier(id),
                 address,
-            }) => Spanned {
+            } => Spanned {
                 value: ast::ExprKind::Identifier(id),
                 address,
             },
             // "String"
-            Some(Token {
+            Token {
                 value: TokenValue::String(nr),
                 address,
-            }) => Spanned {
+            } => Spanned {
                 value: ast::ExprKind::String(nr),
                 address,
             },
             // true
-            Some(Token {
+            Token {
                 value: TokenValue::True,
                 address,
-            }) => Spanned {
+            } => Spanned {
                 value: ast::ExprKind::True,
                 address,
             },
             // false
-            Some(Token {
+            Token {
                 value: TokenValue::False,
                 address,
-            }) => Spanned {
+            } => Spanned {
                 value: ast::ExprKind::False,
                 address,
             },
             // -Unary minus
-            Some(Token {
+            Token {
                 value: TokenValue::Minus,
                 address: minus_addr,
-            }) => {
+            } => {
                 let rhs = self.parse_expression(20)?; // unary minus has high BP
 
                 let merged = minus_addr.merge(&rhs.address);
@@ -318,10 +310,10 @@ impl Parser {
                 }
             }
             // -Unary minus
-            Some(Token {
+            Token {
                 value: TokenValue::Bang,
                 address: bang_addr,
-            }) => {
+            } => {
                 let rhs = self.parse_expression(20)?; // bang has high BP as minus
 
                 let merged = bang_addr.merge(&rhs.address);
@@ -332,10 +324,10 @@ impl Parser {
                 }
             }
             // ['a', 'r', 'r', 'a', 'y']
-            Some(Token {
+            Token {
                 value: TokenValue::OpenBracket,
                 address: bstart,
-            }) => {
+            } => {
                 let (inner, in_addr) = self.parse_array_inner()?;
 
                 let merged = bstart.merge(&in_addr);
@@ -346,10 +338,10 @@ impl Parser {
                 }
             }
             // (Open Paren, ...
-            Some(Token {
+            Token {
                 value: TokenValue::OpenParen,
                 ..
-            }) => {
+            } => {
                 let inner = self.parse_expression(0)?;
                 let close = self.expect(TokenValue::CloseParen);
                 let merged = start_addr.clone().merge(&close.address);
@@ -359,10 +351,9 @@ impl Parser {
                     address: merged,
                 }
             }
-            None => todo!("EOF while parsing expression! Handle error gracefully!"),
             value => {
                 return Err(ParserError::UnexpectedToken {
-                    token: value.unwrap(),
+                    token: value,
                 });
             }
         };
