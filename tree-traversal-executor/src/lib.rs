@@ -1201,7 +1201,7 @@ impl Interpreter {
 
             //     Ok(LValue::Identifier(fullpath))
             // }
-            _ => panic!("Invalid assignment target"),
+            _ => panic!("Invalid assignment target ({:?})", expr.value),
         }
     }
 

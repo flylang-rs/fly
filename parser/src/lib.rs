@@ -611,6 +611,8 @@ impl Parser {
     }
 
     fn parse_new_object_block(&mut self) -> ParserResult<(KeyValueMapWithDuplicates, Address)> {
+    	self.skip_whitespaces();
+    	
         let op_brace_addr = self.expect(TokenValue::OpenBrace).address;
 
         let mut fields = KeyValueMapWithDuplicates::new();
@@ -625,7 +627,8 @@ impl Parser {
 
             let id = match id.value {
                 TokenValue::Identifier(val) => Spanned::new(val, id.address),
-                _ => panic!("Expected identifier, got: {id:?}"),
+                TokenValue::CloseBrace => break,
+                _ => panic!("Expected identifier, got: {:?}", id.value),
             };
 
             self.next_token();
