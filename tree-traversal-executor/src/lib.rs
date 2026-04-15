@@ -225,10 +225,9 @@ impl Interpreter {
     ) -> InterpreterResult<ControlFlow> {
         match statement {
             Statement::Function(function) => {
-                let name = &function.name.value;
-
                 let real_name: Spanned<String> = match &function.name.value {
                 	ExprKind::Identifier(id) => Spanned::new(id.clone(), function.name.address.clone()),
+                  ExprKind::Path { .. } => Spanned::new(self.path_segments_to_vec(&function.name).join("::"), function.name.address.clone()),
                 	fna => todo!("Function name is complex: {fna:?}")
                 };
 

@@ -7,3 +7,10 @@ record City {
 func City::with_heart() {
     return self.name + " <3"
 }
+
+
+helsinki = new City {
+	name: "Helsinki",
+	latitude: 60.192059,
+	longitude: 24.945831
+}
