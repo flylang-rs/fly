@@ -1,6 +1,5 @@
 use crate::{
-    SharedRealm, Value, common_operation_binary, common_operation_unary, control_flow::ControlFlow,
-    runtime::RustInteropFn,
+    InterpreterResult, SharedRealm, Value, common_operation_binary, common_operation_unary, control_flow::ControlFlow, runtime::RustInteropFn
 };
 
 pub static EXPORT: &[(&str, RustInteropFn)] = &[
@@ -27,18 +26,18 @@ fn bool_to_string(
     _interpreter: &mut crate::Interpreter,
     _realm: SharedRealm,
     args: &[Value],
-) -> ControlFlow {
+) -> InterpreterResult<ControlFlow> {
     let Value::Bool(i) = args[0] else {
         panic!("Exptected bool, got {:?}", args[0]);
     };
 
-    ControlFlow::Value(Value::String(i.to_string().into()))
+    Ok(ControlFlow::Value(Value::String(i.to_string().into())))
 }
 
 fn bool_to_displayable(
     interpreter: &mut crate::Interpreter,
     realm: SharedRealm,
     args: &[Value],
-) -> ControlFlow {
+) -> InterpreterResult<ControlFlow> {
     bool_to_string(interpreter, realm, args)
 }

@@ -1,6 +1,5 @@
 use crate::{
-    SharedRealm, common_operation_binary, common_operation_unary, control_flow::ControlFlow,
-    object::Value, runtime::RustInteropFn,
+    InterpreterResult, SharedRealm, common_operation_binary, common_operation_unary, control_flow::ControlFlow, object::Value, runtime::RustInteropFn
 };
 
 pub static EXPORT: &[(&str, RustInteropFn)] = &[
@@ -109,18 +108,18 @@ fn real_to_string(
     _interpreter: &mut crate::Interpreter,
     _realm: SharedRealm,
     args: &[Value],
-) -> ControlFlow {
+) -> InterpreterResult<ControlFlow> {
     let Value::Real(i) = args[0] else {
         panic!("It's not a float, it's {:?}", args[0]);
     };
 
-    ControlFlow::Value(Value::String(i.to_string().into()))
+    Ok(ControlFlow::Value(Value::String(i.to_string().into())))
 }
 
 fn real_to_displayable(
     interpreter: &mut crate::Interpreter,
     realm: SharedRealm,
     args: &[Value],
-) -> ControlFlow {
+) -> InterpreterResult<ControlFlow> {
     real_to_string(interpreter, realm, args)
 }

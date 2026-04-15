@@ -1,7 +1,7 @@
 use crate::control_flow::ControlFlow;
 use crate::{SharedRealm, Value, runtime::RustInteropFn};
 
-use crate::{common_operation_binary, common_operation_unary};
+use crate::{InterpreterResult, common_operation_binary, common_operation_unary};
 
 pub static EXPORT: &[(&str, RustInteropFn)] = &[
     ("integer::operator+integer", integers_add),
@@ -176,18 +176,18 @@ fn integer_to_string(
     _interpreter: &mut crate::Interpreter,
     _realm: SharedRealm,
     args: &[Value],
-) -> ControlFlow {
+) -> InterpreterResult<ControlFlow> {
     let Value::Integer(i) = args[0] else {
         panic!("It's not an integer, it's {:?}", args[0]);
     };
 
-    ControlFlow::Value(Value::String(i.to_string().into()))
+    Ok(ControlFlow::Value(Value::String(i.to_string().into())))
 }
 
 fn integer_to_displayable(
     interpreter: &mut crate::Interpreter,
     realm: SharedRealm,
     args: &[Value],
-) -> ControlFlow {
+) -> InterpreterResult<ControlFlow> {
     integer_to_string(interpreter, realm, args)
 }

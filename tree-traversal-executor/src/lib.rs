@@ -986,7 +986,7 @@ impl Interpreter {
         if let Value::Native(native) = func {
             let new_realm = Realm::dive(realm);
 
-            return Ok(native(self, Arc::new(RwLock::new(new_realm)), args));
+            return native(self, Arc::new(RwLock::new(new_realm)), args);
         }
 
         if let Value::Function(func) = func {
@@ -1040,7 +1040,7 @@ impl Interpreter {
         if let Value::Native(native) = method {
             let new_realm = Realm::dive(Arc::clone(&self.world));
 
-            return Ok(Some(native(self, Arc::new(RwLock::new(new_realm)), args)));
+            return Ok(Some(native(self, Arc::new(RwLock::new(new_realm)), args)?));
         }
 
         if let Value::Function(func) = method {

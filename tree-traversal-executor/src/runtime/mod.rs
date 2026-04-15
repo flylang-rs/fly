@@ -1,4 +1,4 @@
-use crate::{Interpreter, SharedRealm, control_flow::ControlFlow, object::Value};
+use crate::{Interpreter, InterpreterResult, SharedRealm, control_flow::ControlFlow, object::Value};
 
 pub mod arrays;
 pub mod booleans;
@@ -9,7 +9,7 @@ pub mod nil;
 pub mod print;
 pub mod strings;
 
-pub type RustInteropFn = fn(interpreter: &mut Interpreter, realm: SharedRealm, args: &[Value]) -> ControlFlow;
+pub type RustInteropFn = fn(interpreter: &mut Interpreter, realm: SharedRealm, args: &[Value]) -> InterpreterResult<ControlFlow>;
 
 #[macro_export]
 macro_rules! common_operation_binary {
@@ -18,16 +18,16 @@ macro_rules! common_operation_binary {
             _interpreter: &mut $crate::Interpreter,
             _realm: $crate::SharedRealm,
             args: &[$crate::object::Value],
-        ) -> $crate::control_flow::ControlFlow {
+        ) -> $crate::InterpreterResult<$crate::control_flow::ControlFlow> {
             let lhs = &args[0];
             let rhs = &args[1];
 
             if let $crate::object::Value::$ty1(x) = lhs
                 && let $crate::object::Value::$ty2(y) = rhs
             {
-                return $crate::control_flow::ControlFlow::Value($crate::object::Value::$res_ty(
+                return Ok($crate::control_flow::ControlFlow::Value($crate::object::Value::$res_ty(
                     ($conv)(x, y),
-                ));
+                )));
             }
 
             todo!("Make it return `result<T, error>`")
@@ -42,13 +42,13 @@ macro_rules! common_operation_unary {
             _interpreter: &mut $crate::Interpreter,
             _realm: $crate::SharedRealm,
             args: &[$crate::object::Value],
-        ) -> $crate::control_flow::ControlFlow {
+        ) -> $crate::InterpreterResult<$crate::control_flow::ControlFlow> {
             let val = &args[0];
 
             if let $crate::object::Value::$ty(x) = val {
-                return $crate::control_flow::ControlFlow::Value($crate::object::Value::$res_ty(
+                return Ok($crate::control_flow::ControlFlow::Value($crate::object::Value::$res_ty(
                     ($conv)(x),
-                ));
+                )));
             }
 
             todo!("Make it return `result<T, error>`")
