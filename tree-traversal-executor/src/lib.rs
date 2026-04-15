@@ -13,7 +13,7 @@ use crate::{
     control_flow::ControlFlow,
     error::{CallError, InterpreterError},
     function::{Function, FunctionNameKind},
-    object::{LValue, Record, RecordField, Value},
+    object::{LValue, Record, RecordField, RecordInstance, RecordInstanceField, Value},
     realm::Realm,
 };
 
@@ -226,9 +226,14 @@ impl Interpreter {
         match statement {
             Statement::Function(function) => {
                 let real_name: Spanned<String> = match &function.name.value {
-                	ExprKind::Identifier(id) => Spanned::new(id.clone(), function.name.address.clone()),
-                  ExprKind::Path { .. } => Spanned::new(self.path_segments_to_vec(&function.name).join("::"), function.name.address.clone()),
-                	fna => todo!("Function name is complex: {fna:?}")
+                    ExprKind::Identifier(id) => {
+                        Spanned::new(id.clone(), function.name.address.clone())
+                    }
+                    ExprKind::Path { .. } => Spanned::new(
+                        self.path_segments_to_vec(&function.name).join("::"),
+                        function.name.address.clone(),
+                    ),
+                    fna => todo!("Function name is complex: {fna:?}"),
                 };
 
                 let value = Value::Function(Arc::new(Function {
@@ -377,7 +382,10 @@ impl Interpreter {
             Statement::Continue => Ok(ControlFlow::Continue),
             Statement::Break => Ok(ControlFlow::Break),
             Statement::VariableDefinition(var) => {
-                let lhs = self.resolve_lvalue(Arc::clone(&realm), &var.name.clone().map(|x| ExprKind::Identifier(x)))?;
+                let lhs = self.resolve_lvalue(
+                    Arc::clone(&realm),
+                    &var.name.clone().map(|x| ExprKind::Identifier(x)),
+                )?;
 
                 let target = match lhs {
                     LValue::Identifier(id) => LValue::PrivateIdentifier(id),
@@ -388,7 +396,7 @@ impl Interpreter {
                 let rhs = self.evaluate_expression(
                     Arc::clone(&realm),
                     var.value.as_ref().unwrap(),
-                    false
+                    false,
                 )?;
 
                 let ControlFlow::Value(rhs) = rhs else {
@@ -401,17 +409,25 @@ impl Interpreter {
             }
             Statement::RecordDefinition(record) => {
                 let name = &record.name.value;
-                let fields = record.fields.value.iter().map(|x| {
-                    match x {
+                let fields = record
+                    .fields
+                    .value
+                    .iter()
+                    .map(|x| match x {
                         Statement::VariableDefinition(var) => {
                             let vis = var.visibility;
                             let name = var.name.value.clone();
 
-                            RecordField { name, visibility: vis }
+                            RecordField {
+                                name,
+                                visibility: vis,
+                            }
                         }
-                        a => unreachable!("Record field kind check is done in parser. Found: {a:?}")
-                    }
-                }).collect::<Vec<RecordField>>();
+                        a => {
+                            unreachable!("Record field kind check is done in parser. Found: {a:?}")
+                        }
+                    })
+                    .collect::<Vec<RecordField>>();
 
                 let value = Record {
                     name: name.clone(),
@@ -667,16 +683,42 @@ impl Interpreter {
                 let type_name = types::value_to_internal_type(&obj).unwrap();
                 let method_key = format!("{type_name}::{prop}");
 
-                let val = realm.read().unwrap().lookup(&method_key);
+                let mut val = realm.read().unwrap().lookup(&method_key);
+
+                if let Some(val) = val {
+                    return Ok(ControlFlow::Value(val));
+                }
+
+                // If we didn't get a needed value, maybe it can be found in Record's fields?
+                if val.is_none() {
+                    let record_def =
+                        realm.read().unwrap().lookup(&type_name).unwrap_or_else(|| {
+                            panic!("No property `{prop}` on type `{type_name}`")
+                        });
+
+                    let lhs = self.resolve_lvalue(Arc::clone(&realm), origin)?;
+                    let record_instance = match self.read_lvalue(realm, &lhs) {
+                        Value::RecordInstance(rec) => rec,
+                        v => panic!("Expected record instance, got: {v:?}!"),
+                    };
+
+                    let val = record_instance
+                        .lock()
+                        .unwrap()
+                        .fields
+                        .iter()
+                        .find(|x| x.name == prop)
+                        .map(|x| x.value.clone())
+                        .unwrap_or_else(|| {
+                            panic!("No property `{prop}` on type `{type_name}`")
+                        });
+
+                    return Ok(ControlFlow::Value(val));
+                }
 
                 debug!("Property: {prop:?}");
 
-                match val {
-                    Some(val) => {
-                        return Ok(ControlFlow::Value(val));
-                    }
-                    None => panic!("No property `{prop}` on type `{type_name}`"),
-                }
+                panic!("No property `{prop}` on type `{type_name}`")
             }
             ExprKind::IndexedAccess { origin, index } => {
                 let container = self.evaluate_expression(Arc::clone(&realm), origin, true)?;
@@ -769,9 +811,74 @@ impl Interpreter {
 
                 ControlFlow::Value(value)
                 // todo!("Anonymous functions! ({value:?})")
-            },
+            }
             ExprKind::New(new_decl) => {
-                todo!("NEW DECL!")
+                let name = match &new_decl.name.value {
+                    ExprKind::Identifier(id) => id.clone(),
+                    ExprKind::Path { .. } => self.flatten_path(&new_decl.name),
+                    obj => panic!("Creating new object from `{obj:?}` is not supported (yet)!"),
+                };
+
+                let record_def = realm.read().unwrap().lookup(&name).ok_or_else(|| {
+                    InterpreterError::NameNotDefined {
+                        name: name.clone(),
+                        address: new_decl.name.address.clone(),
+                    }
+                })?;
+
+                let record_def = match record_def {
+                    Value::Record(record) => record,
+                    val => todo!("Expected record value, got: {val:?}"),
+                };
+
+                let fields_record_provides: Vec<String> =
+                    record_def.fields.iter().map(|x| x.name.clone()).collect();
+                let fields_we_have: Vec<Spanned<String>> =
+                    new_decl.fields.iter().map(|x| x.0.clone()).collect();
+
+                if fields_record_provides.len() != fields_we_have.len() {
+                    panic!(
+                        "Not enough fields! ({} expected, {} given)",
+                        fields_record_provides.len(),
+                        fields_we_have.len()
+                    );
+                }
+
+                for i in &fields_we_have {
+                    if !fields_record_provides.contains(&i.value) {
+                        panic!(
+                            "Record `{}` doesn't have a field named `{}`",
+                            &name, i.value
+                        );
+                    }
+                }
+
+                let mut fields: Vec<RecordInstanceField> = Vec::new();
+
+                for (name, value) in new_decl.fields.iter() {
+                    let real_name = name.value.to_owned();
+                    let real_value = self.exec_single_statement(
+                        Arc::clone(&realm),
+                        &Statement::Expr(value.clone()),
+                    )?;
+
+                    let real_value = match real_value {
+                        ControlFlow::Value(v) => v,
+                        er => panic!("Invalid expression result: {er:?}"),
+                    };
+
+                    fields.push(RecordInstanceField {
+                        name: real_name,
+                        value: real_value,
+                    });
+                }
+
+                ControlFlow::Value(Value::RecordInstance(Arc::new(Mutex::new(
+                    RecordInstance {
+                        record: record_def,
+                        fields,
+                    },
+                ))))
             }
         };
 
@@ -889,8 +996,8 @@ impl Interpreter {
                 new_realm.values_mut().insert(par.clone(), arg.clone());
             }
 
-            let result = self
-                .exec_single_statement(Arc::new(RwLock::new(new_realm)), &func.body)?;
+            let result =
+                self.exec_single_statement(Arc::new(RwLock::new(new_realm)), &func.body)?;
 
             debug!(
                 "Executing func with params {:?} returned {:?}",
@@ -937,8 +1044,8 @@ impl Interpreter {
                 new_realm.values_mut().insert(par.clone(), arg.clone());
             }
 
-            let result = self
-                .exec_single_statement(Arc::new(RwLock::new(new_realm)), &func.body)?;
+            let result =
+                self.exec_single_statement(Arc::new(RwLock::new(new_realm)), &func.body)?;
 
             return Ok(Some(match result {
                 ControlFlow::Return(v) => ControlFlow::Value(v),
@@ -998,8 +1105,8 @@ impl Interpreter {
                 op: op.to_string(),
                 lhs_addr: lhs.address.clone(),
                 rhs_addr: rhs.address.clone(),
-                lhs_type: l_type.to_owned(),
-                rhs_type: r_type.to_owned(),
+                lhs_type: l_type.to_string(),
+                rhs_type: r_type.to_string(),
             })?;
 
         if let ControlFlow::Value(va) =

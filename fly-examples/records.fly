@@ -14,3 +14,5 @@ helsinki = new City {
 	latitude: 60.192059,
 	longitude: 24.945831
 }
+
+print(helsinki.name + " " + helsinki.latitude.to_string() + " " + helsinki.longitude.to_string());

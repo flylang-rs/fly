@@ -63,8 +63,18 @@ pub struct Record {
 #[derive(Debug)]
 pub struct RecordField {
 	pub name: String,
-	pub visibility: Visibility
+	pub visibility: Visibility,
+	// pub value: Value
 }
 
 #[derive(Debug)]
-pub struct RecordInstance;
+pub struct RecordInstance {
+	pub record: Arc<Record>,
+	pub fields: Vec<RecordInstanceField>
+}
+
+#[derive(Debug)]
+pub struct RecordInstanceField {
+	pub name: String,
+	pub value: Value
+}
