@@ -1,0 +1,26 @@
+record Scoreboard {
+    public player_name;
+    public counter;
+}
+
+func Scoreboard::increment() {
+    self.counter += 1;
+}
+
+func Scoreboard::to_string() {
+    return self.player_name + " ( " + self.counter.to_string() + " )"
+}
+
+sc = new Scoreboard {
+    player_name: "Kevin",
+    counter: 0
+}
+
+sc.increment()
+sc.increment()
+sc.increment()
+sc.increment()
+
+sc.player_name = "Robin"
+
+print(sc)

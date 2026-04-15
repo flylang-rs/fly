@@ -1220,7 +1220,20 @@ impl Interpreter {
 
                 arr.lock().unwrap()[*i as usize].clone()
             }
-            LValue::Property { .. } => todo!("Property value read"),
+            LValue::Property { object, name } => {
+                let value = object
+                    .as_record_instance()
+                    .unwrap_or_else(|| panic!("Expected record instance!"))
+                    .lock()
+                    .unwrap()
+                    .fields
+                    .iter()
+                    .find(|&fi| fi.name == *name)
+                    .map(|x| x.value.clone())
+                    .unwrap_or_else(|| panic!("Lookup of field `{name}` failed!"));
+
+                value
+            },
         }
     }
 
@@ -1251,8 +1264,18 @@ impl Interpreter {
 
                 arr.lock().unwrap()[i as usize] = value;
             }
-            LValue::Property { .. } => {
-                todo!("Property assignment when I add objects")
+            LValue::Property { object, name } => {
+                let arc_bind = object.as_record_instance().unwrap_or_else(|| panic!("Expected record instance, got: {object:?}"));
+
+                let mut bind = arc_bind.lock().unwrap();
+
+                let val_bind = bind.fields.iter_mut().find(|fi| fi.name == name).map(|x| &mut x.value).unwrap_or_else(|| {
+                    panic!("Can't find a field `{name}`");
+                });
+
+                *val_bind = value;
+
+                drop(bind);
             }
         }
     }

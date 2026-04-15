@@ -44,6 +44,14 @@ impl Value {
 			None
 		}
 	}
+
+	pub fn as_record_instance(&self) -> Option<Arc<Mutex<RecordInstance>>> {
+		if let Value::RecordInstance(r) = self {
+			Some(Arc::clone(r))
+		} else {
+			None
+		}
+	}
 }
 
 #[derive(Debug, Clone)]
