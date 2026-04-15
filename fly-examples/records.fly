@@ -4,6 +4,7 @@ record City {
     public longitude;
 }
 
+# Note: `self` is passed automatically
 func City::with_heart() {
     return self.name + " <3"
 }
@@ -13,6 +14,8 @@ func City::to_string() {
     return self.name + " " + self.latitude.to_string() + " " + self.longitude.to_string()
 }
 
+
+# Main code
 
 helsinki = new City {
 	name: "Helsinki",
