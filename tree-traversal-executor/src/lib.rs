@@ -446,6 +446,7 @@ impl Interpreter {
                 let value = Record {
                     name: name.clone(),
                     fields,
+                    definition_realm: Arc::clone(&realm)
                 };
 
                 realm
@@ -705,8 +706,14 @@ impl Interpreter {
 
                 // If we didn't get a needed value, maybe it can be found in Record's fields?
                 if val.is_none() {
+					let rec_realm = if let Value::RecordInstance(ri) = &obj {
+						Arc::clone(&ri.lock().unwrap().record.definition_realm)
+					} else {
+						Arc::clone(&realm)
+					};
+                
                     let record_def =
-                        realm.read().unwrap().lookup(&type_name).unwrap_or_else(|| {
+                        rec_realm.read().unwrap().lookup(&type_name).unwrap_or_else(|| {
                             panic!("No property `{prop}` on type `{type_name}`")
                         });
 

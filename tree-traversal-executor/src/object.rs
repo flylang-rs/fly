@@ -1,8 +1,10 @@
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
 
 use flylang_common::visibility::Visibility;
 
 use crate::{function::Function, runtime::RustInteropFn};
+
+use crate::realm::Realm;
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -65,7 +67,8 @@ pub enum LValue {
 #[derive(Debug)]
 pub struct Record {
 	pub name: String,
-	pub fields: Vec<RecordField>
+	pub fields: Vec<RecordField>,
+	pub definition_realm: Arc<RwLock<Realm>>
 }
 
 #[derive(Debug)]
