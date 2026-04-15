@@ -8,6 +8,11 @@ func City::with_heart() {
     return self.name + " <3"
 }
 
+# For `print` compatibility
+func City::to_string() { 
+    return self.name + " " + self.latitude.to_string() + " " + self.longitude.to_string()
+}
+
 
 helsinki = new City {
 	name: "Helsinki",
@@ -15,4 +20,4 @@ helsinki = new City {
 	longitude: 24.945831
 }
 
-print(helsinki.name + " " + helsinki.latitude.to_string() + " " + helsinki.longitude.to_string());
+print(helsinki);

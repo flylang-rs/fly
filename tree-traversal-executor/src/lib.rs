@@ -6,7 +6,7 @@ use std::{
 
 use flylang_common::{Address, source::Source, spanned::Spanned};
 use flylang_parser::ast::{DivisionKind, ExprKind, Expression, Statement, While};
-use log::debug;
+use log::{debug, info};
 
 use crate::{
     calltrace::{CallFrame, CallSegment},
@@ -236,13 +236,27 @@ impl Interpreter {
                     fna => todo!("Function name is complex: {fna:?}"),
                 };
 
+                // Note: it can't be mixed up with module path notation, because we're working with
+                // function definition.
+                let does_belong_to_a_record = match &function.name.value {
+                    ExprKind::Path { .. } => true,
+                    _ => false
+                };
+
+                let mut params: Vec<String> = function
+                    .arguments
+                    .iter()
+                    .map(|x| x.value.as_id().map(str::to_owned).unwrap())
+                    .collect();
+
+                // If a function belongs to method, add `self` as an object receiver
+                if does_belong_to_a_record {
+                    params.insert(0, "self".to_string());
+                }
+
                 let value = Value::Function(Arc::new(Function {
                     normal_name: FunctionNameKind::Normal(real_name.clone()),
-                    params: function
-                        .arguments
-                        .iter()
-                        .map(|x| x.value.as_id().map(str::to_owned).unwrap())
-                        .collect(),
+                    params,
                     body: *function.body.clone(),
                     closure_realm: Arc::clone(&realm),
                 }));
