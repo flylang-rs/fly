@@ -812,7 +812,11 @@ impl Interpreter {
 
                 match result {
                     Some(val) => ControlFlow::Value(val),
-                    None => panic!("Undefined path: `{key}`"),
+                    None => {
+                        // panic!("Undefined path: `{key}`")
+
+                        return Err(InterpreterError::NameNotDefined { name: key, address: expr.address.clone() })
+                    },
                 }
             }
 
@@ -1344,17 +1348,21 @@ impl Interpreter {
         }
     }
 
-    fn property_access_segments_to_vec(&mut self, expr: &Expression) -> Vec<String> {
+    fn property_access_segments_to_vec(&mut self, expr: &Expression) -> Spanned<Vec<String>> {
+        let addr = expr.address.clone();
+
         match &expr.value {
             ExprKind::PropertyAccess { origin, property } => {
-                let lhs = self.property_access_segments_to_vec(origin);
-                let rhs = self.property_access_segments_to_vec(property);
+                let lhs = self.property_access_segments_to_vec(origin).value;
+                let rhs = self.property_access_segments_to_vec(property).value;
 
-                lhs.into_iter()
+                Spanned::new(lhs.into_iter()
                     .chain(rhs.into_iter())
-                    .collect::<Vec<String>>()
+                    .collect::<Vec<String>>(),
+                    addr
+                )
             }
-            ExprKind::Identifier(name) => vec![name.clone()],
+            ExprKind::Identifier(name) => Spanned::new(vec![name.clone()], addr),
             _ => panic!("Invalid property access segment: {:?}", expr.value),
         }
     }

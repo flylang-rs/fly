@@ -2,6 +2,8 @@ use flylang_common::spanned::Spanned;
 
 use flylang_common::Address;
 
+use crate::kw_lookup_table;
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenValue {
     // Atoms
@@ -26,10 +28,9 @@ pub enum TokenValue {
     Bar,
     Percent,
     Slash,
-    BackSlash,
+    Backslash,
     BitShiftLeft,
     BitShiftRight,
-    Backslash,
     Dot,
     Comma,
     Colon,
@@ -91,6 +92,83 @@ pub enum TokenValue {
     True,
     Use,
     While,
+}
+
+impl TokenValue {
+    pub fn repr(&self) -> &str {
+        match self {
+            TokenValue::Identifier(id) => id,
+            TokenValue::String(st) => st,
+            TokenValue::Comment(com) => com,
+            TokenValue::Number(nr) => nr,
+            TokenValue::Assign => "=",
+            TokenValue::Plus => "+",
+            TokenValue::Minus => "-",
+            TokenValue::Asterisk => "*",
+            TokenValue::OpenBrace => "{",
+            TokenValue::CloseBrace => "}",
+            TokenValue::OpenBracket => "[",
+            TokenValue::CloseBracket => "]",
+            TokenValue::OpenParen => "(",
+            TokenValue::CloseParen => ")",
+            TokenValue::Hash => "#",
+            TokenValue::Bang => "!",
+            TokenValue::QuestionMark => "?",
+            TokenValue::Ampersand => "&",
+            TokenValue::Bar => "|",
+            TokenValue::Percent => "%",
+            TokenValue::Slash => "/",
+            TokenValue::Backslash => "\\",
+            TokenValue::BitShiftLeft => "<<",
+            TokenValue::BitShiftRight => ">>",
+            TokenValue::Dot => ".",
+            TokenValue::Comma => ",",
+            TokenValue::Colon => ":",
+            TokenValue::Semicolon => ";",
+            TokenValue::Newline => "<newline>",
+            TokenValue::Less => "<",
+            TokenValue::Greater => ">",
+            TokenValue::ArrowForward => "->",
+            TokenValue::PathDelimiter => "::",
+            TokenValue::Range => "..",
+            TokenValue::RangeInclusive => "..=",
+            TokenValue::RoundingUpDiv => "/+",
+            TokenValue::RoundingDownDiv => "/-",
+            TokenValue::PlusAssign => "+=",
+            TokenValue::MinusAssign => "-",
+            TokenValue::MulAssign => "*",
+            TokenValue::DivAssign => "/",
+            TokenValue::RoundingUpDivAssign => "/+=",
+            TokenValue::RoundingDownDivAssign => "/-=",
+            TokenValue::BitAndAssign => "&=",
+            TokenValue::BitOrAssign => "|=",
+            TokenValue::PercentAssign => "%=",
+            TokenValue::Equals => "==",
+            TokenValue::NotEquals => "!=",
+            TokenValue::LessOrEquals => "<=",
+            TokenValue::GreaterOrEquals => ">=",
+            TokenValue::LogicalAnd => "&&",
+            TokenValue::LogicalOr => "||",
+
+            token => {
+                // If it's a keyword, find it in keyword lookup table instead.
+                
+                let value = kw_lookup_table::KEYWORDS
+                    .iter()
+                    .filter(|(_, tkv)| *tkv == token)
+                    .map(|(name, _)| name)
+                    .next();
+
+                if let Some(value) = value {
+                    return value;
+                }
+
+                unimplemented!(
+                    "Cannot transform token value: {token:?} to its string representation."
+                )
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone)]

@@ -1,12 +1,13 @@
 use flylang_common::Address;
 use flylang_diagnostics::{Diagnostics, additions::Note, error::DiagnosticsReport};
-use flylang_lexer::token::Token;
+use flylang_lexer::token::{Token, TokenValue};
 
 #[derive(Clone, Debug)]
 pub enum ParserError {
     UnexpectedEOF(Address),
     UnexpectedToken {
         token: Token,
+        expected: Option<TokenValue>
     },
     ParsingNumberFailed {
         number: String,
@@ -16,6 +17,10 @@ pub enum ParserError {
         address: Address,
         domain: InvalidArgumentKindDomain,
     },
+    ReservedKeywordUsage {
+        address: Address,
+        keyword: String
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -32,10 +37,16 @@ impl DiagnosticsReport for ParserError {
             ParserError::UnexpectedEOF(addr) => {
                 Diagnostics {}.error_ext(&mut report, "Unexpected EOF", addr, &[], &[]);
             }
-            ParserError::UnexpectedToken { token } => {
+            ParserError::UnexpectedToken { token, expected } => {
+                let error_string = if let Some(expec) = expected {
+                    format!("Unexpected token `{}`, expected `{}`", token.value.repr(), expec.repr())
+                } else {
+                    "Unexpected token".to_string()
+                };
+
                 Diagnostics {}.error_ext(
                     &mut report,
-                    "Unexpected token",
+                    &error_string,
                     &token.address,
                     &[Note::new(token.address.clone(), "here")],
                     &[],
@@ -60,9 +71,18 @@ impl DiagnosticsReport for ParserError {
 
                 Diagnostics {}.error_ext(
                     &mut report,
-                    &format!("Invalid argument kind"),
+                    "Invalid argument kind",
                     &address,
                     &[Note::new(address.clone(), note_msg)],
+                    &[],
+                );
+            }
+            ParserError::ReservedKeywordUsage { address, keyword } => {
+                Diagnostics {}.error_ext(
+                    &mut report,
+                    &format!("Cannot use reserved keyword `{keyword}` here"),
+                    &address,
+                    &[Note::new(address.clone(), "here")],
                     &[],
                 );
             }

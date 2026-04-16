@@ -19,5 +19,6 @@ Err(
                 span: 1..2,
             },
         },
+        expected: None,
     },
 )

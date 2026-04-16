@@ -264,6 +264,7 @@ dependencies = [
  "flylang-diagnostics",
  "flylang-lexer",
  "insta",
+ "log",
 ]
 
 [[package]]

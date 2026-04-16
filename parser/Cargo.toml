@@ -4,6 +4,8 @@ version = "0.1.1"
 edition = "2024"
 
 [dependencies]
+log = "0.4.29"
+
 flylang-lexer = { path = "../lexer" }
 flylang-common = { path = "../common" }
 flylang-diagnostics = { path = "../diagnostics" }

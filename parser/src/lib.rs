@@ -1,5 +1,6 @@
 use flylang_common::{Address, spanned::Spanned, visibility::Visibility};
 use flylang_lexer::token::{Token, TokenValue};
+use log::debug;
 use std::iter::Peekable;
 
 use crate::{
@@ -71,14 +72,14 @@ impl Parser {
         }
     }
 
-    fn expect(&mut self, expected: TokenValue) -> Token {
+    fn expect(&mut self, expected: TokenValue) -> ParserResult<Token> {
         match self.tokens.next() {
-            Some(token) if token.value == expected => token,
+            Some(token) if token.value == expected => Ok(token),
             Some(token) => {
-                panic!("expected {:?}, got {:?}", expected, token.value);
+                Err(ParserError::UnexpectedToken { token, expected: Some(expected) })
             }
             None => {
-                panic!("expected {:?}, got end of input", expected);
+                Err(ParserError::UnexpectedEOF(self.eof_addr.clone()))
             }
         }
     }
@@ -106,13 +107,13 @@ impl Parser {
     }
 
     fn parse_block(&mut self) -> ParserResult<ast::Statement> {
-        let token_addr = self.expect(TokenValue::OpenBrace).address;
+        let token_addr = self.expect(TokenValue::OpenBrace)?.address;
 
         self.skip_whitespaces();
 
         let statements = self.parse(ParserState::InBlock)?;
 
-        let end_token_addr = self.expect(TokenValue::CloseBrace).address;
+        let end_token_addr = self.expect(TokenValue::CloseBrace)?.address;
 
         Ok(ast::Statement::Expr(Spanned {
             value: ast::ExprKind::Block(statements),
@@ -121,11 +122,11 @@ impl Parser {
     }
 
     fn parse_func(&mut self) -> ParserResult<ast::Statement> {
-        self.expect(TokenValue::Func);
+        self.expect(TokenValue::Func)?;
 
         let name = self.parse_expression(31)?;
 
-        self.expect(TokenValue::OpenParen);
+        self.expect(TokenValue::OpenParen)?;
 
         let (arguments, _) = self.parse_argument_list()?;
 
@@ -311,7 +312,7 @@ impl Parser {
                     address: merged,
                 }
             }
-            // -Unary minus
+            // !
             Token {
                 value: TokenValue::Bang,
                 address: bang_addr,
@@ -345,7 +346,7 @@ impl Parser {
                 ..
             } => {
                 let inner = self.parse_expression(0)?;
-                let close = self.expect(TokenValue::CloseParen);
+                let close = self.expect(TokenValue::CloseParen)?;
                 let merged = start_addr.clone().merge(&close.address);
 
                 Spanned {
@@ -355,14 +356,29 @@ impl Parser {
             }
             Token {
                 value: TokenValue::New,
-                ..
+                address
             } => {
+                debug!("`new` token found with MBP: {min_binding_power}");
+
+                // If we used `new` keyword like this:
+                // > new Object { ... }
+                // or
+                // > a = new Object { ... }
+                // It will have MBP (min_binding_power) = 0
+                // But when we want to use it as a part of something (like function name or path segement),
+                // it will have other binding power.
+                // For example if `new` is used as function, it will have MBP = 31 (see `parse_func` method)
+                // And if it's used as path segment it will have MBP = 32 (see `TokenValue::Dot | TokenValue::PathDelimiter` in `match` below)
+                if min_binding_power >= 31 {
+                    return Err(ParserError::ReservedKeywordUsage { address, keyword: "new".to_string() });
+                }
+
                 let new_obj = self.parse_new_object_declaration()?;
 
                 Spanned::new(ExprKind::New(new_obj.value), new_obj.address)
             }
             value => {
-                return Err(ParserError::UnexpectedToken { token: value });
+                return Err(ParserError::UnexpectedToken { token: value, expected: None });
             }
         };
 
@@ -575,7 +591,7 @@ impl Parser {
                         value: Box::new(rhs),
                     },
                     TokenValue::OpenBracket => {
-                        self.expect(TokenValue::CloseBracket);
+                        self.expect(TokenValue::CloseBracket)?;
 
                         ast::ExprKind::IndexedAccess {
                             origin: Box::new(lhs),
@@ -613,7 +629,7 @@ impl Parser {
     fn parse_new_object_block(&mut self) -> ParserResult<(KeyValueMapWithDuplicates, Address)> {
         self.skip_whitespaces();
 
-        let op_brace_addr = self.expect(TokenValue::OpenBrace).address;
+        let op_brace_addr = self.expect(TokenValue::OpenBrace)?.address;
 
         let mut fields = KeyValueMapWithDuplicates::new();
 
@@ -633,7 +649,7 @@ impl Parser {
 
             self.next_token();
 
-            self.expect(TokenValue::Colon);
+            self.expect(TokenValue::Colon)?;
 
             let value = self.parse_expression(0)?;
 
@@ -653,7 +669,7 @@ impl Parser {
 
         self.skip_whitespaces();
 
-        let cl_brace_addr = self.expect(TokenValue::CloseBrace).address;
+        let cl_brace_addr = self.expect(TokenValue::CloseBrace)?.address;
 
         Ok((fields, op_brace_addr.merge(&cl_brace_addr)))
     }
@@ -788,8 +804,6 @@ impl Parser {
             }
             _ => todo!("Cannot mix `private` with {current_token:?} right now..."),
         }
-
-        unreachable!()
     }
 
     fn parse_record(&mut self, visibility: Visibility) -> ParserResult<ast::Statement> {
@@ -801,7 +815,7 @@ impl Parser {
 
         let name = match &name.value {
             TokenValue::Identifier(id) => Spanned::new(id.to_string(), name.address),
-            _ => return Err(ParserError::UnexpectedToken { token: name }),
+            _ => return Err(ParserError::UnexpectedToken { token: name, expected: None }),
         };
 
         let fields = self.parse_record_block()?;
@@ -814,7 +828,7 @@ impl Parser {
     }
 
     fn parse_record_block(&mut self) -> ParserResult<Spanned<Vec<ast::Statement>>> {
-        let open_token_addr = self.expect(TokenValue::OpenBrace).address;
+        let open_token_addr = self.expect(TokenValue::OpenBrace)?.address;
 
         let mut fields: Vec<ast::Statement> = vec![];
 
@@ -841,7 +855,7 @@ impl Parser {
                         TokenValue::Identifier(id) => {
                             Spanned::new(id.clone(), name.address.clone())
                         }
-                        _ => return Err(ParserError::UnexpectedToken { token: name }),
+                        _ => return Err(ParserError::UnexpectedToken { token: name, expected: None }),
                     };
 
                     // eprintln!("Public or private field with value: {:?}", name);
@@ -860,11 +874,11 @@ impl Parser {
                 // Closing brace
                 TokenValue::CloseBrace => break,
                 // Anything else
-                _ => return Err(ParserError::UnexpectedToken { token: token }),
+                _ => return Err(ParserError::UnexpectedToken { token: token, expected: None }),
             };
         }
 
-        let close_token_addr = self.expect(TokenValue::CloseBrace).address;
+        let close_token_addr = self.expect(TokenValue::CloseBrace)?.address;
 
         Ok(Spanned::new(
             fields,

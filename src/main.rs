@@ -5,12 +5,13 @@ use std::sync::Arc;
 use flylang_common::source::Source;
 use flylang_diagnostics::error::DiagnosticsReport;
 
-use crate::common::LoadingError;
+use crate::{arguments::CommandLineArguments, common::LoadingError};
 
+pub mod arguments;
 pub mod common;
 pub mod repl;
 
-fn run_file(source: Source) {
+fn run_file(options: &CommandLineArguments, source: Source) {
     let source = Arc::new(source);
 
     let ast = match common::parse_source(Arc::clone(&source)) {
@@ -24,6 +25,10 @@ fn run_file(source: Source) {
             std::process::exit(1)
         }
     };
+
+    if options.show_ast {
+        eprintln!("{ast:#?}");
+    }
 
     let mut interpreter = flylang_tte::Interpreter::new();
 
@@ -72,6 +77,7 @@ fn show_help() {
 
     println!("Options:");
     println!("  --repl\t\tLaunch Fly REPL");
+    println!("  --show-ast\t\tShow AST");
     println!("  -h, --help\t\tShow this help");
     println!();
 
@@ -85,6 +91,8 @@ fn main() -> std::io::Result<()> {
         .format_timestamp_millis()
         .init();
 
+    let mut cmd_opts = CommandLineArguments::default();
+
     // TODO: Use `clap` crate for CLI args parsing.
     if std::env::args().any(|x| x == "-h" || x == "--help") {
         show_help();
@@ -96,6 +104,10 @@ fn main() -> std::io::Result<()> {
         repl::REPL::new().enter();
 
         std::process::exit(0);
+    }
+
+    if std::env::args().any(|x| x == "--show-ast") {
+        cmd_opts.show_ast = true;
     }
 
     let filepath = if let Some(arg) = std::env::args().nth(1) {
@@ -111,7 +123,7 @@ fn main() -> std::io::Result<()> {
 
     let source_code = std::fs::read_to_string(&filepath)?;
 
-    run_file(Source::new(filepath, source_code));
+    run_file(&cmd_opts, Source::new(filepath, source_code));
 
     Ok(())
 }
