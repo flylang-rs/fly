@@ -32,7 +32,7 @@ fn run_file(options: &CommandLineArguments, source: Source) {
 
     let mut interpreter = flylang_tte::Interpreter::new();
 
-    let result = match interpreter.execute_script(source, ast) {
+    let result = match interpreter.execute_script(ast) {
         Ok(res) => res,
         Err(e) => {
             flylang_diagnostics::report_simple_error("Exception occured, showing traceback...");

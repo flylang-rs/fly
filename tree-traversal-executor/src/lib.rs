@@ -6,7 +6,7 @@ use std::{
 
 use flylang_common::{Address, source::Source, spanned::Spanned};
 use flylang_parser::ast::{DivisionKind, ExprKind, Expression, Statement, While};
-use log::{debug, info};
+use log::debug;
 
 use crate::{
     calltrace::{CallFrame, CallSegment},
@@ -31,12 +31,12 @@ pub type InterpreterResult<T> = Result<T, InterpreterError>;
 
 enum ModuleState {
     Loading,
-    Loaded(LoadedModule),
+    Loaded, /* (LoadedModule) */
 }
 
-struct LoadedModule {
-    exports: HashMap<String, Value>,
-}
+// struct LoadedModule {
+//     exports: HashMap<String, Value>,
+// }
 
 pub struct Interpreter {
     // "Root" Realm of the interpreter
@@ -103,17 +103,8 @@ impl Interpreter {
     /// Script version of `Interpreter::execute`. Doesn't break when value is returned.
     pub fn execute_script(
         &mut self,
-        source: Arc<Source>,
         ast: Vec<Statement>,
     ) -> InterpreterResult<ControlFlow> {
-        // self.call_trace.push_back(CallFrame {
-        //     what_calls: CallSegment {
-        //         func_name: "<main>".to_string(),
-        //         address_filename: source.filepath.clone(),
-        //         address_line_col: None,
-        //     },
-        // });
-
         self.exec_inner(Arc::clone(&self.world), &ast, false)
     }
 
@@ -173,7 +164,7 @@ impl Interpreter {
         if let Some(val) = self.module_registry.read().unwrap().get(&path) {
             match val {
                 ModuleState::Loading => panic!("Circular import detected for module: {}", filename),
-                ModuleState::Loaded(_) => return Ok(()), // We don't have to load it again
+                ModuleState::Loaded /*(_)*/ => return Ok(()), // We don't have to load it again
             }
         }
 
@@ -190,7 +181,8 @@ impl Interpreter {
             }
         };
 
-        let ast = flylang_lexparse_glue::parse_source(Arc::new(Source::new(filename, code))).unwrap();
+        let ast =
+            flylang_lexparse_glue::parse_source(Arc::new(Source::new(filename, code))).unwrap();
 
         let module_realm = Arc::new(RwLock::new(Realm::dive(Arc::clone(&self.builtins))));
 
@@ -200,9 +192,9 @@ impl Interpreter {
 
         self.module_registry.write().unwrap().insert(
             path.clone(),
-            ModuleState::Loaded(LoadedModule {
-                exports: exports.clone(),
-            }),
+            ModuleState::Loaded, /* (LoadedModule {
+                                     exports: exports.clone(),
+                                 }) */
         );
 
         for (name, value) in exports {
@@ -450,7 +442,7 @@ impl Interpreter {
 
                 Ok(ControlFlow::Nothing)
             }
-            st => todo!("Unexpected statement: {:?}", st),
+            // st => todo!("Unexpected statement: {:?}", st),
         }
     }
 
@@ -691,7 +683,7 @@ impl Interpreter {
                 let type_name = types::value_to_internal_type(&obj).unwrap();
                 let method_key = format!("{type_name}::{prop}");
 
-                let mut val = realm.read().unwrap().lookup(&method_key);
+                let val = realm.read().unwrap().lookup(&method_key);
 
                 if let Some(val) = val {
                     return Ok(ControlFlow::Value(val));
@@ -705,11 +697,9 @@ impl Interpreter {
                         Arc::clone(&realm)
                     };
 
-                    let record_def = rec_realm
-                        .read()
-                        .unwrap()
-                        .lookup(&type_name)
-                        .unwrap_or_else(|| panic!("No property `{prop}` on type `{type_name}`"));
+                    if rec_realm.read().unwrap().lookup(&type_name).is_none() {
+                        panic!("No property `{prop}` on type `{type_name}`");
+                    }
 
                     let lhs = self.resolve_lvalue(Arc::clone(&realm), origin)?;
                     let record_instance = match self.read_lvalue(realm, &lhs) {
@@ -808,8 +798,11 @@ impl Interpreter {
                     None => {
                         // panic!("Undefined path: `{key}`")
 
-                        return Err(InterpreterError::NameNotDefined { name: key, address: expr.address.clone() })
-                    },
+                        return Err(InterpreterError::NameNotDefined {
+                            name: key,
+                            address: expr.address.clone(),
+                        });
+                    }
                 }
             }
 
@@ -1111,17 +1104,15 @@ impl Interpreter {
 
         let method_name = format!("{l_type}::operator{op}{r_type}");
 
-        let method = realm
-            .read()
-            .unwrap()
-            .lookup(&method_name)
-            .ok_or_else(|| InterpreterError::IncompatibleTypesForOperation {
+        let method = realm.read().unwrap().lookup(&method_name).ok_or_else(|| {
+            InterpreterError::IncompatibleTypesForOperation {
                 op: op.to_string(),
                 lhs_addr: lhs.address.clone(),
                 rhs_addr: rhs.address.clone(),
                 lhs_type: l_type.to_string(),
                 rhs_type: r_type.to_string(),
-            })?;
+            }
+        })?;
 
         if let ControlFlow::Value(va) =
             self.call_func(realm, None, method, &[lhs.value, rhs.value])?
@@ -1220,18 +1211,16 @@ impl Interpreter {
 
                 arr.lock().unwrap()[*i as usize].clone()
             }
-            LValue::Property { object, name } => {
-                object
-                    .as_record_instance()
-                    .unwrap_or_else(|| panic!("Expected record instance!"))
-                    .lock()
-                    .unwrap()
-                    .fields
-                    .iter()
-                    .find(|&fi| fi.name == *name)
-                    .map(|x| x.value.clone())
-                    .unwrap_or_else(|| panic!("Lookup of field `{name}` failed!"))
-            }
+            LValue::Property { object, name } => object
+                .as_record_instance()
+                .unwrap_or_else(|| panic!("Expected record instance!"))
+                .lock()
+                .unwrap()
+                .fields
+                .iter()
+                .find(|&fi| fi.name == *name)
+                .map(|x| x.value.clone())
+                .unwrap_or_else(|| panic!("Lookup of field `{name}` failed!")),
         }
     }
 
@@ -1327,9 +1316,7 @@ impl Interpreter {
                 let lhs = self.path_segments_to_vec(parent);
                 let rhs = self.path_segments_to_vec(value);
 
-                lhs.into_iter()
-                    .chain(rhs)
-                    .collect::<Vec<String>>()
+                lhs.into_iter().chain(rhs).collect::<Vec<String>>()
             }
             ExprKind::Identifier(name) => vec![name.clone()],
             _ => panic!("Invalid path segment: {:?}", expr.value),

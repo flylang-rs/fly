@@ -1,8 +1,6 @@
-use std::sync::Arc;
-
 use crate::{
     Interpreter, InterpreterResult, SharedRealm, control_flow::ControlFlow, object::Value,
-    runtime::RustInteropFn, types,
+    runtime::RustInteropFn
 };
 
 #[rustfmt::skip]
