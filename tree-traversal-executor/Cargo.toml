@@ -9,5 +9,6 @@ flylang-common = { path = "../common" }
 flylang-diagnostics = { path = "../diagnostics" }
 flylang-lexer = { path = "../lexer" }
 flylang-parser = { path = "../parser" }
+flylang-lexparse-glue = { path = "../lexparse-glue" }
 
 log = "0.4.29"

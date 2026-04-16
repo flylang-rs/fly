@@ -1,6 +1,11 @@
 [package]
-name = "lexparse-glue"
+name = "flylang-lexparse-glue"
 version = "0.1.1"
 edition = "2024"
 
 [dependencies]
+flylang-ast-analyzer = { path = "../analyzer" }
+flylang-common = { path = "../common" }
+flylang-lexer = { path = "../lexer" }
+flylang-parser = { path = "../parser" }
+flylang-diagnostics = { path = "../diagnostics" }

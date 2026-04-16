@@ -8,7 +8,9 @@ use flylang_common::source::Source;
 use flylang_diagnostics::error::DiagnosticsReport;
 use flylang_tte::{Interpreter, control_flow::ControlFlow, object::Value};
 
-use crate::common::{LoadingError, LoadingResult};
+use crate::repl::error::{REPLError, REPLResult};
+
+pub mod error;
 
 pub struct REPL {
     interpreter: Interpreter,
@@ -90,12 +92,17 @@ impl REPL {
         ReadlineResult::Ignore
     }
 
-    pub fn execute(&mut self, line: String) -> LoadingResult<ControlFlow> {
-        let ast = crate::common::parse_source(Arc::new(Source::new(String::from("<REPL>"), line)))?;
+    pub fn execute(&mut self, line: String) -> REPLResult<ControlFlow> {
+        let ast = flylang_lexparse_glue::parse_source(Arc::new(Source::new(
+            String::from("<REPL>"),
+            line,
+        )))
+        .map_err(|e| REPLError::ModuleLoadingError(e))?;
+
         let result = self
             .interpreter
             .execute(ast)
-            .map_err(|e| LoadingError::InterpreterError(e))?;
+            .map_err(|e| REPLError::InterpreterError(e))?;
 
         Ok(result)
     }

@@ -22,7 +22,6 @@ pub mod control_flow;
 pub mod error;
 pub mod function;
 pub mod object;
-pub mod parser_glue;
 pub mod realm;
 pub mod runtime;
 pub mod types;
@@ -191,7 +190,7 @@ impl Interpreter {
             }
         };
 
-        let ast = parser_glue::parse_into_ast(Source::new(filename, code)).unwrap();
+        let ast = flylang_lexparse_glue::parse_source(Arc::new(Source::new(filename, code))).unwrap();
 
         let module_realm = Arc::new(RwLock::new(Realm::dive(Arc::clone(&self.builtins))));
 

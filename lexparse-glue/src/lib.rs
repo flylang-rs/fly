@@ -1,14 +1,63 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
+use std::sync::Arc;
+
+use flylang_common::source::Source;
+use flylang_diagnostics::error::DiagnosticsReport;
+use flylang_lexer::{error::LexerError, token::Token};
+use flylang_parser::{Parser, ast::Statement, error::ParserError, state::ParserState};
+
+pub type LoadingResult<T> = Result<T, LoadingError>;
+
+#[derive(Debug, Clone)]
+pub enum LoadingError {
+    LexerError(LexerError),
+    ParserError(ParserError),
+    AnalyzeFailed,
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+impl DiagnosticsReport for LoadingError {
+    fn render(&self) -> String {
+        match self {
+            LoadingError::LexerError(lexer_error) => lexer_error.render(),
+            LoadingError::ParserError(parser_error) => parser_error.render(),
+            LoadingError::AnalyzeFailed => unreachable!("Not rendered as diagnostics"),
+        }
     }
+}
+
+pub fn parse_source(source: Arc<Source>) -> LoadingResult<Vec<Statement>> {
+    let mut lexer = flylang_lexer::Lexer::new(source);
+    let mut tokens: Vec<Token> = vec![];
+
+    loop {
+        match lexer.next_token() {
+            // If we got a token, add it
+            Ok(token) => tokens.push(token),
+            // It's actually not an error, it indicated that we reached the end, so just break
+            Err(LexerError::EOF) => break,
+            // This arm is more serious, we have a problem here
+            Err(err) => {
+                return Err(LoadingError::LexerError(err));
+            }
+        }
+    }
+
+    // Parse here...
+
+    let mut parser = Parser::new(tokens);
+
+    let ast = parser.parse(ParserState::Neutral);
+
+    if let Err(e) = ast {
+        return Err(LoadingError::ParserError(e));
+    }
+
+    let ast = ast.unwrap();
+
+    let analyzer = flylang_ast_analyzer::analyze(&ast);
+
+    if analyzer.error_count() != 0 {
+        return Err(LoadingError::AnalyzeFailed);
+    }
+
+    Ok(ast)
 }

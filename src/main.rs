@@ -4,17 +4,17 @@ use std::sync::Arc;
 
 use flylang_common::source::Source;
 use flylang_diagnostics::error::DiagnosticsReport;
+use flylang_lexparse_glue::LoadingError;
 
-use crate::{arguments::CommandLineArguments, common::LoadingError};
+use crate::{arguments::CommandLineArguments};
 
 pub mod arguments;
-pub mod common;
 pub mod repl;
 
 fn run_file(options: &CommandLineArguments, source: Source) {
     let source = Arc::new(source);
 
-    let ast = match common::parse_source(Arc::clone(&source)) {
+    let ast = match flylang_lexparse_glue::parse_source(Arc::clone(&source)) {
         Ok(st) => st,
         Err(LoadingError::AnalyzeFailed) => {
             std::process::exit(1);
