@@ -37,7 +37,7 @@ impl REPL {
     pub fn read_line(&mut self) -> ReadlineResult {
         terminal::enable_raw_mode().unwrap();
 
-        write!(std::io::stdout(), ":{:<2}   > ", self.line_counter).unwrap();
+        print!(":{:<2}   > ", self.line_counter);
         std::io::stdout().flush().unwrap();
 
         let mut line = String::new();
@@ -97,12 +97,12 @@ impl REPL {
             String::from("<REPL>"),
             line,
         )))
-        .map_err(|e| REPLError::ModuleLoadingError(e))?;
+        .map_err(REPLError::ModuleLoadingError)?;
 
         let result = self
             .interpreter
             .execute(ast)
-            .map_err(|e| REPLError::InterpreterError(e))?;
+            .map_err(REPLError::InterpreterError)?;
 
         Ok(result)
     }

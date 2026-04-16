@@ -56,7 +56,7 @@ impl DiagnosticsReport for ParserError {
                 Diagnostics {}.error_ext(
                     &mut report,
                     &format!("Failed to parse a number: {number:?}"),
-                    &address,
+                    address,
                     &[Note::new(address.clone(), "here")],
                     &[],
                 );
@@ -72,7 +72,7 @@ impl DiagnosticsReport for ParserError {
                 Diagnostics {}.error_ext(
                     &mut report,
                     "Invalid argument kind",
-                    &address,
+                    address,
                     &[Note::new(address.clone(), note_msg)],
                     &[],
                 );
@@ -81,7 +81,7 @@ impl DiagnosticsReport for ParserError {
                 Diagnostics {}.error_ext(
                     &mut report,
                     &format!("Cannot use reserved keyword `{keyword}` here"),
-                    &address,
+                    address,
                     &[Note::new(address.clone(), "here")],
                     &[],
                 );

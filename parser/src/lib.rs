@@ -147,10 +147,10 @@ impl Parser {
         address: Address,
     ) -> ParserResult<ast::Expression> {
         if let Err(_) = number_repr.parse::<f64>() {
-            return Err(ParserError::ParsingNumberFailed {
+            Err(ParserError::ParsingNumberFailed {
                 number: number_repr,
                 address,
-            });
+            })
         } else {
             Ok(Spanned {
                 value: ast::ExprKind::Number(number_repr),
@@ -874,7 +874,7 @@ impl Parser {
                 // Closing brace
                 TokenValue::CloseBrace => break,
                 // Anything else
-                _ => return Err(ParserError::UnexpectedToken { token: token, expected: None }),
+                _ => return Err(ParserError::UnexpectedToken { token, expected: None }),
             };
         }
 
@@ -891,23 +891,21 @@ impl Parser {
 
         let eof = self.eof_addr.clone();
 
-        loop {
-            return match self.peek().ok_or_else(|| ParserError::UnexpectedEOF(eof))? {
-                TokenValue::Func => Ok(self.parse_func()?),
-                TokenValue::If => Ok(self.parse_if()?),
-                TokenValue::While => Ok(self.parse_while()?),
-                TokenValue::Return => Ok(self.parse_return()?),
-                TokenValue::OpenBrace => Ok(self.parse_block()?),
-                TokenValue::Break | TokenValue::Continue => Ok(self.parse_break_or_continue()?),
-                TokenValue::Use => Ok(self.parse_use()?),
-                TokenValue::Private => Ok(self.parse_private()?),
-                TokenValue::Record => Ok(self.parse_record(Visibility::Global)?),
-                _ /* tok */ => {
-                    let lhs = self.parse_expression(0)?;
+        return match self.peek().ok_or_else(|| ParserError::UnexpectedEOF(eof))? {
+            TokenValue::Func => Ok(self.parse_func()?),
+            TokenValue::If => Ok(self.parse_if()?),
+            TokenValue::While => Ok(self.parse_while()?),
+            TokenValue::Return => Ok(self.parse_return()?),
+            TokenValue::OpenBrace => Ok(self.parse_block()?),
+            TokenValue::Break | TokenValue::Continue => Ok(self.parse_break_or_continue()?),
+            TokenValue::Use => Ok(self.parse_use()?),
+            TokenValue::Private => Ok(self.parse_private()?),
+            TokenValue::Record => Ok(self.parse_record(Visibility::Global)?),
+            _ /* tok */ => {
+                let lhs = self.parse_expression(0)?;
 
-                    Ok(ast::Statement::Expr(lhs))
-                }
-            };
-        }
+                Ok(ast::Statement::Expr(lhs))
+            }
+        };
     }
 }

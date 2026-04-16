@@ -373,21 +373,16 @@ impl Lexer {
         let mut comment = String::new();
         let mut end = start + 1;
 
-        loop {
-            match self.peek_symbol() {
-                Some((offset, char)) => {
-                    if char == '\n' {
-                        break;
-                    }
-
-                    self.next_character_any();
-
-                    comment.push(char);
-
-                    end = offset + char.len_utf8();
-                }
-                _ => break,
+        while let Some((offset, char)) = self.peek_symbol() {
+            if char == '\n' {
+                break;
             }
+
+            self.next_character_any();
+
+            comment.push(char);
+
+            end = offset + char.len_utf8();
         }
 
         (TokenValue::Comment(comment), end)
