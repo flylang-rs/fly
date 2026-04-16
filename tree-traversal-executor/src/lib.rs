@@ -293,10 +293,7 @@ impl Interpreter {
                     };
 
                     if let ExprKind::Block(bk) = &block_value.value {
-                        // let inner_realm = Arc::new(RwLock::new(Realm::dive(Arc::clone(&realm))));
-
-                        // return Some(self.exec_inner(inner_realm, &bk));
-                        return Ok(self.exec_inner(Arc::clone(&realm), &bk, false)?);
+                        return self.exec_inner(Arc::clone(&realm), &bk, false);
                     } else {
                         panic!("Expected a block!")
                     }
@@ -304,10 +301,7 @@ impl Interpreter {
                     // ...
                 } else {
                     if let Some(else_body) = &stmt.else_body {
-                        // let inner_realm = Arc::new(RwLock::new(Realm::dive(Arc::clone(&realm))));
-
-                        // self.exec_single_statement(inner_realm, &else_body);
-                        self.exec_single_statement(realm, &else_body)
+                        self.exec_single_statement(realm, else_body)
                     } else {
                         Ok(ControlFlow::Nothing)
                     }
@@ -377,7 +371,7 @@ impl Interpreter {
                     };
 
                     if let ExprKind::Block(bk) = &block_value.value {
-                        let block_result = self.exec_inner(Arc::clone(&realm), &bk, false)?;
+                        let block_result = self.exec_inner(Arc::clone(&realm), bk, false)?;
 
                         match block_result {
                             ControlFlow::Return(_) => return Ok(block_result),
@@ -397,7 +391,7 @@ impl Interpreter {
             Statement::VariableDefinition(var) => {
                 let lhs = self.resolve_lvalue(
                     Arc::clone(&realm),
-                    &var.name.clone().map(|x| ExprKind::Identifier(x)),
+                    &var.name.clone().map(ExprKind::Identifier),
                 )?;
 
                 let target = match lhs {
@@ -1121,9 +1115,6 @@ impl Interpreter {
             .read()
             .unwrap()
             .lookup(&method_name)
-            // .unwrap_or_else(|| {
-            //     panic!("Incompatible types for operation `{op}`: `{l_type}` and `{r_type}`")
-            // });
             .ok_or_else(|| InterpreterError::IncompatibleTypesForOperation {
                 op: op.to_string(),
                 lhs_addr: lhs.address.clone(),
@@ -1135,7 +1126,7 @@ impl Interpreter {
         if let ControlFlow::Value(va) =
             self.call_func(realm, None, method, &[lhs.value, rhs.value])?
         {
-            return Ok(Some(va));
+            Ok(Some(va))
         } else {
             panic!("Failed to get a return value from function call.");
         }
@@ -1164,7 +1155,7 @@ impl Interpreter {
             .unwrap_or_else(|| panic!("Incompatible type for operation `{op}`: `{ty}`"));
 
         if let ControlFlow::Value(va) = self.call_func(realm, None, method, &[expr_val])? {
-            return Ok(Some(va));
+            Ok(Some(va))
         } else {
             panic!("Failed to get a return value from function call.");
         }
@@ -1230,7 +1221,7 @@ impl Interpreter {
                 arr.lock().unwrap()[*i as usize].clone()
             }
             LValue::Property { object, name } => {
-                let value = object
+                object
                     .as_record_instance()
                     .unwrap_or_else(|| panic!("Expected record instance!"))
                     .lock()
@@ -1239,9 +1230,7 @@ impl Interpreter {
                     .iter()
                     .find(|&fi| fi.name == *name)
                     .map(|x| x.value.clone())
-                    .unwrap_or_else(|| panic!("Lookup of field `{name}` failed!"));
-
-                value
+                    .unwrap_or_else(|| panic!("Lookup of field `{name}` failed!"))
             }
         }
     }
@@ -1339,7 +1328,7 @@ impl Interpreter {
                 let rhs = self.path_segments_to_vec(value);
 
                 lhs.into_iter()
-                    .chain(rhs.into_iter())
+                    .chain(rhs)
                     .collect::<Vec<String>>()
             }
             ExprKind::Identifier(name) => vec![name.clone()],
@@ -1347,24 +1336,24 @@ impl Interpreter {
         }
     }
 
-    fn property_access_segments_to_vec(&mut self, expr: &Expression) -> Spanned<Vec<String>> {
-        let addr = expr.address.clone();
+    // fn property_access_segments_to_vec(&mut self, expr: &Expression) -> Spanned<Vec<String>> {
+    //     let addr = expr.address.clone();
 
-        match &expr.value {
-            ExprKind::PropertyAccess { origin, property } => {
-                let lhs = self.property_access_segments_to_vec(origin).value;
-                let rhs = self.property_access_segments_to_vec(property).value;
+    //     match &expr.value {
+    //         ExprKind::PropertyAccess { origin, property } => {
+    //             let lhs = self.property_access_segments_to_vec(origin).value;
+    //             let rhs = self.property_access_segments_to_vec(property).value;
 
-                Spanned::new(lhs.into_iter()
-                    .chain(rhs.into_iter())
-                    .collect::<Vec<String>>(),
-                    addr
-                )
-            }
-            ExprKind::Identifier(name) => Spanned::new(vec![name.clone()], addr),
-            _ => panic!("Invalid property access segment: {:?}", expr.value),
-        }
-    }
+    //             Spanned::new(lhs.into_iter()
+    //                 .chain(rhs)
+    //                 .collect::<Vec<String>>(),
+    //                 addr
+    //             )
+    //         }
+    //         ExprKind::Identifier(name) => Spanned::new(vec![name.clone()], addr),
+    //         _ => panic!("Invalid property access segment: {:?}", expr.value),
+    //     }
+    // }
 
     /// Flattens path into a string that will be used in Realm's HashMap lookup.
     fn flatten_path(&self, expr: &Expression) -> String {

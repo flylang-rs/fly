@@ -1,5 +1,6 @@
 pub mod utils;
 
+pub mod functions;
 pub mod records;
 
 #[test]
@@ -43,23 +44,6 @@ nine = 4 + 5
 }
 
 #[test]
-fn func_with_blocks() {
-    let code = utils::code2ast(
-        r#"
-func fly() {
-    {
-        {
-            4 + 9
-        }
-    }
-}
-    "#,
-    );
-
-    insta::assert_debug_snapshot!(code);
-}
-
-#[test]
 fn comments() {
     let code = utils::code2ast(
         r#"
@@ -88,40 +72,12 @@ b = (2 + 2) * 2
 }
 
 #[test]
-fn hello_world() {
-    let code = utils::code2ast(
-        r#"
-func main() {
-    print("Hello, world!");
-
-    return 0;
-}
-    "#,
-    );
-
-    insta::assert_debug_snapshot!(code);
-}
-
-#[test]
 fn multiassign() {
     let code = utils::code2ast(
         r#"
 # Test multiple assignment
 
 [a, b] = [4, 9]
-    "#,
-    );
-
-    insta::assert_debug_snapshot!(code);
-}
-
-#[test]
-fn funcargs() {
-    let code = utils::code2ast(
-        r#"
-func multiarg(a, b, c) {
-    return a + b + c
-}
     "#,
     );
 
@@ -142,19 +98,6 @@ if number == 49 {
     print("It's too late!")
 } else {
     print("Intapreta guna sei wut")
-}
-    "#,
-    );
-
-    insta::assert_debug_snapshot!(code);
-}
-
-#[test]
-fn predefined_values_in_function_args() {
-    let code = utils::code2ast(
-        r#"
-func log(x, base = E) {
-    # ...
 }
     "#,
     );

@@ -11,11 +11,11 @@ pub static EXPORT: &[(&str, RustInteropFn)] = &[
 ];
 
 fn inner_exit(
-    interpreter: &mut Interpreter,
-    realm: SharedRealm,
+    _interpreter: &mut Interpreter,
+    _realm: SharedRealm,
     args: &[Value],
 ) -> InterpreterResult<ControlFlow> {
-    let code = args.get(0);
+    let code = args.first();
 
     if code.is_none() {
         std::process::exit(0);

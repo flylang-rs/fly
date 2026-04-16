@@ -891,7 +891,7 @@ impl Parser {
 
         let eof = self.eof_addr.clone();
 
-        return match self.peek().ok_or_else(|| ParserError::UnexpectedEOF(eof))? {
+        match self.peek().ok_or_else(|| ParserError::UnexpectedEOF(eof))? {
             TokenValue::Func => Ok(self.parse_func()?),
             TokenValue::If => Ok(self.parse_if()?),
             TokenValue::While => Ok(self.parse_while()?),
@@ -906,6 +906,6 @@ impl Parser {
 
                 Ok(ast::Statement::Expr(lhs))
             }
-        };
+        }
     }
 }

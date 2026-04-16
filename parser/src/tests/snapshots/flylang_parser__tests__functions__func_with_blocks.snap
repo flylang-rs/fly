@@ -1,5 +1,5 @@
 ---
-source: parser/src/tests/mod.rs
+source: parser/src/tests/functions.rs
 expression: code
 ---
 Ok(
