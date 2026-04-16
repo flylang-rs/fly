@@ -1,0 +1,26 @@
+---
+source: parser/src/tests/records.rs
+expression: code
+---
+Err(
+    UnexpectedToken {
+        token: Token {
+            value: New,
+            address: Address {
+                source: Source {
+                    filepath: "<test>",
+                    code: "\nrecord new {\n    private value\n}\n    ",
+                    line_starts: [
+                        0,
+                        1,
+                        14,
+                        32,
+                        34,
+                    ],
+                },
+                span: 8..11,
+            },
+        },
+        expected: None,
+    },
+)

@@ -1,0 +1,23 @@
+---
+source: parser/src/tests/functions.rs
+expression: code
+---
+Err(
+    ReservedKeywordUsage {
+        address: Address {
+            source: Source {
+                filepath: "<test>",
+                code: "\nfunc new() {\n    # ...\n}\n    ",
+                line_starts: [
+                    0,
+                    1,
+                    14,
+                    24,
+                    26,
+                ],
+            },
+            span: 6..9,
+        },
+        keyword: "new",
+    },
+)

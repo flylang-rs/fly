@@ -60,3 +60,16 @@ func fly() {
 
     insta::assert_debug_snapshot!(code);
 }
+
+#[test]
+fn function_with_reserved_keyword() {
+    let code = utils::code2ast(
+        r#"
+func new() {
+    # ...
+}
+    "#,
+    );
+
+    insta::assert_debug_snapshot!(code);
+}

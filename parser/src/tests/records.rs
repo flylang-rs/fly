@@ -80,3 +80,33 @@ record Test {
 
     insta::assert_debug_snapshot!(code);
 }
+
+#[test]
+fn error_record_with_reserved_keyword_name() {
+    let code = utils::code2ast(
+        r#"
+record new {
+    private value
+}
+    "#,
+    );
+
+    insta::assert_debug_snapshot!(code);
+}
+
+#[test]
+fn error_record_with_reserved_keyword_method() {
+    let code = utils::code2ast(
+        r#"
+record A {
+    private value
+}
+
+func A::new() {
+    # ...
+}
+    "#,
+    );
+
+    insta::assert_debug_snapshot!(code);
+}

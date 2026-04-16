@@ -1,0 +1,27 @@
+---
+source: parser/src/tests/records.rs
+expression: code
+---
+Err(
+    ReservedKeywordUsage {
+        address: Address {
+            source: Source {
+                filepath: "<test>",
+                code: "\nrecord A {\n    private value\n}\n\nfunc A::new() {\n    # ...\n}\n    ",
+                line_starts: [
+                    0,
+                    1,
+                    12,
+                    30,
+                    32,
+                    33,
+                    49,
+                    59,
+                    61,
+                ],
+            },
+            span: 41..44,
+        },
+        keyword: "new",
+    },
+)
