@@ -611,8 +611,8 @@ impl Parser {
     }
 
     fn parse_new_object_block(&mut self) -> ParserResult<(KeyValueMapWithDuplicates, Address)> {
-    	self.skip_whitespaces();
-    	
+        self.skip_whitespaces();
+
         let op_brace_addr = self.expect(TokenValue::OpenBrace).address;
 
         let mut fields = KeyValueMapWithDuplicates::new();

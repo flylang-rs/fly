@@ -22,9 +22,7 @@ impl DiagnosticsReport for ImportError {
     }
 }
 
-pub fn parse_into_ast(
-    source: Source,
-) -> Result<Vec<Statement>, ImportError> {
+pub fn parse_into_ast(source: Source) -> Result<Vec<Statement>, ImportError> {
     let mut lexer = flylang_lexer::Lexer::new(Arc::new(source));
     let mut tokens: Vec<Token> = vec![];
 

@@ -19,41 +19,41 @@ pub enum Value {
 
     // Complex types starting from 0.1.1
     Record(Arc<Record>),
-    RecordInstance(Arc<Mutex<RecordInstance>>)
+    RecordInstance(Arc<Mutex<RecordInstance>>),
 }
 
 impl Value {
-	pub fn as_arc_string(&self) -> Option<Arc<String>> {
-		if let Value::String(s) = self {
-			Some(Arc::clone(s))
-		} else {
-			None
-		}
-	}
+    pub fn as_arc_string(&self) -> Option<Arc<String>> {
+        if let Value::String(s) = self {
+            Some(Arc::clone(s))
+        } else {
+            None
+        }
+    }
 
-	pub fn as_integer(&self) -> Option<i128> {
-		if let Value::Integer(i) = self {
-			Some(*i)
-		} else {
-			None
-		}
-	}
+    pub fn as_integer(&self) -> Option<i128> {
+        if let Value::Integer(i) = self {
+            Some(*i)
+        } else {
+            None
+        }
+    }
 
-	pub fn as_real(&self) -> Option<f64> {
-		if let Value::Real(f) = self {
-			Some(*f)
-		} else {
-			None
-		}
-	}
+    pub fn as_real(&self) -> Option<f64> {
+        if let Value::Real(f) = self {
+            Some(*f)
+        } else {
+            None
+        }
+    }
 
-	pub fn as_record_instance(&self) -> Option<Arc<Mutex<RecordInstance>>> {
-		if let Value::RecordInstance(r) = self {
-			Some(Arc::clone(r))
-		} else {
-			None
-		}
-	}
+    pub fn as_record_instance(&self) -> Option<Arc<Mutex<RecordInstance>>> {
+        if let Value::RecordInstance(r) = self {
+            Some(Arc::clone(r))
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -66,26 +66,26 @@ pub enum LValue {
 
 #[derive(Debug)]
 pub struct Record {
-	pub name: String,
-	pub fields: Vec<RecordField>,
-	pub definition_realm: Arc<RwLock<Realm>>
+    pub name: String,
+    pub fields: Vec<RecordField>,
+    pub definition_realm: Arc<RwLock<Realm>>,
 }
 
 #[derive(Debug)]
 pub struct RecordField {
-	pub name: String,
-	pub visibility: Visibility,
-	// pub value: Value
+    pub name: String,
+    pub visibility: Visibility,
+    // pub value: Value
 }
 
 #[derive(Debug)]
 pub struct RecordInstance {
-	pub record: Arc<Record>,
-	pub fields: Vec<RecordInstanceField>
+    pub record: Arc<Record>,
+    pub fields: Vec<RecordInstanceField>,
 }
 
 #[derive(Debug)]
 pub struct RecordInstanceField {
-	pub name: String,
-	pub value: Value
+    pub name: String,
+    pub value: Value,
 }

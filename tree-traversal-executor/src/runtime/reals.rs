@@ -1,5 +1,6 @@
 use crate::{
-    InterpreterResult, SharedRealm, common_operation_binary, common_operation_unary, control_flow::ControlFlow, object::Value, runtime::RustInteropFn
+    InterpreterResult, SharedRealm, common_operation_binary, common_operation_unary,
+    control_flow::ControlFlow, object::Value, runtime::RustInteropFn,
 };
 
 pub static EXPORT: &[(&str, RustInteropFn)] = &[

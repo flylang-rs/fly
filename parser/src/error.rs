@@ -5,11 +5,16 @@ use flylang_lexer::token::Token;
 #[derive(Clone, Debug)]
 pub enum ParserError {
     UnexpectedEOF(Address),
-    UnexpectedToken { token: Token },
-    ParsingNumberFailed { number: String, address: Address },
+    UnexpectedToken {
+        token: Token,
+    },
+    ParsingNumberFailed {
+        number: String,
+        address: Address,
+    },
     InvalidArgumentKind {
-        address:Address,
-        domain: InvalidArgumentKindDomain
+        address: Address,
+        domain: InvalidArgumentKindDomain,
     },
 }
 
@@ -47,7 +52,9 @@ impl DiagnosticsReport for ParserError {
             }
             ParserError::InvalidArgumentKind { address, domain } => {
                 let note_msg = match domain {
-                    InvalidArgumentKindDomain::WholeExpression => "only identifier and argument list by using arrays supported here",
+                    InvalidArgumentKindDomain::WholeExpression => {
+                        "only identifier and argument list by using arrays supported here"
+                    }
                     InvalidArgumentKindDomain::OnlyId => "only identifiers supported here",
                 };
 
@@ -55,10 +62,7 @@ impl DiagnosticsReport for ParserError {
                     &mut report,
                     &format!("Invalid argument kind"),
                     &address,
-                    &[Note::new(
-                        address.clone(),
-                        note_msg,
-                    )],
+                    &[Note::new(address.clone(), note_msg)],
                     &[],
                 );
             }

@@ -15,7 +15,8 @@ func Test::say_hi() {
     insta::assert_debug_snapshot!(code);
 }
 
-#[test]                                                                                              fn empty_record() {
+#[test]
+fn empty_record() {
     let code = utils::code2ast(
         r#"
 record Test {}

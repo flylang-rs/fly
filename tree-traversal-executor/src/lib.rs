@@ -240,7 +240,7 @@ impl Interpreter {
                 // function definition.
                 let does_belong_to_a_record = match &function.name.value {
                     ExprKind::Path { .. } => true,
-                    _ => false
+                    _ => false,
                 };
 
                 let mut params: Vec<String> = function
@@ -446,7 +446,7 @@ impl Interpreter {
                 let value = Record {
                     name: name.clone(),
                     fields,
-                    definition_realm: Arc::clone(&realm)
+                    definition_realm: Arc::clone(&realm),
                 };
 
                 realm
@@ -706,16 +706,17 @@ impl Interpreter {
 
                 // If we didn't get a needed value, maybe it can be found in Record's fields?
                 if val.is_none() {
-					let rec_realm = if let Value::RecordInstance(ri) = &obj {
-						Arc::clone(&ri.lock().unwrap().record.definition_realm)
-					} else {
-						Arc::clone(&realm)
-					};
-                
-                    let record_def =
-                        rec_realm.read().unwrap().lookup(&type_name).unwrap_or_else(|| {
-                            panic!("No property `{prop}` on type `{type_name}`")
-                        });
+                    let rec_realm = if let Value::RecordInstance(ri) = &obj {
+                        Arc::clone(&ri.lock().unwrap().record.definition_realm)
+                    } else {
+                        Arc::clone(&realm)
+                    };
+
+                    let record_def = rec_realm
+                        .read()
+                        .unwrap()
+                        .lookup(&type_name)
+                        .unwrap_or_else(|| panic!("No property `{prop}` on type `{type_name}`"));
 
                     let lhs = self.resolve_lvalue(Arc::clone(&realm), origin)?;
                     let record_instance = match self.read_lvalue(realm, &lhs) {
@@ -730,9 +731,7 @@ impl Interpreter {
                         .iter()
                         .find(|x| x.name == prop)
                         .map(|x| x.value.clone())
-                        .unwrap_or_else(|| {
-                            panic!("No property `{prop}` on type `{type_name}`")
-                        });
+                        .unwrap_or_else(|| panic!("No property `{prop}` on type `{type_name}`"));
 
                     return Ok(ControlFlow::Value(val));
                 }
@@ -1240,7 +1239,7 @@ impl Interpreter {
                     .unwrap_or_else(|| panic!("Lookup of field `{name}` failed!"));
 
                 value
-            },
+            }
         }
     }
 
@@ -1272,13 +1271,20 @@ impl Interpreter {
                 arr.lock().unwrap()[i as usize] = value;
             }
             LValue::Property { object, name } => {
-                let arc_bind = object.as_record_instance().unwrap_or_else(|| panic!("Expected record instance, got: {object:?}"));
+                let arc_bind = object
+                    .as_record_instance()
+                    .unwrap_or_else(|| panic!("Expected record instance, got: {object:?}"));
 
                 let mut bind = arc_bind.lock().unwrap();
 
-                let val_bind = bind.fields.iter_mut().find(|fi| fi.name == name).map(|x| &mut x.value).unwrap_or_else(|| {
-                    panic!("Can't find a field `{name}`");
-                });
+                let val_bind = bind
+                    .fields
+                    .iter_mut()
+                    .find(|fi| fi.name == name)
+                    .map(|x| &mut x.value)
+                    .unwrap_or_else(|| {
+                        panic!("Can't find a field `{name}`");
+                    });
 
                 *val_bind = value;
 

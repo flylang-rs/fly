@@ -173,7 +173,7 @@ pub type KeyValueMapWithDuplicates = Vec<(Spanned<String>, Expression)>;
 #[derive(Debug, Clone)]
 pub struct NewObjectDeclaration {
     pub name: Box<Expression>,
-    pub fields: KeyValueMapWithDuplicates
+    pub fields: KeyValueMapWithDuplicates,
 }
 
 #[derive(Debug, Copy, Clone)]

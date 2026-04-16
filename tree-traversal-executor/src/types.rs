@@ -26,7 +26,7 @@ pub fn value_to_internal_type(val: &Value) -> Option<Cow<'_, str>> {
             let lt = reci.lock().unwrap().record.name.clone();
 
             Some(lt.into())
-        },
+        }
         unk => panic!("Cannot convert {unk:?} to internal type."),
     }
 }

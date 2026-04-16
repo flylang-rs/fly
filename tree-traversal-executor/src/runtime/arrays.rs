@@ -1,7 +1,8 @@
 use std::sync::{Arc, Mutex};
 
 use crate::{
-    Interpreter, InterpreterResult, SharedRealm, control_flow::ControlFlow, object::Value, runtime::RustInteropFn, types
+    Interpreter, InterpreterResult, SharedRealm, control_flow::ControlFlow, object::Value,
+    runtime::RustInteropFn, types,
 };
 
 pub static EXPORT: &[(&str, RustInteropFn)] = &[
@@ -12,7 +13,11 @@ pub static EXPORT: &[(&str, RustInteropFn)] = &[
     ("array::to_displayable", array_to_displayable),
 ];
 
-pub fn array_push(_interp: &mut Interpreter, _realm: SharedRealm, args: &[Value]) -> InterpreterResult<ControlFlow> {
+pub fn array_push(
+    _interp: &mut Interpreter,
+    _realm: SharedRealm,
+    args: &[Value],
+) -> InterpreterResult<ControlFlow> {
     let Value::Array(arr) = &args[0] else {
         panic!("Expected array, got: {:?}", args[0])
     };
@@ -23,11 +28,17 @@ pub fn array_push(_interp: &mut Interpreter, _realm: SharedRealm, args: &[Value]
     Ok(ControlFlow::Value(Value::Nil))
 }
 
-pub fn array_len(_interp: &mut Interpreter, _realm: SharedRealm, args: &[Value]) -> InterpreterResult<ControlFlow> {
+pub fn array_len(
+    _interp: &mut Interpreter,
+    _realm: SharedRealm,
+    args: &[Value],
+) -> InterpreterResult<ControlFlow> {
     let Value::Array(arr) = &args[0] else {
         panic!("Expected array")
     };
-    Ok(ControlFlow::Value(Value::Integer(arr.lock().unwrap().len() as i128)))
+    Ok(ControlFlow::Value(Value::Integer(
+        arr.lock().unwrap().len() as i128,
+    )))
 }
 
 fn render_value(
@@ -76,7 +87,8 @@ fn render_array(
 
     seen.push(ptr);
 
-    let parts: Vec<String> = {  // put that into block so guard will be dropped on its end.
+    let parts: Vec<String> = {
+        // put that into block so guard will be dropped on its end.
         let guard = array.lock().unwrap();
 
         guard
@@ -90,7 +102,11 @@ fn render_array(
     format!("[{}]", parts.join(", "))
 }
 
-fn array_to_string(interpreter: &mut Interpreter, realm: SharedRealm, args: &[Value]) -> InterpreterResult<ControlFlow> {
+fn array_to_string(
+    interpreter: &mut Interpreter,
+    realm: SharedRealm,
+    args: &[Value],
+) -> InterpreterResult<ControlFlow> {
     let Value::Array(array) = &args[0] else {
         panic!("Expected array, got {:?}", args[0]);
     };

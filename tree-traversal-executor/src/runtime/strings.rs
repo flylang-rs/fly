@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use crate::{
-    InterpreterResult, SharedRealm, common_operation_binary, control_flow::ControlFlow, object::Value, runtime::RustInteropFn
+    InterpreterResult, SharedRealm, common_operation_binary, control_flow::ControlFlow,
+    object::Value, runtime::RustInteropFn,
 };
 
 pub static EXPORT: &[(&str, RustInteropFn)] = &[
@@ -77,7 +78,11 @@ common_operation_binary!(
     |x: &String, y: &String| x <= y
 );
 
-fn string_to_string(_interpreter: &mut crate::Interpreter, _realm: SharedRealm, args: &[Value]) -> InterpreterResult<ControlFlow> {
+fn string_to_string(
+    _interpreter: &mut crate::Interpreter,
+    _realm: SharedRealm,
+    args: &[Value],
+) -> InterpreterResult<ControlFlow> {
     let Value::String(ref i) = args[0] else {
         panic!("It's not a string, it's {:?}", args[0]);
     };
@@ -85,11 +90,15 @@ fn string_to_string(_interpreter: &mut crate::Interpreter, _realm: SharedRealm, 
     Ok(ControlFlow::Value(Value::String(Arc::clone(i))))
 }
 
-fn string_to_displayable(_interpreter: &mut crate::Interpreter, _realm: SharedRealm, args: &[Value]) -> InterpreterResult<ControlFlow> {
+fn string_to_displayable(
+    _interpreter: &mut crate::Interpreter,
+    _realm: SharedRealm,
+    args: &[Value],
+) -> InterpreterResult<ControlFlow> {
     let Value::String(ref i) = args[0] else {
         panic!("It's not a string, it's {:?}", args[0]);
     };
-    
+
     let disp = format!("\"{i}\"");
 
     Ok(ControlFlow::Value(Value::String(disp.into())))

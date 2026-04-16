@@ -1,4 +1,7 @@
-use crate::{InterpreterResult, SharedRealm, control_flow::ControlFlow, object::Value, runtime::RustInteropFn};
+use crate::{
+    InterpreterResult, SharedRealm, control_flow::ControlFlow, object::Value,
+    runtime::RustInteropFn,
+};
 
 pub static EXPORT: &[(&str, RustInteropFn)] = &[
     ("nil::to_string", nil_to_string),

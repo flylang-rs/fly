@@ -16,7 +16,7 @@ pub struct Function {
 #[derive(Clone)]
 pub enum FunctionNameKind {
     Normal(Spanned<String>),
-    Anonymous
+    Anonymous,
 }
 
 // It will avoid stack overflowing

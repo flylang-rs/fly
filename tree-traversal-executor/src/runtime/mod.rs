@@ -1,15 +1,21 @@
-use crate::{Interpreter, InterpreterResult, SharedRealm, control_flow::ControlFlow, object::Value};
+use crate::{
+    Interpreter, InterpreterResult, SharedRealm, control_flow::ControlFlow, object::Value,
+};
 
 pub mod arrays;
 pub mod booleans;
 pub mod exit;
-pub mod reals;
 pub mod integers;
 pub mod nil;
 pub mod print;
+pub mod reals;
 pub mod strings;
 
-pub type RustInteropFn = fn(interpreter: &mut Interpreter, realm: SharedRealm, args: &[Value]) -> InterpreterResult<ControlFlow>;
+pub type RustInteropFn = fn(
+    interpreter: &mut Interpreter,
+    realm: SharedRealm,
+    args: &[Value],
+) -> InterpreterResult<ControlFlow>;
 
 #[macro_export]
 macro_rules! common_operation_binary {
@@ -25,9 +31,9 @@ macro_rules! common_operation_binary {
             if let $crate::object::Value::$ty1(x) = lhs
                 && let $crate::object::Value::$ty2(y) = rhs
             {
-                return Ok($crate::control_flow::ControlFlow::Value($crate::object::Value::$res_ty(
-                    ($conv)(x, y),
-                )));
+                return Ok($crate::control_flow::ControlFlow::Value(
+                    $crate::object::Value::$res_ty(($conv)(x, y)),
+                ));
             }
 
             todo!("Make it return `result<T, error>`")
@@ -46,9 +52,9 @@ macro_rules! common_operation_unary {
             let val = &args[0];
 
             if let $crate::object::Value::$ty(x) = val {
-                return Ok($crate::control_flow::ControlFlow::Value($crate::object::Value::$res_ty(
-                    ($conv)(x),
-                )));
+                return Ok($crate::control_flow::ControlFlow::Value(
+                    $crate::object::Value::$res_ty(($conv)(x)),
+                ));
             }
 
             todo!("Make it return `result<T, error>`")
