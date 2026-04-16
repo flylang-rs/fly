@@ -17,6 +17,9 @@ use crate::{
     realm::Realm,
 };
 
+#[cfg(test)]
+pub mod tests;
+
 pub mod calltrace;
 pub mod control_flow;
 pub mod error;

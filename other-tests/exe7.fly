@@ -1,9 +1,0 @@
-# Should return 6.
-
-func foo() {
-    a = 4 + 9;
-
-    return 3 + 3;
-}
-
-print(foo())
