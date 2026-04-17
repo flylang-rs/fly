@@ -1,0 +1,5 @@
+record Value {
+    public val;
+}
+
+a = new Value { val: 7 }

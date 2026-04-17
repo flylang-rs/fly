@@ -1,0 +1,43 @@
+---
+source: lang/parser/src/tests/records.rs
+expression: code
+---
+Err(
+    MissingNewKeyword {
+        token: Token {
+            value: OpenBrace,
+            address: Address {
+                source: Source {
+                    filepath: "<test>",
+                    code: "\nrecord A {\n    private value\n}\n\na = A { value: 4.9 }\n    ",
+                    line_starts: [
+                        0,
+                        1,
+                        12,
+                        30,
+                        32,
+                        33,
+                        54,
+                    ],
+                },
+                span: 39..40,
+            },
+        },
+        name_address: Address {
+            source: Source {
+                filepath: "<test>",
+                code: "\nrecord A {\n    private value\n}\n\na = A { value: 4.9 }\n    ",
+                line_starts: [
+                    0,
+                    1,
+                    12,
+                    30,
+                    32,
+                    33,
+                    54,
+                ],
+            },
+            span: 37..38,
+        },
+    },
+)

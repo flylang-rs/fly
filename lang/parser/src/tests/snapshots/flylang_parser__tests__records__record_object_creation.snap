@@ -1,0 +1,73 @@
+---
+source: lang/parser/src/tests/records.rs
+expression: code
+---
+Ok(
+    [
+        RecordDefinition(
+            RecordDefinition {
+                name: Spanned(
+                    "A",
+                    8..9,
+                ),
+                visibility: Global,
+                fields: Spanned(
+                    [
+                        VariableDefinition(
+                            VariableDefinition {
+                                name: Spanned(
+                                    "value",
+                                    24..29,
+                                ),
+                                visibility: Local,
+                                type_annotation: None,
+                                value: None,
+                            },
+                        ),
+                    ],
+                    10..31,
+                ),
+            },
+        ),
+        Expr(
+            Spanned(
+                Assignment {
+                    name: Spanned(
+                        Identifier(
+                            "a",
+                        ),
+                        33..34,
+                    ),
+                    value: Spanned(
+                        New(
+                            NewObjectDeclaration {
+                                name: Spanned(
+                                    Identifier(
+                                        "A",
+                                    ),
+                                    41..42,
+                                ),
+                                fields: [
+                                    (
+                                        Spanned(
+                                            "value",
+                                            45..50,
+                                        ),
+                                        Spanned(
+                                            Number(
+                                                "4.9",
+                                            ),
+                                            52..55,
+                                        ),
+                                    ),
+                                ],
+                            },
+                        ),
+                        41..57,
+                    ),
+                },
+                33..57,
+            ),
+        ),
+    ],
+)

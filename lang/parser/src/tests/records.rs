@@ -110,3 +110,34 @@ func A::new() {
 
     insta::assert_debug_snapshot!(code);
 }
+
+#[test]
+fn error_record_object_creation_without_new_keyword() {
+    let code = utils::code2ast(
+        r#"
+record A {
+    private value
+}
+
+a = A { value: 4.9 }
+    "#,
+    );
+
+    insta::assert_debug_snapshot!(code);
+}
+
+
+#[test]
+fn record_object_creation() {
+    let code = utils::code2ast(
+        r#"
+record A {
+    private value
+}
+
+a = new A { value: 4.9 }
+    "#,
+    );
+
+    insta::assert_debug_snapshot!(code);
+}

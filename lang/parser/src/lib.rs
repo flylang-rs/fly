@@ -22,6 +22,8 @@ pub type ParserResult<T> = Result<T, ParserError>;
 pub struct Parser {
     tokens: Peekable<std::vec::IntoIter<Token>>,
     eof_addr: Address, // for diagnostics
+
+    context_stack: Vec<Token>,
 }
 
 impl Parser {
@@ -31,6 +33,8 @@ impl Parser {
         Self {
             tokens: tokens.into_iter().peekable(),
             eof_addr,
+
+            context_stack: vec![]
         }
     }
 
@@ -355,7 +359,7 @@ impl Parser {
             }
             Token {
                 value: TokenValue::New,
-                address,
+                ref address,
             } => {
                 debug!("`new` token found with MBP: {min_binding_power}");
 
@@ -370,14 +374,18 @@ impl Parser {
                 // And if it's used as path segment it will have MBP = 32 (see `TokenValue::Dot | TokenValue::PathDelimiter` in `match` below)
                 if min_binding_power >= 31 {
                     return Err(ParserError::ReservedKeywordUsage {
-                        address,
+                        address: address.clone(),
                         keyword: "new".to_string(),
                     });
                 }
 
+                self.context_stack.push(next_token.clone());
+
                 let new_obj = self.parse_new_object_declaration()?;
 
                 debug!("Parsed?");
+
+                self.context_stack.pop();
 
                 return Ok(Spanned::new(ExprKind::New(new_obj.value), new_obj.address));
             }
@@ -390,10 +398,21 @@ impl Parser {
         };
 
         // Avoid using `RecordName { ... }` without `new`
+        // It must be `new RecordName { ... }`
+        // FIXME: STILL IN PROGRESS!
         if self.peek() == Some(&TokenValue::OpenBrace) {
-            // As usually, when we're parsing `new` keyword, we expect only paths or single identifiers,
-            // so MBP will be >= 31
-            if min_binding_power >= 31 {
+            debug!("`{{` MBP = {min_binding_power}");
+            // debug!("LHS = {:?}", lhs.value);
+            // debug!("CTXSTK = {:?}", self.context_stack);
+
+            let was_use = self.context_stack.last().map(|x| matches!(x.value, TokenValue::Use)).unwrap_or_default();
+            let was_new = self.context_stack.last().map(|x| matches!(x.value, TokenValue::New)).unwrap_or_default();
+
+            debug!("USE: {was_use}");
+            debug!("NEW: {was_new}");
+
+            // Check the presence of `use` or `new` keywords on the stack.
+            if was_use || was_new || min_binding_power >= 3 {
                 return Ok(lhs);
             } else {
                 // If we haven't encounter a `new` keyword, throw an error.
@@ -748,11 +767,15 @@ impl Parser {
     }
 
     fn parse_use(&mut self) -> ParserResult<ast::Statement> {
-        self.next_token();
+        let tok = self.next_token();
+        self.context_stack.push(tok.unwrap());
 
         match self.peek() {
             Some(TokenValue::OpenParen) => {
                 let held_value = self.parse_expression(0)?;
+
+                self.context_stack.pop();
+
                 let body = self.parse_block()?;
 
                 Ok(ast::Statement::Scope {
@@ -762,6 +785,8 @@ impl Parser {
             }
             _ => {
                 let path = self.parse_expression(0)?;
+
+                self.context_stack.pop();
 
                 Ok(ast::Statement::ModuleUsageDeclaration {
                     path: Box::new(path),
