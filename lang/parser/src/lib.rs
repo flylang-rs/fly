@@ -75,12 +75,11 @@ impl Parser {
     fn expect(&mut self, expected: TokenValue) -> ParserResult<Token> {
         match self.tokens.next() {
             Some(token) if token.value == expected => Ok(token),
-            Some(token) => {
-                Err(ParserError::UnexpectedToken { token, expected: Some(expected) })
-            }
-            None => {
-                Err(ParserError::UnexpectedEOF(self.eof_addr.clone()))
-            }
+            Some(token) => Err(ParserError::UnexpectedToken {
+                token,
+                expected: Some(expected),
+            }),
+            None => Err(ParserError::UnexpectedEOF(self.eof_addr.clone())),
         }
     }
 
@@ -356,7 +355,7 @@ impl Parser {
             }
             Token {
                 value: TokenValue::New,
-                address
+                address,
             } => {
                 debug!("`new` token found with MBP: {min_binding_power}");
 
@@ -370,17 +369,40 @@ impl Parser {
                 // For example if `new` is used as function, it will have MBP = 31 (see `parse_func` method)
                 // And if it's used as path segment it will have MBP = 32 (see `TokenValue::Dot | TokenValue::PathDelimiter` in `match` below)
                 if min_binding_power >= 31 {
-                    return Err(ParserError::ReservedKeywordUsage { address, keyword: "new".to_string() });
+                    return Err(ParserError::ReservedKeywordUsage {
+                        address,
+                        keyword: "new".to_string(),
+                    });
                 }
 
                 let new_obj = self.parse_new_object_declaration()?;
 
-                Spanned::new(ExprKind::New(new_obj.value), new_obj.address)
+                debug!("Parsed?");
+
+                return Ok(Spanned::new(ExprKind::New(new_obj.value), new_obj.address));
             }
             value => {
-                return Err(ParserError::UnexpectedToken { token: value, expected: None });
+                return Err(ParserError::UnexpectedToken {
+                    token: value,
+                    expected: None,
+                });
             }
         };
+
+        // Avoid using `RecordName { ... }` without `new`
+        if self.peek() == Some(&TokenValue::OpenBrace) {
+            // As usually, when we're parsing `new` keyword, we expect only paths or single identifiers,
+            // so MBP will be >= 31
+            if min_binding_power >= 31 {
+                return Ok(lhs);
+            } else {
+                // If we haven't encounter a `new` keyword, throw an error.
+                return Err(ParserError::MissingNewKeyword {
+                    token: self.peek_whole().cloned().unwrap(),
+                    name_address: lhs.address.clone(),
+                });
+            }
+        }
 
         loop {
             let op = match self.peek() {
@@ -613,6 +635,8 @@ impl Parser {
     fn parse_new_object_declaration(&mut self) -> ParserResult<Spanned<ast::NewObjectDeclaration>> {
         let name = self.parse_expression(31)?;
 
+        debug!("Record name is: {:?}", name.value);
+
         let (fields, final_addr) = self.parse_new_object_block()?;
 
         let addr = name.address.clone().merge(&final_addr);
@@ -815,7 +839,12 @@ impl Parser {
 
         let name = match &name.value {
             TokenValue::Identifier(id) => Spanned::new(id.to_string(), name.address),
-            _ => return Err(ParserError::UnexpectedToken { token: name, expected: None }),
+            _ => {
+                return Err(ParserError::UnexpectedToken {
+                    token: name,
+                    expected: None,
+                });
+            }
         };
 
         let fields = self.parse_record_block()?;
@@ -855,7 +884,12 @@ impl Parser {
                         TokenValue::Identifier(id) => {
                             Spanned::new(id.clone(), name.address.clone())
                         }
-                        _ => return Err(ParserError::UnexpectedToken { token: name, expected: None }),
+                        _ => {
+                            return Err(ParserError::UnexpectedToken {
+                                token: name,
+                                expected: None,
+                            });
+                        }
                     };
 
                     // eprintln!("Public or private field with value: {:?}", name);
@@ -874,7 +908,12 @@ impl Parser {
                 // Closing brace
                 TokenValue::CloseBrace => break,
                 // Anything else
-                _ => return Err(ParserError::UnexpectedToken { token, expected: None }),
+                _ => {
+                    return Err(ParserError::UnexpectedToken {
+                        token,
+                        expected: None,
+                    });
+                }
             };
         }
 

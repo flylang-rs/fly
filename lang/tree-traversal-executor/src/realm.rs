@@ -3,6 +3,8 @@ use std::{
     sync::{Arc, RwLock},
 };
 
+use log::debug;
+
 use crate::{SharedRealm, object::Value};
 
 /// Realm (Context or Environment) is a place where runtime objects are stored.
@@ -23,6 +25,8 @@ impl Realm {
 
     /// Enter new level of realm, recursing deeper.
     pub fn dive(shared_realm: SharedRealm) -> Self {
+        debug!("Dive called!");
+
         Self {
             values: HashMap::new(),
             parent: Some(shared_realm),

@@ -1,5 +1,9 @@
 use flylang_common::Address;
-use flylang_diagnostics::{Diagnostics, additions::Note, error::DiagnosticsReport};
+use flylang_diagnostics::{
+    Diagnostics,
+    additions::{Help, Note, TextEdit},
+    error::DiagnosticsReport,
+};
 use flylang_lexer::token::{Token, TokenValue};
 
 #[derive(Clone, Debug)]
@@ -7,7 +11,7 @@ pub enum ParserError {
     UnexpectedEOF(Address),
     UnexpectedToken {
         token: Token,
-        expected: Option<TokenValue>
+        expected: Option<TokenValue>,
     },
     ParsingNumberFailed {
         number: String,
@@ -19,8 +23,12 @@ pub enum ParserError {
     },
     ReservedKeywordUsage {
         address: Address,
-        keyword: String
-    }
+        keyword: String,
+    },
+    MissingNewKeyword {
+        token: Token,
+        name_address: Address,
+    },
 }
 
 #[derive(Clone, Debug)]
@@ -39,7 +47,11 @@ impl DiagnosticsReport for ParserError {
             }
             ParserError::UnexpectedToken { token, expected } => {
                 let error_string = if let Some(expec) = expected {
-                    format!("Unexpected token `{}`, expected `{}`", token.value.repr(), expec.repr())
+                    format!(
+                        "Unexpected token `{}`, expected `{}`",
+                        token.value.repr(),
+                        expec.repr()
+                    )
                 } else {
                     "Unexpected token".to_string()
                 };
@@ -84,6 +96,24 @@ impl DiagnosticsReport for ParserError {
                     address,
                     &[Note::new(address.clone(), "here")],
                     &[],
+                );
+            }
+            ParserError::MissingNewKeyword {
+                name_address,
+                token,
+            } => {
+                Diagnostics {}.error_ext(
+                    &mut report,
+                    &format!("Unexpected token `{{`, maybe you're missing the `new` keyword?"),
+                    &token.address,
+                    &[Note::new(token.address.clone(), "here")],
+                    &[Help::new(
+                        "add `new` keyword",
+                        vec![TextEdit {
+                            span: (name_address.span.start..name_address.span.start),
+                            replacement: Some("new ".to_string()),
+                        }],
+                    )],
                 );
             }
         }
