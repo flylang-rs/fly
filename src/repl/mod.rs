@@ -75,6 +75,18 @@ impl REPL {
                     return ReadlineResult::Value(line);
                 }
 
+                if key_event.code == KeyCode::Up {
+                	terminal::disable_raw_mode().unwrap();
+
+                	todo!("Implement history navigation on keyup");
+                }
+
+                if key_event.code == KeyCode::Down {
+              		terminal::disable_raw_mode().unwrap();
+
+              		todo!("Implement history navigation on keydown");
+                }
+
                 let key = match key_event.code.as_char() {
                     Some(ch) => ch,
                     None => continue,
