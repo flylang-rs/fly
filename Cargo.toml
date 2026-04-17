@@ -4,16 +4,24 @@ version = "0.1.1"
 edition = "2024"
 
 [workspace]
-members = ["analyzer","common", "diagnostics","lexer", "lexparse-glue", "parser", "tree-traversal-executor"]
+members = [
+    "lang/analyzer",
+    "lang/common",
+    "lang/diagnostics",
+    "lang/lexer",
+    "lang/lexparse-glue",
+    "lang/parser",
+    "lang/tree-traversal-executor"
+]
 
 [dependencies]
-flylang-common = { path = "common/" }
-flylang-lexer = { path = "lexer/" }
-flylang-parser = { path = "parser/" }
-flylang-ast-analyzer = { path = "analyzer/" }
-flylang-lexparse-glue = { path = "lexparse-glue/" }
-flylang-diagnostics = { path = "diagnostics/" }
-flylang-tte = { path = "tree-traversal-executor/" }
+flylang-common = { path = "lang/common/" }
+flylang-lexer = { path = "lang/lexer/" }
+flylang-parser = { path = "lang/parser/" }
+flylang-ast-analyzer = { path = "lang/analyzer/" }
+flylang-lexparse-glue = { path = "lang/lexparse-glue/" }
+flylang-diagnostics = { path = "lang/diagnostics/" }
+flylang-tte = { path = "lang/tree-traversal-executor/" }
 
 log = "0.4.29"
 env_logger = "0.11.8"
