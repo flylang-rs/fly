@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use flylang_common::source::Source;
 use flylang_diagnostics::error::DiagnosticsReport;
 use flylang_lexparse_glue::LoadingError;
@@ -23,24 +21,42 @@ impl DiagnosticsReport for TestError {
     }
 }
 
-fn execute_inner(source: Source) -> TestResult<ControlFlow> {
-    let source = Arc::new(source);
+pub struct Tester {
+    interp: crate::Interpreter,
+}
 
-    let ast = flylang_lexparse_glue::parse_source(Arc::clone(&source))
-        .map_err(TestError::LoadingError)?;
+impl Tester {
+    pub fn new() -> Self {
+        Self {
+            interp: crate::Interpreter::new(),
+        }
+    }
 
-    let mut interpreter = crate::Interpreter::new();
+    pub fn exec(&mut self, code: &str) -> TestResult<ControlFlow> {
+        let src = Source::new("<test>".to_string(), code.to_string());
 
-    interpreter.execute(ast).map_err(TestError::InterpreterError)
+        let ast = flylang_lexparse_glue::parse_source(src.into())
+            .map_err(TestError::LoadingError)?;
+
+        self.interp.execute(ast).map_err(TestError::InterpreterError)
+    }
+    
+    pub fn exec_script(&mut self, code: &str) -> TestResult<ControlFlow> {
+        let src = Source::new("<test>".to_string(), code.to_string());
+
+        let ast = flylang_lexparse_glue::parse_source(src.into())
+            .map_err(TestError::LoadingError)?;
+
+        self.interp.execute_script(ast).map_err(TestError::InterpreterError)
+    }
 }
 
 pub fn execute(code: &str) -> TestResult<ControlFlow> {
-    execute_inner(Source::new("<test>".to_string(), code.to_string()))
+    Tester::new().exec(code)
 }
 
-
 pub fn execute_or_fail(code: &str) -> ControlFlow {
-    let value = execute_inner(Source::new("<test>".to_string(), code.to_string()));
+    let value = execute(code);
 
     match value {
         Ok(value) => value,

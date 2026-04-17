@@ -1,4 +1,4 @@
-use crate::{control_flow::ControlFlow, object::Value, tests::utils::{TestResult, execute, execute_or_fail}};
+use crate::{Interpreter, control_flow::ControlFlow, object::Value, tests::utils::{TestResult, Tester, execute, execute_or_fail}};
 
 mod utils;
 
@@ -59,27 +59,39 @@ foo()
 
 #[test]
 fn arrays_and_ref_cycles() {
-    let code = r#"
-print([1, 2, 3, 4])
-print([1, 2, [3, 4]])
-print([1, 2, [3, 4, [5, 6]]])
+    let mut tester = Tester::new();
 
-print("")
+    let result = tester.exec("[1, 2, 3, 4].to_string()");
+    let string_repr = result.unwrap().as_value().unwrap().as_arc_string().unwrap();
 
+    assert_eq!(&*string_repr, "[1, 2, 3, 4]");
+
+    let result = tester.exec("[1, 2, [3, 4]].to_string()");
+    let string_repr = result.unwrap().as_value().unwrap().as_arc_string().unwrap();
+
+    assert_eq!(&*string_repr, "[1, 2, [3, 4]]");
+
+    let result = tester.exec("[1, 2, [3, 4, [5, 6]]].to_string()");
+    let string_repr = result.unwrap().as_value().unwrap().as_arc_string().unwrap();
+
+    assert_eq!(&*string_repr, "[1, 2, [3, 4, [5, 6]]]");
+
+    tester.exec_script(r#"
 a = [1, 2]
 b = [3, 4, a]
 
 a.push(b)
 a.push(5)
+    "#).unwrap();
 
-print(a)
-print(b)
-    "#;
+    let result = tester.exec("a.to_string()");
+    let string_repr = result.unwrap().as_value().unwrap().as_arc_string().unwrap();
 
-    // let result = execute(code).unwrap();
+    assert_eq!(&*string_repr, "[1, 2, [3, 4, [...]], 5]");
 
-    // assert_eq!(result.as_value().unwrap().as_integer().unwrap(), 6);
+    let result = tester.exec("b.to_string()");
+    let string_repr = result.unwrap().as_value().unwrap().as_arc_string().unwrap();
 
-    todo!("Capture println output somehow");
+    assert_eq!(&*string_repr, "[3, 4, [1, 2, [...], 5]]");
 }
 
