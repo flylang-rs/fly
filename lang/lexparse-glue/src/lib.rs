@@ -25,7 +25,7 @@ impl DiagnosticsReport for LoadingError {
 }
 
 pub fn parse_source(source: Arc<Source>) -> LoadingResult<Vec<Statement>> {
-    let mut lexer = flylang_lexer::Lexer::new(source);
+    let mut lexer = flylang_lexer::Lexer::new(Arc::clone(&source));
     let mut tokens: Vec<Token> = vec![];
 
     loop {
@@ -43,7 +43,7 @@ pub fn parse_source(source: Arc<Source>) -> LoadingResult<Vec<Statement>> {
 
     // Parse here...
 
-    let mut parser = Parser::new(tokens);
+    let mut parser = Parser::new(tokens, &source);
 
     let ast = parser.parse(ParserState::Neutral);
 

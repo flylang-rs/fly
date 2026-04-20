@@ -1,4 +1,4 @@
-use std::{io::Write, sync::Arc};
+use std::{collections::VecDeque, io::Write, sync::Arc};
 
 use crossterm::{
     event::{self, Event, KeyCode, KeyModifiers},
@@ -8,13 +8,16 @@ use flylang_common::source::Source;
 use flylang_diagnostics::error::DiagnosticsReport;
 use flylang_tte::{Interpreter, control_flow::ControlFlow, object::Value};
 
-use crate::repl::error::{REPLError, REPLResult};
+use crate::repl::{error::{REPLError, REPLResult}, line_history::LineHistory};
 
+mod line_history;
 pub mod error;
 
 pub struct REPL {
     interpreter: Interpreter,
     line_counter: usize,
+
+    line_history: line_history::LineHistory
 }
 
 pub enum ReadlineResult {
@@ -28,7 +31,13 @@ impl REPL {
         Self {
             interpreter: Interpreter::new(),
             line_counter: 1,
+
+            line_history: LineHistory::new()
         }
+    }
+
+    fn show_prompt(&self) {
+        print!(":{:<2}   > ", self.line_counter);
     }
 
     /// Reads line, returns a continuation signal.
@@ -37,7 +46,7 @@ impl REPL {
     pub fn read_line(&mut self) -> ReadlineResult {
         terminal::enable_raw_mode().unwrap();
 
-        print!(":{:<2}   > ", self.line_counter);
+        self.show_prompt();
         std::io::stdout().flush().unwrap();
 
         let mut line = String::new();
@@ -76,15 +85,45 @@ impl REPL {
                 }
 
                 if key_event.code == KeyCode::Up {
-                	terminal::disable_raw_mode().unwrap();
+                    if let Some(ln) = self.line_history.prev() {
+                        line = ln.to_string();
 
-                	todo!("Implement history navigation on keyup");
+                        print!("\r");
+                        self.show_prompt();
+                        print!("{line}\x1b[K");
+                    } else {
+                        line.clear();
+
+                        print!("\r");
+                        self.show_prompt();
+                        print!("\x1b[K");
+                    }
+
+                    std::io::stdout().flush().unwrap();
+                    
+                    continue;
+
+                	// todo!("Implement history navigation on keyup");
                 }
 
                 if key_event.code == KeyCode::Down {
-              		terminal::disable_raw_mode().unwrap();
+                    if let Some(ln) = self.line_history.next() {
+                        line = ln.to_string();
 
-              		todo!("Implement history navigation on keydown");
+                        print!("\r");
+                        self.show_prompt();
+                        print!("{line}\x1b[K");
+                    } else {
+                        line.clear();
+
+                        print!("\r");
+                        self.show_prompt();
+                        print!("\x1b[K");
+                    }
+
+                    std::io::stdout().flush().unwrap();
+                    
+                    continue;
                 }
 
                 let key = match key_event.code.as_char() {
@@ -131,6 +170,8 @@ impl REPL {
                 ReadlineResult::Ignore => continue,
                 ReadlineResult::Break => break,
                 ReadlineResult::Value(line) => {
+                    self.line_history.push(line.clone());
+
                     let result = self.execute(line);
 
                     match result {
