@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::LazyLock};
 use crate::token::TokenValue;
 
 /// Keyword Lookup Table (KLT)
-pub(crate) static KEYWORDS: LazyLock<HashMap<&'static str, crate::TokenValue>> =
+pub static KEYWORDS: LazyLock<HashMap<&'static str, crate::TokenValue>> =
     LazyLock::new(|| {
         HashMap::from([
             ("break", TokenValue::Break),

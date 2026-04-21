@@ -234,6 +234,7 @@ dependencies = [
  "flylang-parser",
  "flylang-tte",
  "log",
+ "owo-colors",
 ]
 
 [[package]]

@@ -8,17 +8,22 @@ use flylang_common::source::Source;
 use flylang_diagnostics::error::DiagnosticsReport;
 use flylang_tte::{Interpreter, control_flow::ControlFlow, object::Value};
 
-use crate::repl::{error::{REPLError, REPLResult}, line_history::LineHistory};
+use crate::repl::{
+    error::{REPLError, REPLResult},
+    line_history::LineHistory,
+};
 
-mod line_history;
+use owo_colors::{OwoColorize, Stream};
+
 pub mod error;
+mod line_history;
 
 pub struct REPL {
     interpreter: Interpreter,
     line_counter: usize,
 
     line_history: line_history::LineHistory,
-    cursor_position: usize    // Relative to text, not the whole prompt
+    cursor_position: usize, // Relative to text, not the whole prompt
 }
 
 pub enum ReadlineResult {
@@ -34,7 +39,7 @@ impl REPL {
             line_counter: 1,
 
             line_history: LineHistory::new(),
-            cursor_position: 0
+            cursor_position: 0,
         }
     }
 
@@ -42,10 +47,53 @@ impl REPL {
         print!(":{:<2}   > ", self.line_counter);
     }
 
+    // XXX: It would better work with iterators but keep it as-is for now.
+    fn split_and_keep<'a>(text: &'a str) -> Vec<&'a str> {
+        let mut result = Vec::new();
+        let mut last = 0;
+
+        for (index, matched) in text.match_indices(|x: char| !x.is_alphanumeric()) {
+            if last != index {
+                result.push(&text[last..index]);
+            }
+        
+            result.push(matched);
+            last = index + matched.len();
+        }
+        
+        if last < text.len() {
+            result.push(&text[last..]);
+        }
+        
+        result
+    }
+
+    fn format_line(&self, line: &str) {
+        // Do a simple split here
+        let stems = Self::split_and_keep(line);
+
+        for (n, i) in stems.iter().enumerate() {
+            if flylang_lexer::kw_lookup_table::KEYWORDS.contains_key(i) {
+                print!(
+                    "{}",
+                    i.if_supports_color(Stream::Stdout, |x| x.bold())
+                        .if_supports_color(Stream::Stdout, |x| x.bright_magenta())
+                );
+
+                continue;
+            }
+
+            print!("{}", i);
+        }
+    }
+
     fn redraw(&self, line: &[char], cursor: usize) {
         print!("\r");
+
         self.show_prompt();
-        print!("{line}\x1b[K", line = line.into_iter().collect::<String>());
+        self.format_line(&line.into_iter().collect::<String>());
+
+        print!("\x1b[K");
 
         print!("\x1b[{}D", line.len() + 1);
         print!("\x1b[{}C", cursor + 1);
@@ -90,7 +138,7 @@ impl REPL {
 
                     if self.cursor_position <= line.len() {
                         line.remove(self.cursor_position - 1);
-                    
+
                         self.cursor_position -= 1;
 
                         self.redraw(&line, self.cursor_position);
@@ -124,7 +172,7 @@ impl REPL {
                     }
 
                     std::io::stdout().flush().unwrap();
-                    
+
                     continue;
                 }
 
@@ -144,7 +192,7 @@ impl REPL {
                     }
 
                     std::io::stdout().flush().unwrap();
-                    
+
                     continue;
                 }
 
@@ -190,9 +238,9 @@ impl REPL {
                 };
 
                 line.insert(self.cursor_position, key);
-                
+
                 self.cursor_position += 1;
-                
+
                 self.redraw(&line, self.cursor_position);
             }
         }
