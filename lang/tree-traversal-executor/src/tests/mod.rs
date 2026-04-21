@@ -1,4 +1,4 @@
-use crate::{Interpreter, control_flow::ControlFlow, object::Value, tests::utils::{TestResult, Tester, execute, execute_or_fail}};
+use crate::{tests::utils::{Tester, execute}};
 
 mod utils;
 

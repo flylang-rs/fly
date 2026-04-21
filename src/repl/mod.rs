@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, io::Write, sync::Arc};
+use std::{io::Write, sync::Arc};
 
 use crossterm::{
     event::{self, Event, KeyCode, KeyModifiers},
@@ -17,7 +17,8 @@ pub struct REPL {
     interpreter: Interpreter,
     line_counter: usize,
 
-    line_history: line_history::LineHistory
+    line_history: line_history::LineHistory,
+    cursor_position: usize    // Relative to text, not the whole prompt
 }
 
 pub enum ReadlineResult {
@@ -32,12 +33,24 @@ impl REPL {
             interpreter: Interpreter::new(),
             line_counter: 1,
 
-            line_history: LineHistory::new()
+            line_history: LineHistory::new(),
+            cursor_position: 0
         }
     }
 
     fn show_prompt(&self) {
         print!(":{:<2}   > ", self.line_counter);
+    }
+
+    fn redraw(&self, line: &[char], cursor: usize) {
+        print!("\r");
+        self.show_prompt();
+        print!("{line}\x1b[K", line = line.into_iter().collect::<String>());
+
+        print!("\x1b[{}D", line.len() + 1);
+        print!("\x1b[{}C", cursor + 1);
+
+        std::io::stdout().flush().unwrap();
     }
 
     /// Reads line, returns a continuation signal.
@@ -49,7 +62,9 @@ impl REPL {
         self.show_prompt();
         std::io::stdout().flush().unwrap();
 
-        let mut line = String::new();
+        let mut line: Vec<char> = vec![];
+
+        self.cursor_position = 0;
 
         loop {
             if let Event::Key(key_event) = event::read().unwrap() {
@@ -63,14 +78,22 @@ impl REPL {
                 if key_event.modifiers.contains(KeyModifiers::CONTROL)
                     && key_event.code == KeyCode::Char('d')
                 {
+                    print!("\r\n");
                     terminal::disable_raw_mode().unwrap();
                     return ReadlineResult::Break;
                 }
 
                 if key_event.code == KeyCode::Backspace {
-                    if line.pop().is_some() {
-                        print!("\u{0008} \u{0008}");
-                        std::io::stdout().flush().unwrap();
+                    if self.cursor_position == 0 {
+                        continue;
+                    }
+
+                    if self.cursor_position <= line.len() {
+                        line.remove(self.cursor_position - 1);
+                    
+                        self.cursor_position -= 1;
+
+                        self.redraw(&line, self.cursor_position);
                     }
 
                     continue;
@@ -81,16 +104,17 @@ impl REPL {
                     std::io::stdout().flush().unwrap();
 
                     terminal::disable_raw_mode().unwrap();
-                    return ReadlineResult::Value(line);
+
+                    return ReadlineResult::Value(line.into_iter().collect::<String>());
                 }
 
                 if key_event.code == KeyCode::Up {
                     if let Some(ln) = self.line_history.prev() {
-                        line = ln.to_string();
+                        line = ln.chars().collect();
 
                         print!("\r");
                         self.show_prompt();
-                        print!("{line}\x1b[K");
+                        print!("{line}\x1b[K", line = line.iter().collect::<String>());
                     } else {
                         line.clear();
 
@@ -102,17 +126,15 @@ impl REPL {
                     std::io::stdout().flush().unwrap();
                     
                     continue;
-
-                	// todo!("Implement history navigation on keyup");
                 }
 
                 if key_event.code == KeyCode::Down {
                     if let Some(ln) = self.line_history.next() {
-                        line = ln.to_string();
+                        line = ln.chars().collect();
 
                         print!("\r");
                         self.show_prompt();
-                        print!("{line}\x1b[K");
+                        print!("{line}\x1b[K", line = line.iter().collect::<String>());
                     } else {
                         line.clear();
 
@@ -123,6 +145,42 @@ impl REPL {
 
                     std::io::stdout().flush().unwrap();
                     
+                    continue;
+                }
+
+                if key_event.code == KeyCode::Left {
+                    self.cursor_position = self.cursor_position.saturating_sub(1);
+
+                    self.redraw(&line, self.cursor_position);
+
+                    continue;
+                }
+
+                if key_event.code == KeyCode::Right {
+                    if self.cursor_position >= line.len() {
+                        continue;
+                    }
+
+                    self.cursor_position += 1;
+
+                    self.redraw(&line, self.cursor_position);
+
+                    continue;
+                }
+
+                if key_event.code == KeyCode::Home {
+                    self.cursor_position = 0;
+
+                    self.redraw(&line, self.cursor_position);
+
+                    continue;
+                }
+
+                if key_event.code == KeyCode::End {
+                    self.cursor_position = line.len();
+
+                    self.redraw(&line, self.cursor_position);
+
                     continue;
                 }
 
@@ -131,10 +189,11 @@ impl REPL {
                     None => continue,
                 };
 
-                print!("{}", key);
-                std::io::stdout().flush().unwrap();
-
-                line.push(key);
+                line.insert(self.cursor_position, key);
+                
+                self.cursor_position += 1;
+                
+                self.redraw(&line, self.cursor_position);
             }
         }
 

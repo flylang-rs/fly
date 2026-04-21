@@ -1,9 +1,8 @@
-use flylang_common::spanned::Spanned;
 use flylang_diagnostics::{
     Diagnostics,
-    additions::{Help, Note, TextEdit}, error::DiagnosticsReport,
+    additions::{Help, Note, TextEdit},
 };
-use flylang_parser::{ast::{ExprKind, Expression, Function, Statement}, error::ParserError};
+use flylang_parser::ast::{ExprKind, Expression, Function, Statement};
 use log::debug;
 
 pub struct Analyzer<'a> {
@@ -52,11 +51,11 @@ impl<'a> Analyzer<'a> {
         // ...
     }
 
-    fn analyze_block(&mut self, block: &[Statement]) {
-        for statement in block {
-            // ...
-        }
-    }
+    // fn analyze_block(&mut self, block: &[Statement]) {
+    //     for statement in block {
+    //         // ...
+    //     }
+    // }
 
     fn analyze_expression(&mut self, expression: &Expression) {
         match &expression.value {
@@ -161,7 +160,7 @@ impl<'a> Analyzer<'a> {
                     }
                 }
             }
-            ExprKind::Block(bk) => self.analyze_block(bk),
+            // ExprKind::Block(bk) => self.analyze_block(bk),
             kind => {
                 debug!("TODO: Analyze that expression: {kind:#?}");
             }

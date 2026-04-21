@@ -54,16 +54,3 @@ impl Tester {
 pub fn execute(code: &str) -> TestResult<ControlFlow> {
     Tester::new().exec(code)
 }
-
-pub fn execute_or_fail(code: &str) -> ControlFlow {
-    let value = execute(code);
-
-    match value {
-        Ok(value) => value,
-        Err(e) => {
-            eprintln!("{}", e.render());
-
-            panic!("Encountered an error.")
-        }
-    }
-}

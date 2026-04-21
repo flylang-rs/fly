@@ -425,11 +425,8 @@ impl Parser {
             }
         }
 
-        loop {
-            let op = match self.peek() {
-                Some(t) => t.clone(),
-                None => break,
-            };
+        while let Some(token) = self.peek() {
+            let op = token.clone();
 
             // Check for function call
             if op == TokenValue::OpenParen {
