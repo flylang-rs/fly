@@ -15,6 +15,11 @@ pub enum InterpreterError {
         lhs_type: String,
         rhs_type: String,
     },
+    NoPropertyForType {
+        typename: String,
+        property: String,
+        callee_address: Address
+    },
     CallError(CallError)
 }
 
@@ -24,6 +29,7 @@ impl InterpreterError {
             InterpreterError::NameNotDefined { address, .. } => Some(address),
             InterpreterError::IncompatibleTypesForOperation { lhs_addr, .. } => Some(lhs_addr),
             InterpreterError::CallError(call_error) => call_error.try_get_error_loc(),
+            InterpreterError::NoPropertyForType { callee_address, .. } => Some(callee_address),
         }
     }
 }
@@ -91,12 +97,23 @@ impl DiagnosticsReport for InterpreterError {
                             ),
                             &callee_address,
                             &[
-                                Note::new(callee_address.clone(), &format!("here")),
+                                Note::new(callee_address.clone(), "here"),
                             ],
                             &[],
                         )
                     }
                 }
+            }
+            InterpreterError::NoPropertyForType { typename, property, callee_address } => {
+                flylang_diagnostics::Diagnostics {}.error_ext(
+                    &mut result,
+                    &format!("Proptery `{property}` is not defined for type `{typename}`"),
+                    &callee_address,
+                    &[
+                        Note::new(callee_address.clone(), "here"),
+                    ],
+                    &[],
+                )
             }
         }
 

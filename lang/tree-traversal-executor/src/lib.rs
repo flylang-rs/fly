@@ -104,10 +104,7 @@ impl Interpreter {
     }
 
     /// Script version of `Interpreter::execute`. Doesn't break when value is returned.
-    pub fn execute_script(
-        &mut self,
-        ast: Vec<Statement>,
-    ) -> InterpreterResult<ControlFlow> {
+    pub fn execute_script(&mut self, ast: Vec<Statement>) -> InterpreterResult<ControlFlow> {
         self.exec_inner(Arc::clone(&self.world), &ast, false)
     }
 
@@ -444,8 +441,7 @@ impl Interpreter {
                     .insert(name.clone(), Value::Record(value.into()));
 
                 Ok(ControlFlow::Nothing)
-            }
-            // st => todo!("Unexpected statement: {:?}", st),
+            } // st => todo!("Unexpected statement: {:?}", st),
         }
     }
 
@@ -603,11 +599,13 @@ impl Interpreter {
                     let type_name = types::value_to_internal_type(&obj).unwrap();
                     let method_key = format!("{type_name}::{prop}");
 
-                    let method = realm
-                        .read()
-                        .unwrap()
-                        .lookup(&method_key)
-                        .unwrap_or_else(|| panic!("No method `{prop}` on `{type_name}`"));
+                    let method = realm.read().unwrap().lookup(&method_key).ok_or_else(|| {
+                        InterpreterError::NoPropertyForType {
+                            typename: type_name.to_string(),
+                            property: prop.to_string(),
+                            callee_address: callee.address.clone(),
+                        }
+                    })?;
 
                     let mut args = vec![obj]; // receiver (self) is first argument
                     for p in parameters {
@@ -701,7 +699,11 @@ impl Interpreter {
                     };
 
                     if rec_realm.read().unwrap().lookup(&type_name).is_none() {
-                        panic!("No property `{prop}` on type `{type_name}`");
+                        return Err(InterpreterError::NoPropertyForType {
+                            typename: type_name.to_string(),
+                            property: prop.to_string(),
+                            callee_address: property.address.clone(),
+                        });
                     }
 
                     let lhs = self.resolve_lvalue(Arc::clone(&realm), origin)?;

@@ -244,7 +244,7 @@ impl REPL {
 
                             let stringres =
                                 match self.interpreter.call_func_extern(&methodname, &[val]) {
-                                    Ok(cf) => cf.unwrap(),
+                                    Ok(cf) => cf,
                                     Err(e) => {
                                         eprintln!("{}", e.render());
 
@@ -252,8 +252,12 @@ impl REPL {
                                     }
                                 };
 
-                            if let ControlFlow::Value(Value::String(v)) = stringres {
-                                println!("      = {v}");
+                            if let Some(cf) = stringres {
+                                if let ControlFlow::Value(Value::String(v)) = cf {
+                                    println!("      = {v}");
+                                } else {
+                                    panic!("Expected string value, got: {cf:?}");
+                                }
                             }
                         }
                         Ok(ControlFlow::Nothing) => (),
