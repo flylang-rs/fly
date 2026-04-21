@@ -1,0 +1,7 @@
+---
+source: lang/parser/src/tests/mod.rs
+expression: code
+---
+Ok(
+    [],
+)

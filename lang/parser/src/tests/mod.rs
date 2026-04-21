@@ -4,6 +4,35 @@ pub mod functions;
 pub mod records;
 
 #[test]
+fn no_code() {
+    let code = utils::code2ast("");
+
+    insta::assert_debug_snapshot!(code);
+}
+
+#[test]
+fn only_spaces() {
+    let code = utils::code2ast("       ");
+
+    insta::assert_debug_snapshot!(code);
+}
+
+#[test]
+fn only_spaces_and_tabs() {
+    let code = utils::code2ast(" \t\t   \t   \t\t\t\t\t\t");
+
+    insta::assert_debug_snapshot!(code);
+}
+
+#[test]
+fn spaces_newlines_and_tabs() {
+    let code = utils::code2ast("    \n\n \n\t\t     ");
+
+    insta::assert_debug_snapshot!(code);
+}
+
+
+#[test]
 fn addition() {
     let code = utils::code2ast("2 + 4");
 
