@@ -30,3 +30,13 @@ pub static KEYWORDS: LazyLock<HashMap<&'static str, crate::TokenValue>> =
             ("while", TokenValue::While),
         ])
     });
+
+pub fn tokenvalue_to_name(val: &TokenValue) -> Option<&'static str> {
+	for (key, value) in &*KEYWORDS {
+		if value == val {
+			return Some(key);
+		}
+	}
+	
+	None
+}

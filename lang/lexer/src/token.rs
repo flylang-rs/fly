@@ -152,12 +152,8 @@ impl TokenValue {
 
             token => {
                 // If it's a keyword, find it in keyword lookup table instead.
-                
-                let value = kw_lookup_table::KEYWORDS
-                    .iter()
-                    .filter(|(_, tkv)| *tkv == token)
-                    .map(|(name, _)| name)
-                    .next();
+
+                let value = kw_lookup_table::tokenvalue_to_name(token);
 
                 if let Some(value) = value {
                     return value;
