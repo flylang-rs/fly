@@ -165,6 +165,10 @@ impl TokenValue {
             }
         }
     }
+
+    pub fn is_keyword(&self) -> bool {
+    	kw_lookup_table::tokenvalue_to_name(self).is_some()
+    }
 }
 
 #[derive(Debug, Clone)]
