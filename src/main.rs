@@ -14,6 +14,12 @@ pub mod repl;
 fn run_file(options: &CommandLineArguments, source: Source) {
     let source = Arc::new(source);
 
+    if options.show_lexems {
+    	let tokens = flylang_lexparse_glue::lex_source(Arc::clone(&source)).map(|x| x.iter().map(|y| (y.value.clone(), y.address.span.clone())).collect::<Vec<_>>());
+    	
+    	println!("{:?}", tokens);
+    }
+
     let ast = match flylang_lexparse_glue::parse_source(Arc::clone(&source)) {
         Ok(st) => st,
         Err(LoadingError::AnalyzeFailed) => {
@@ -78,6 +84,7 @@ fn show_help() {
     println!("Options:");
     println!("  --repl\t\tLaunch Fly REPL");
     println!("  --show-ast\t\tShow AST");
+    println!("  --show-lexems\t\tShow token stream");
     println!("  -h, --help\t\tShow this help");
     println!();
 
@@ -108,6 +115,10 @@ fn main() -> std::io::Result<()> {
 
     if std::env::args().any(|x| x == "--show-ast") {
         cmd_opts.show_ast = true;
+    }
+
+    if std::env::args().any(|x| x == "--show-lexems") {
+        cmd_opts.show_lexems = true;
     }
 
     let filepath = if let Some(arg) = std::env::args().nth(1) {

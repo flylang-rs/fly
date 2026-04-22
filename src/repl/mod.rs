@@ -72,7 +72,7 @@ impl REPL {
         // Do a simple split here
         let stems = Self::split_and_keep(line);
 
-        for (n, i) in stems.iter().enumerate() {
+        for i in stems.iter() {
             if flylang_lexer::kw_lookup_table::KEYWORDS.contains_key(i) {
                 print!(
                     "{}",
