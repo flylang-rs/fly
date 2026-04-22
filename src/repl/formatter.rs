@@ -16,6 +16,7 @@ impl REPLFormatter {
     pub fn format(code: &str) -> LoadingResult<String> {
         let tokens = flylang_lexparse_glue::lex_source(
             Source::new("<REPL>".to_string(), code.to_string()).into(),
+            false,
         )?;
 
         let result = tokens

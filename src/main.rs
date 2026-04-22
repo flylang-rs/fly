@@ -15,7 +15,7 @@ fn run_file(options: &CommandLineArguments, source: Source) {
     let source = Arc::new(source);
 
     if options.show_lexems {
-        let tokens = flylang_lexparse_glue::lex_source(Arc::clone(&source)).map(|x| {
+        let tokens = flylang_lexparse_glue::lex_source(Arc::clone(&source), true).map(|x| {
             x.iter()
                 .map(|y| (y.value.clone(), y.address.span.clone()))
                 .collect::<Vec<_>>()

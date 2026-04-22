@@ -24,7 +24,7 @@ impl DiagnosticsReport for LoadingError {
     }
 }
 
-pub fn lex_source(source: Arc<Source>) -> LoadingResult<Vec<Token>> {
+pub fn lex_source(source: Arc<Source>, make_error: bool) -> LoadingResult<Vec<Token>> {
     let mut lexer = flylang_lexer::Lexer::new(Arc::clone(&source));
     let mut tokens: Vec<Token> = vec![];
 
@@ -36,7 +36,14 @@ pub fn lex_source(source: Arc<Source>) -> LoadingResult<Vec<Token>> {
             Err(LexerError::EOF) => break,
             // This arm is more serious, we have a problem here
             Err(err) => {
-                return Err(LoadingError::LexerError(err));
+                if make_error {
+                    return Err(LoadingError::LexerError(err));
+                } else {
+                    // If make_error == false, return what we have.
+                    // This behaviour is useful for REPL, since input coloring is based on lexer...
+                    // ... any error will remove all coloring, so we're doing some "error silencer" here.
+                    return Ok(tokens);
+                }
             }
         }
     }
@@ -45,7 +52,7 @@ pub fn lex_source(source: Arc<Source>) -> LoadingResult<Vec<Token>> {
 }
 
 pub fn parse_source(source: Arc<Source>) -> LoadingResult<Vec<Statement>> {
-    let tokens = lex_source(Arc::clone(&source))?;
+    let tokens = lex_source(Arc::clone(&source), true)?;
 
     // Parse here...
 
