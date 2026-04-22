@@ -1,4 +1,4 @@
-use crate::{Interpreter, InterpreterResult, SharedRealm, control_flow::ControlFlow, error::InterpreterError, object::Value, runtime::RustInteropFn};
+use crate::{Interpreter, InterpreterResult, SharedRealm, control_flow::ControlFlow, object::Value, runtime::RustInteropFn};
 
 #[rustfmt::skip]
 pub static EXPORT: &[(&str, RustInteropFn)] = &[
@@ -6,8 +6,8 @@ pub static EXPORT: &[(&str, RustInteropFn)] = &[
 ];
 
 fn typename(
-    interpreter: &mut Interpreter,
-    realm: SharedRealm,
+    _interpreter: &mut Interpreter,
+    _realm: SharedRealm,
     args: &[Value],
 ) -> InterpreterResult<ControlFlow> {
     if args.is_empty() {

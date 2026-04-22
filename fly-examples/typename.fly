@@ -1,12 +1,18 @@
+func write(val) {
+    print(val.to_displayable() + " => " + typename(val))
+}
+
+write("Hello")
+write(3.1415926)
+write(49)
+write([49, 26])
+write(nil)
+write(x: x + 1)
+
+
+# Just print typenames here, because `to_displayable` is not implemented automatically for new types.
+
 record MyRecord {}
 
 print(typename(MyRecord))
 print(typename(new MyRecord {}))
-
-print(typename("Hello"))
-print(typename(3.1415926))
-print(typename(49))
-print(typename([49, 26]))
-
-print(typename(nil))
-print(typename(x: x + 1))

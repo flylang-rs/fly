@@ -65,6 +65,7 @@ impl Interpreter {
             .chain(runtime::arrays::EXPORT.iter())
             .chain(runtime::booleans::EXPORT.iter())
             .chain(runtime::exit::EXPORT.iter())
+            .chain(runtime::functions::EXPORT.iter())
             .chain(runtime::reals::EXPORT.iter())
             .chain(runtime::integers::EXPORT.iter())
             .chain(runtime::nil::EXPORT.iter())

@@ -5,6 +5,7 @@ use crate::{
 pub mod arrays;
 pub mod booleans;
 pub mod exit;
+pub mod functions;
 pub mod integers;
 pub mod nil;
 pub mod print;
