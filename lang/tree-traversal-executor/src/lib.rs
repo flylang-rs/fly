@@ -69,7 +69,8 @@ impl Interpreter {
             .chain(runtime::integers::EXPORT.iter())
             .chain(runtime::nil::EXPORT.iter())
             .chain(runtime::print::EXPORT.iter())
-            .chain(runtime::strings::EXPORT.iter());
+            .chain(runtime::strings::EXPORT.iter())
+            .chain(runtime::types::EXPORT.iter());
 
         // Import native functions into the builtins subworld.
         for (name, func) in natives {

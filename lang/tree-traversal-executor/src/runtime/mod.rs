@@ -10,6 +10,7 @@ pub mod nil;
 pub mod print;
 pub mod reals;
 pub mod strings;
+pub mod types;
 
 pub type RustInteropFn = fn(
     interpreter: &mut Interpreter,

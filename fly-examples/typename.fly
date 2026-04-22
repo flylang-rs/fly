@@ -1,0 +1,12 @@
+record MyRecord {}
+
+print(typename(MyRecord))
+print(typename(new MyRecord {}))
+
+print(typename("Hello"))
+print(typename(3.1415926))
+print(typename(49))
+print(typename([49, 26]))
+
+print(typename(nil))
+print(typename(x: x + 1))
