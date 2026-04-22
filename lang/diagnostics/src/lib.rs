@@ -116,12 +116,13 @@ impl Diagnostics {
         for i in notes {
             if let Some(pos) = &i.position {
                 let location = src.location(pos.span.start);
+                let char_len = src.span_char_len(&pos.span);
 
                 writeln!(
                     output,
                     "     | {}{} {}",
                     " ".repeat(location.1 - 1),
-                    "^".repeat(pos.span.end - pos.span.start),
+                    "^".repeat(char_len),
                     i.message.if_supports_color(Stream::Stderr, |x| x.bold())
                 )
                 .unwrap();

@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 /// Describes the source file with code.
 #[derive(Debug, Clone)]
 pub struct Source {
@@ -34,7 +36,10 @@ impl Source {
             .line_starts
             .partition_point(|&start| start <= byte_offset)
             - 1;
-        let col = byte_offset - self.line_starts[line_idx];
+        let line_start_byte = self.line_starts[line_idx];
+
+        let col = self.code[line_start_byte..byte_offset].chars().count();
+
         (line_idx + 1, col + 1)
     }
 
@@ -48,6 +53,10 @@ impl Source {
             .unwrap_or(self.code.len());
 
         self.code[start..end].trim_end_matches('\n')
+    }
+
+    pub fn span_char_len(&self, span: &Range<usize>) -> usize {
+        self.code[span.start..span.end].chars().count()
     }
 
     /// Oh gosh...
