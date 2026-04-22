@@ -1,5 +1,5 @@
 ---
-source: parser/src/tests/mod.rs
+source: lang/parser/src/tests/mod.rs
 expression: code
 ---
 Ok(
@@ -53,10 +53,10 @@ Ok(
                         String(
                             "Lloyd",
                         ),
-                        41..47,
+                        41..48,
                     ),
                 },
-                22..47,
+                22..48,
             ),
         ),
         Expr(
@@ -83,10 +83,10 @@ Ok(
                         String(
                             "Montgomery",
                         ),
-                        69..80,
+                        69..81,
                     ),
                 },
-                49..80,
+                49..81,
             ),
         ),
         Expr(
@@ -113,10 +113,10 @@ Ok(
                         String(
                             "Garmadon",
                         ),
-                        100..109,
+                        100..110,
                     ),
                 },
-                82..109,
+                82..110,
             ),
         ),
         Expr(

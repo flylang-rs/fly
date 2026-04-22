@@ -1,5 +1,5 @@
 ---
-source: parser/src/tests/functions.rs
+source: lang/parser/src/tests/functions.rs
 expression: code
 ---
 Ok(
@@ -32,7 +32,7 @@ Ok(
                                                     String(
                                                         "Hello, world!",
                                                     ),
-                                                    25..39,
+                                                    25..40,
                                                 ),
                                             ],
                                         },

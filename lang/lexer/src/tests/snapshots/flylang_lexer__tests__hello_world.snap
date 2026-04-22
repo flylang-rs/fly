@@ -1,5 +1,5 @@
 ---
-source: lexer/src/tests/mod.rs
+source: lang/lexer/src/tests/mod.rs
 expression: tokens.map(|x| x.into_values_with_positions())
 ---
 Ok(
@@ -48,7 +48,7 @@ Ok(
             String(
                 "Hello, world!",
             ),
-            25..39,
+            25..40,
         ),
         (
             CloseParen,

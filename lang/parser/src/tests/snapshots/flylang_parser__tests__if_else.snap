@@ -1,5 +1,5 @@
 ---
-source: parser/src/tests/mod.rs
+source: lang/parser/src/tests/mod.rs
 expression: code
 ---
 Ok(
@@ -60,7 +60,7 @@ Ok(
                                                     String(
                                                         "Forty-nine looks like fortune!",
                                                     ),
-                                                    42..73,
+                                                    42..74,
                                                 ),
                                             ],
                                         },
@@ -110,7 +110,7 @@ Ok(
                                                                 String(
                                                                     "It's too early!",
                                                                 ),
-                                                                110..126,
+                                                                110..127,
                                                             ),
                                                         ],
                                                     },
@@ -160,7 +160,7 @@ Ok(
                                                                             String(
                                                                                 "It's too late!",
                                                                             ),
-                                                                            163..178,
+                                                                            163..179,
                                                                         ),
                                                                     ],
                                                                 },
@@ -191,7 +191,7 @@ Ok(
                                                                                 String(
                                                                                     "Intapreta guna sei wut",
                                                                                 ),
-                                                                                200..223,
+                                                                                200..224,
                                                                             ),
                                                                         ],
                                                                     },

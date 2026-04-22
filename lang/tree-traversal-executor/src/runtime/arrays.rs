@@ -51,6 +51,10 @@ fn render_value(
         return render_array(interpreter, realm, arr, seen);
     }
 
+    if let Value::String(str) = &val {
+        return format!("'{str}'");
+    }
+
     let ty = types::value_to_internal_type(val).unwrap();
     let method_name = format!("{ty}::to_displayable");
     let method = realm

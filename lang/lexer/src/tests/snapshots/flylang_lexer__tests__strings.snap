@@ -1,5 +1,5 @@
 ---
-source: lexer/src/tests/mod.rs
+source: lang/lexer/src/tests/mod.rs
 expression: tokens.map(|x| x.into_values_with_positions())
 ---
 Ok(
@@ -12,7 +12,7 @@ Ok(
             String(
                 "string",
             ),
-            1..8,
+            1..9,
         ),
         (
             Newline,
@@ -22,7 +22,7 @@ Ok(
             String(
                 "string with whitespaces",
             ),
-            10..34,
+            10..35,
         ),
         (
             Newline,
@@ -32,7 +32,7 @@ Ok(
             String(
                 "123456789 123456789",
             ),
-            36..56,
+            36..57,
         ),
         (
             Newline,
@@ -42,7 +42,7 @@ Ok(
             String(
                 "string with \\n newline",
             ),
-            58..81,
+            58..82,
         ),
         (
             Newline,

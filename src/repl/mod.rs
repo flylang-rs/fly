@@ -10,12 +10,12 @@ use flylang_tte::{Interpreter, control_flow::ControlFlow, object::Value};
 
 use crate::repl::{
     error::{REPLError, REPLResult},
+    formatter::REPLFormatter,
     line_history::LineHistory,
 };
 
-use owo_colors::{OwoColorize, Stream};
-
 pub mod error;
+mod formatter;
 mod line_history;
 
 pub struct REPL {
@@ -47,29 +47,9 @@ impl REPL {
         print!(":{:<2}   > ", self.line_counter);
     }
 
-    // XXX: It would better work with iterators but keep it as-is for now.
-    fn split_and_keep<'a>(text: &'a str) -> Vec<&'a str> {
-        let mut result = Vec::new();
-        let mut last = 0;
-
-        for (index, matched) in text.match_indices(|x: char| !x.is_alphanumeric()) {
-            if last != index {
-                result.push(&text[last..index]);
-            }
-
-            result.push(matched);
-            last = index + matched.len();
-        }
-
-        if last < text.len() {
-            result.push(&text[last..]);
-        }
-
-        result
-    }
-
     fn format_line(&self, line: &str) {
         // Do a simple split here
+        /*
         let stems = Self::split_and_keep(line);
 
         for i in stems.iter() {
@@ -85,6 +65,12 @@ impl REPL {
 
             print!("{}", i);
         }
+        */
+
+        let formatted = REPLFormatter::format(line);
+        let ln = formatted.as_deref().unwrap_or(line);
+
+        print!("{ln}");
     }
 
     fn redraw(&self, line: &[char], cursor: usize) {
@@ -159,16 +145,14 @@ impl REPL {
                 if key_event.code == KeyCode::Up {
                     if let Some(ln) = self.line_history.prev() {
                         line = ln.chars().collect();
+                        self.cursor_position = line.len();
 
-                        print!("\r");
-                        self.show_prompt();
-                        print!("{line}\x1b[K", line = line.iter().collect::<String>());
+                        self.redraw(&line, self.cursor_position);
                     } else {
                         line.clear();
+                        self.cursor_position = 0;
 
-                        print!("\r");
-                        self.show_prompt();
-                        print!("\x1b[K");
+                        self.redraw(&line, self.cursor_position);
                     }
 
                     std::io::stdout().flush().unwrap();
@@ -179,16 +163,14 @@ impl REPL {
                 if key_event.code == KeyCode::Down {
                     if let Some(ln) = self.line_history.next() {
                         line = ln.chars().collect();
+                        self.cursor_position = line.len();
 
-                        print!("\r");
-                        self.show_prompt();
-                        print!("{line}\x1b[K", line = line.iter().collect::<String>());
+                        self.redraw(&line, self.cursor_position);
                     } else {
                         line.clear();
+                        self.cursor_position = 0;
 
-                        print!("\r");
-                        self.show_prompt();
-                        print!("\x1b[K");
+                        self.redraw(&line, self.cursor_position);
                     }
 
                     std::io::stdout().flush().unwrap();
@@ -302,7 +284,10 @@ impl REPL {
 
                             if let Some(cf) = stringres {
                                 if let ControlFlow::Value(Value::String(v)) = cf {
-                                    println!("      = {v}");
+                                    let output_fmt =
+                                        REPLFormatter::format(&v).unwrap_or_else(|_| v.to_string());
+
+                                    println!("      = {output_fmt}");
                                 } else {
                                     panic!("Expected string value, got: {cf:?}");
                                 }

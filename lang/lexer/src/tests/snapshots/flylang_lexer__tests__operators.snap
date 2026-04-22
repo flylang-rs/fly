@@ -1,5 +1,5 @@
 ---
-source: lexer/src/tests/mod.rs
+source: lang/lexer/src/tests/mod.rs
 expression: tokens.map(|x| x.into_values_with_positions())
 ---
 Ok(
@@ -22,7 +22,7 @@ Ok(
             String(
                 "abc",
             ),
-            9..13,
+            9..14,
         ),
         (
             Newline,
@@ -56,7 +56,7 @@ Ok(
             String(
                 "t",
             ),
-            29..31,
+            29..32,
         ),
         (
             Newline,
@@ -86,7 +86,7 @@ Ok(
             String(
                 "t",
             ),
-            47..49,
+            47..50,
         ),
         (
             Newline,
@@ -116,7 +116,7 @@ Ok(
             String(
                 "t",
             ),
-            65..67,
+            65..68,
         ),
         (
             Newline,
@@ -136,7 +136,7 @@ Ok(
             String(
                 "a",
             ),
-            78..80,
+            78..81,
         ),
         (
             Newline,
@@ -156,7 +156,7 @@ Ok(
             String(
                 "c",
             ),
-            92..94,
+            92..95,
         ),
         (
             Newline,
@@ -176,7 +176,7 @@ Ok(
             String(
                 "b",
             ),
-            106..108,
+            106..109,
         ),
         (
             Newline,
@@ -200,7 +200,7 @@ Ok(
             String(
                 "a",
             ),
-            116..118,
+            116..119,
         ),
         (
             Newline,
@@ -220,7 +220,7 @@ Ok(
             String(
                 "b",
             ),
-            125..127,
+            125..128,
         ),
         (
             Newline,
@@ -240,7 +240,7 @@ Ok(
             String(
                 "c",
             ),
-            134..136,
+            134..137,
         ),
         (
             Newline,
@@ -260,7 +260,7 @@ Ok(
             String(
                 "d",
             ),
-            143..145,
+            143..146,
         ),
         (
             Newline,
@@ -280,7 +280,7 @@ Ok(
             String(
                 "e",
             ),
-            151..153,
+            151..154,
         ),
         (
             Newline,
@@ -300,7 +300,7 @@ Ok(
             String(
                 "f",
             ),
-            159..161,
+            159..162,
         ),
         (
             Newline,

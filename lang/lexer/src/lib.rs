@@ -133,6 +133,7 @@ impl Lexer {
                     self.next_character_any();
 
                     if character == begin_char {
+                        end = offset + character.len_utf8();
                         break;
                     }
 
