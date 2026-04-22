@@ -31,7 +31,6 @@ fn spaces_newlines_and_tabs() {
     insta::assert_debug_snapshot!(code);
 }
 
-
 #[test]
 fn addition() {
     let code = utils::code2ast("2 + 4");

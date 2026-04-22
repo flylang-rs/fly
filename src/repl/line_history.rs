@@ -2,7 +2,7 @@
 /// It contains all lines were interpreted, and index for navigation (cursor).
 pub struct LineHistory {
     container: Vec<String>,
-    index: usize
+    index: usize,
 }
 
 impl LineHistory {

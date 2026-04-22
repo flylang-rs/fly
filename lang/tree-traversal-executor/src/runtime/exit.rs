@@ -1,6 +1,6 @@
 use crate::{
     Interpreter, InterpreterResult, SharedRealm, control_flow::ControlFlow, object::Value,
-    runtime::RustInteropFn
+    runtime::RustInteropFn,
 };
 
 #[rustfmt::skip]

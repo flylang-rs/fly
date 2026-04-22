@@ -13,7 +13,6 @@ func log(x, base = E) {
     insta::assert_debug_snapshot!(code);
 }
 
-
 #[test]
 fn funcargs() {
     let code = utils::code2ast(

@@ -25,27 +25,27 @@ impl DiagnosticsReport for LoadingError {
 }
 
 pub fn lex_source(source: Arc<Source>) -> LoadingResult<Vec<Token>> {
-	let mut lexer = flylang_lexer::Lexer::new(Arc::clone(&source));
-	    let mut tokens: Vec<Token> = vec![];
-	
-	    loop {
-	        match lexer.next_token() {
-	            // If we got a token, add it
-	            Ok(token) => tokens.push(token),
-	            // It's actually not an error, it indicated that we reached the end, so just
-	            Err(LexerError::EOF) => break,
-	            // This arm is more serious, we have a problem here
-	            Err(err) => {
-	                return Err(LoadingError::LexerError(err));
-	            }
-	        }
-	    }
+    let mut lexer = flylang_lexer::Lexer::new(Arc::clone(&source));
+    let mut tokens: Vec<Token> = vec![];
 
-	Ok(tokens)
+    loop {
+        match lexer.next_token() {
+            // If we got a token, add it
+            Ok(token) => tokens.push(token),
+            // It's actually not an error, it indicated that we reached the end, so just
+            Err(LexerError::EOF) => break,
+            // This arm is more serious, we have a problem here
+            Err(err) => {
+                return Err(LoadingError::LexerError(err));
+            }
+        }
+    }
+
+    Ok(tokens)
 }
 
 pub fn parse_source(source: Arc<Source>) -> LoadingResult<Vec<Statement>> {
-	let tokens = lex_source(Arc::clone(&source))?;
+    let tokens = lex_source(Arc::clone(&source))?;
 
     // Parse here...
 

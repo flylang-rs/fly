@@ -28,15 +28,19 @@ pub struct Parser {
 
 impl Parser {
     pub fn new(tokens: Vec<Token>, source: &Arc<Source>) -> Self {
-        let eof_addr = tokens.last().map(|x| x.address.clone()).unwrap_or_else(|| {
-            Address { source: Arc::clone(source), span: 0..0 }
-        });
+        let eof_addr = tokens
+            .last()
+            .map(|x| x.address.clone())
+            .unwrap_or_else(|| Address {
+                source: Arc::clone(source),
+                span: 0..0,
+            });
 
         Self {
             tokens: tokens.into_iter().peekable(),
             eof_addr,
 
-            context_stack: vec![]
+            context_stack: vec![],
         }
     }
 
@@ -407,8 +411,16 @@ impl Parser {
             // debug!("LHS = {:?}", lhs.value);
             // debug!("CTXSTK = {:?}", self.context_stack);
 
-            let was_use = self.context_stack.last().map(|x| matches!(x.value, TokenValue::Use)).unwrap_or_default();
-            let was_new = self.context_stack.last().map(|x| matches!(x.value, TokenValue::New)).unwrap_or_default();
+            let was_use = self
+                .context_stack
+                .last()
+                .map(|x| matches!(x.value, TokenValue::Use))
+                .unwrap_or_default();
+            let was_new = self
+                .context_stack
+                .last()
+                .map(|x| matches!(x.value, TokenValue::New))
+                .unwrap_or_default();
 
             debug!("USE: {was_use}");
             debug!("NEW: {was_new}");

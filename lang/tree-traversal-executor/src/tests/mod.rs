@@ -1,4 +1,4 @@
-use crate::{tests::utils::{Tester, execute}};
+use crate::tests::utils::{Tester, execute};
 
 mod utils;
 
@@ -76,13 +76,17 @@ fn arrays_and_ref_cycles() {
 
     assert_eq!(&*string_repr, "[1, 2, [3, 4, [5, 6]]]");
 
-    tester.exec_script(r#"
+    tester
+        .exec_script(
+            r#"
 a = [1, 2]
 b = [3, 4, a]
 
 a.push(b)
 a.push(5)
-    "#).unwrap();
+    "#,
+        )
+        .unwrap();
 
     let result = tester.exec("a.to_string()");
     let string_repr = result.unwrap().as_value().unwrap().as_arc_string().unwrap();
@@ -94,4 +98,3 @@ a.push(5)
 
     assert_eq!(&*string_repr, "[3, 4, [1, 2, [...], 5]]");
 }
-

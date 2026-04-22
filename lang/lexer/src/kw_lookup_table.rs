@@ -3,40 +3,39 @@ use std::{collections::HashMap, sync::LazyLock};
 use crate::token::TokenValue;
 
 /// Keyword Lookup Table (KLT)
-pub static KEYWORDS: LazyLock<HashMap<&'static str, crate::TokenValue>> =
-    LazyLock::new(|| {
-        HashMap::from([
-            ("break", TokenValue::Break),
-            ("continue", TokenValue::Continue),
-            ("destructor", TokenValue::Destructor),
-            ("drop", TokenValue::Drop),
-            ("else", TokenValue::Else),
-            ("false", TokenValue::False),
-            ("for", TokenValue::For),
-            ("func", TokenValue::Func),
-            ("if", TokenValue::If),
-            ("new", TokenValue::New),
-            ("nil", TokenValue::Nil),
-            ("operator", TokenValue::Operator),
-            ("override", TokenValue::Override),
-            ("private", TokenValue::Private),
-            ("public", TokenValue::Public),
-            ("record", TokenValue::Record),
-            ("return", TokenValue::Return),
-            ("Self", TokenValue::SelfRecord),
-            ("static", TokenValue::Static),
-            ("true", TokenValue::True),
-            ("use", TokenValue::Use),
-            ("while", TokenValue::While),
-        ])
-    });
+pub static KEYWORDS: LazyLock<HashMap<&'static str, crate::TokenValue>> = LazyLock::new(|| {
+    HashMap::from([
+        ("break", TokenValue::Break),
+        ("continue", TokenValue::Continue),
+        ("destructor", TokenValue::Destructor),
+        ("drop", TokenValue::Drop),
+        ("else", TokenValue::Else),
+        ("false", TokenValue::False),
+        ("for", TokenValue::For),
+        ("func", TokenValue::Func),
+        ("if", TokenValue::If),
+        ("new", TokenValue::New),
+        ("nil", TokenValue::Nil),
+        ("operator", TokenValue::Operator),
+        ("override", TokenValue::Override),
+        ("private", TokenValue::Private),
+        ("public", TokenValue::Public),
+        ("record", TokenValue::Record),
+        ("return", TokenValue::Return),
+        ("Self", TokenValue::SelfRecord),
+        ("static", TokenValue::Static),
+        ("true", TokenValue::True),
+        ("use", TokenValue::Use),
+        ("while", TokenValue::While),
+    ])
+});
 
 pub fn tokenvalue_to_name(val: &TokenValue) -> Option<&'static str> {
-	for (key, value) in &*KEYWORDS {
-		if value == val {
-			return Some(key);
-		}
-	}
-	
-	None
+    for (key, value) in &*KEYWORDS {
+        if value == val {
+            return Some(key);
+        }
+    }
+
+    None
 }

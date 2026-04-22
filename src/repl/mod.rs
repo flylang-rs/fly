@@ -56,15 +56,15 @@ impl REPL {
             if last != index {
                 result.push(&text[last..index]);
             }
-        
+
             result.push(matched);
             last = index + matched.len();
         }
-        
+
         if last < text.len() {
             result.push(&text[last..]);
         }
-        
+
         result
     }
 

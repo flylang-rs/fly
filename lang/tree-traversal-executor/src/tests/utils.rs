@@ -35,19 +35,23 @@ impl Tester {
     pub fn exec(&mut self, code: &str) -> TestResult<ControlFlow> {
         let src = Source::new("<test>".to_string(), code.to_string());
 
-        let ast = flylang_lexparse_glue::parse_source(src.into())
-            .map_err(TestError::LoadingError)?;
+        let ast =
+            flylang_lexparse_glue::parse_source(src.into()).map_err(TestError::LoadingError)?;
 
-        self.interp.execute(ast).map_err(TestError::InterpreterError)
+        self.interp
+            .execute(ast)
+            .map_err(TestError::InterpreterError)
     }
-    
+
     pub fn exec_script(&mut self, code: &str) -> TestResult<ControlFlow> {
         let src = Source::new("<test>".to_string(), code.to_string());
 
-        let ast = flylang_lexparse_glue::parse_source(src.into())
-            .map_err(TestError::LoadingError)?;
+        let ast =
+            flylang_lexparse_glue::parse_source(src.into()).map_err(TestError::LoadingError)?;
 
-        self.interp.execute_script(ast).map_err(TestError::InterpreterError)
+        self.interp
+            .execute_script(ast)
+            .map_err(TestError::InterpreterError)
     }
 }
 

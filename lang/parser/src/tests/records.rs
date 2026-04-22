@@ -126,7 +126,6 @@ a = A { value: 4.9 }
     insta::assert_debug_snapshot!(code);
 }
 
-
 #[test]
 fn record_object_creation() {
     let code = utils::code2ast(

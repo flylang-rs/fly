@@ -6,7 +6,7 @@ use flylang_common::source::Source;
 use flylang_diagnostics::error::DiagnosticsReport;
 use flylang_lexparse_glue::LoadingError;
 
-use crate::{arguments::CommandLineArguments};
+use crate::arguments::CommandLineArguments;
 
 pub mod arguments;
 pub mod repl;
@@ -15,9 +15,13 @@ fn run_file(options: &CommandLineArguments, source: Source) {
     let source = Arc::new(source);
 
     if options.show_lexems {
-    	let tokens = flylang_lexparse_glue::lex_source(Arc::clone(&source)).map(|x| x.iter().map(|y| (y.value.clone(), y.address.span.clone())).collect::<Vec<_>>());
-    	
-    	println!("{:?}", tokens);
+        let tokens = flylang_lexparse_glue::lex_source(Arc::clone(&source)).map(|x| {
+            x.iter()
+                .map(|y| (y.value.clone(), y.address.span.clone()))
+                .collect::<Vec<_>>()
+        });
+
+        println!("{:?}", tokens);
     }
 
     let ast = match flylang_lexparse_glue::parse_source(Arc::clone(&source)) {
