@@ -44,5 +44,5 @@ fn inner_print(
 
     println!();
 
-    Ok(ControlFlow::Nothing)
+    Ok(ControlFlow::Value(Value::Nil))
 }
