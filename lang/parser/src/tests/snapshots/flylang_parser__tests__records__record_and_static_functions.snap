@@ -1,0 +1,53 @@
+---
+source: lang/parser/src/tests/records.rs
+expression: code
+---
+Ok(
+    [
+        RecordDefinition(
+            RecordDefinition {
+                name: Spanned(
+                    "A",
+                    8..9,
+                ),
+                visibility: Global,
+                fields: Spanned(
+                    [],
+                    10..12,
+                ),
+            },
+        ),
+        Function(
+            Function {
+                name: Spanned(
+                    Path {
+                        parent: Spanned(
+                            Identifier(
+                                "A",
+                            ),
+                            26..27,
+                        ),
+                        value: Spanned(
+                            Identifier(
+                                "create",
+                            ),
+                            29..35,
+                        ),
+                    },
+                    26..35,
+                ),
+                visibility: Global,
+                is_static: true,
+                arguments: [],
+                body: Expr(
+                    Spanned(
+                        Block(
+                            [],
+                        ),
+                        38..40,
+                    ),
+                ),
+            },
+        ),
+    ],
+)

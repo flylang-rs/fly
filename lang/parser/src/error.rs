@@ -29,6 +29,9 @@ pub enum ParserError {
         token: Token,
         name_address: Address,
     },
+    StaticNotAllowedHere {
+        static_keyword_addr: Address,
+    },
 }
 
 #[derive(Clone, Debug)]
@@ -113,6 +116,18 @@ impl DiagnosticsReport for ParserError {
                             span: (name_address.span.start..name_address.span.start),
                             replacement: Some("new ".to_string()),
                         }],
+                    )],
+                );
+            }
+            ParserError::StaticNotAllowedHere { static_keyword_addr } => {
+                Diagnostics {}.error_ext(
+                    &mut report,
+                    &format!("`static` keyword is not allowed here"),
+                    &static_keyword_addr,
+                    &[Note::new(static_keyword_addr.clone(), "here")],
+                    &[Help::new(
+                        "remove `static` keyword",
+                        vec![TextEdit::delete(static_keyword_addr.span.clone())],
                     )],
                 );
             }

@@ -136,6 +136,7 @@ pub enum Statement {
 pub struct Function {
     pub name: Box<Expression>,
     pub visibility: Visibility,
+    pub is_static: bool,
     pub arguments: Vec<Expression>,
     pub body: Box<Statement>,
 }

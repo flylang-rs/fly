@@ -1,5 +1,5 @@
 ---
-source: parser/src/tests/functions.rs
+source: lang/parser/src/tests/functions.rs
 expression: code
 ---
 Ok(
@@ -13,6 +13,7 @@ Ok(
                     6..9,
                 ),
                 visibility: Global,
+                is_static: false,
                 arguments: [
                     Spanned(
                         Identifier(

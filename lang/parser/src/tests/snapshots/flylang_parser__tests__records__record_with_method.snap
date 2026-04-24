@@ -37,6 +37,7 @@ Ok(
                     22..34,
                 ),
                 visibility: Global,
+                is_static: false,
                 arguments: [],
                 body: Expr(
                     Spanned(

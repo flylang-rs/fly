@@ -140,3 +140,16 @@ a = new A { value: 4.9 }
 
     insta::assert_debug_snapshot!(code);
 }
+
+#[test]
+fn record_and_static_functions() {
+    let code = utils::code2ast(
+        r#"
+record A {}
+
+static func A::create() {}
+    "#,
+    );
+
+    insta::assert_debug_snapshot!(code);
+}

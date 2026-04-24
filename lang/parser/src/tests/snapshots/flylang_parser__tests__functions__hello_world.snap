@@ -13,6 +13,7 @@ Ok(
                     6..10,
                 ),
                 visibility: Global,
+                is_static: false,
                 arguments: [],
                 body: Expr(
                     Spanned(

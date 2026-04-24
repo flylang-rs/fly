@@ -1,0 +1,27 @@
+---
+source: lang/parser/src/tests/functions.rs
+expression: code
+---
+Err(
+    UnexpectedToken {
+        token: Token {
+            value: Private,
+            address: Address {
+                source: Source {
+                    filepath: "<test>",
+                    code: "\n# `private static` not `static private`\nstatic private func a() {\n    # ...\n}\n    ",
+                    line_starts: [
+                        0,
+                        1,
+                        41,
+                        67,
+                        77,
+                        79,
+                    ],
+                },
+                span: 48..55,
+            },
+        },
+        expected: None,
+    },
+)

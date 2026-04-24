@@ -130,7 +130,11 @@ impl Parser {
         }))
     }
 
-    fn parse_func(&mut self) -> ParserResult<ast::Statement> {
+    fn parse_func(
+        &mut self,
+        visibility: Visibility,
+        is_static: bool,
+    ) -> ParserResult<ast::Statement> {
         self.expect(TokenValue::Func)?;
 
         let name = self.parse_expression(31)?;
@@ -144,7 +148,8 @@ impl Parser {
         Ok(ast::Statement::Function(ast::Function {
             name: name.into(),
             arguments,
-            visibility: Visibility::Global,
+            is_static,
+            visibility,
             body: Box::new(body),
         }))
     }
@@ -862,6 +867,16 @@ impl Parser {
                     panic!("Cannot apply `private` to expression `{:?}`", expr.value);
                 }
             }
+            TokenValue::Static => {
+                let statement = self.parse_static(Visibility::Local)?;
+
+                return Ok(statement);
+            }
+            TokenValue::Func => {
+                let statement = self.parse_func(Visibility::Local, false)?;
+
+                return Ok(statement);
+            }
             _ => todo!("Cannot mix `private` with {current_token:?} right now..."),
         }
     }
@@ -961,13 +976,43 @@ impl Parser {
         ))
     }
 
+    fn parse_static(&mut self, visibility: Visibility) -> ParserResult<ast::Statement> {
+        let this_addr = self.peek_address().unwrap().clone();
+
+        self.next_token();
+
+        let eof = self.eof_address().clone();
+        let next = self
+            .peek_whole()
+            .ok_or_else(|| ParserError::UnexpectedEOF(eof))?;
+
+        match next.value {
+            TokenValue::Func => {
+                let func = self.parse_func(visibility, true)?;
+
+                return Ok(func);
+            }
+            TokenValue::Identifier(_) => {
+                return Err(ParserError::StaticNotAllowedHere {
+                    static_keyword_addr: this_addr
+                });
+            }
+            _ => {
+                return Err(ParserError::UnexpectedToken {
+                    token: next.clone(),
+                    expected: None,
+                });
+            }
+        }
+    }
+
     fn parse_statement(&mut self) -> ParserResult<ast::Statement> {
         self.skip_whitespaces();
 
         let eof = self.eof_addr.clone();
 
         match self.peek().ok_or_else(|| ParserError::UnexpectedEOF(eof))? {
-            TokenValue::Func => Ok(self.parse_func()?),
+            TokenValue::Func => Ok(self.parse_func(Visibility::Global, false)?),
             TokenValue::If => Ok(self.parse_if()?),
             TokenValue::While => Ok(self.parse_while()?),
             TokenValue::Return => Ok(self.parse_return()?),
@@ -975,6 +1020,7 @@ impl Parser {
             TokenValue::Break | TokenValue::Continue => Ok(self.parse_break_or_continue()?),
             TokenValue::Use => Ok(self.parse_use()?),
             TokenValue::Private => Ok(self.parse_private()?),
+            TokenValue::Static => Ok(self.parse_static(Visibility::Global)?),
             TokenValue::Record => Ok(self.parse_record(Visibility::Global)?),
             _ /* tok */ => {
                 let lhs = self.parse_expression(0)?;

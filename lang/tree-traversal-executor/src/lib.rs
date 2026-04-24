@@ -243,7 +243,7 @@ impl Interpreter {
                     .collect();
 
                 // If a function belongs to method, add `self` as an object receiver
-                if does_belong_to_a_record {
+                if does_belong_to_a_record && !function.is_static {
                     params.insert(0, "self".to_string());
                 }
 
@@ -609,7 +609,10 @@ impl Interpreter {
                         }
                     })?;
 
+                    // eprintln!("!!! {method:?}");
+
                     let mut args = vec![obj]; // receiver (self) is first argument
+
                     for p in parameters {
                         let ControlFlow::Value(v) =
                             self.evaluate_expression(Arc::clone(&realm), p, true)?

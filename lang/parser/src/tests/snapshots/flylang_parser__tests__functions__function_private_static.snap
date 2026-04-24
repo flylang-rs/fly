@@ -1,0 +1,29 @@
+---
+source: lang/parser/src/tests/functions.rs
+expression: code
+---
+Ok(
+    [
+        Function(
+            Function {
+                name: Spanned(
+                    Identifier(
+                        "a",
+                    ),
+                    21..22,
+                ),
+                visibility: Local,
+                is_static: true,
+                arguments: [],
+                body: Expr(
+                    Spanned(
+                        Block(
+                            [],
+                        ),
+                        25..38,
+                    ),
+                ),
+            },
+        ),
+    ],
+)

@@ -72,3 +72,56 @@ func new() {
 
     insta::assert_debug_snapshot!(code);
 }
+
+#[test]
+fn function_static() {
+    let code = utils::code2ast(
+        r#"
+static func a() {
+    # ...
+}
+    "#,
+    );
+
+    insta::assert_debug_snapshot!(code);
+}
+
+#[test]
+fn function_private_static() {
+    let code = utils::code2ast(
+        r#"
+private static func a() {
+    # ...
+}
+    "#,
+    );
+
+    insta::assert_debug_snapshot!(code);
+}
+
+#[test]
+fn error_function_static_private() {
+    let code = utils::code2ast(
+        r#"
+# `private static` not `static private`
+static private func a() {
+    # ...
+}
+    "#,
+    );
+
+    insta::assert_debug_snapshot!(code);
+}
+
+#[test]
+fn function_private() {
+    let code = utils::code2ast(
+        r#"
+private func a() {
+    # ...
+}
+    "#,
+    );
+
+    insta::assert_debug_snapshot!(code);
+}

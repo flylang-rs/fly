@@ -1,0 +1,40 @@
+record Animal {
+    public name;
+    public age;
+}
+
+func Animal::to_string() {
+    return "Animal { name: " + self.name + ", age: " + self.age.to_string() + " }"
+}
+
+static func Animal::newborn(name) {
+    return new Animal {
+        name: name,
+        age: 0
+    }
+}
+
+static func Animal::create(name, age) {
+    return new Animal {
+        name: name,
+        age: age
+    }
+}
+
+func Animal::celebrate_birthday() {
+    print("Happy birthday, " + self.name + "!");
+
+    self.age += 1;
+}
+
+print(Animal::newborn("Cat"))
+print(Animal::newborn("Dog"))
+print(Animal::create("Frog", 4))
+
+eagle = Animal::create("Eagle", 8)
+
+print(eagle)
+
+eagle.celebrate_birthday()
+
+print(eagle)

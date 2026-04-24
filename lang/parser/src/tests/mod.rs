@@ -298,3 +298,25 @@ fn error_03() {
 
     insta::assert_debug_snapshot!(code);
 }
+
+#[test]
+fn error_static_variable() {
+    let code = utils::code2ast(
+        r#"
+static x = 0
+    "#,
+    );
+
+    insta::assert_debug_snapshot!(code);
+}
+
+#[test]
+fn error_private_static_variable() {
+    let code = utils::code2ast(
+        r#"
+private static x = 0
+    "#,
+    );
+
+    insta::assert_debug_snapshot!(code);
+}

@@ -1,0 +1,20 @@
+---
+source: lang/parser/src/tests/mod.rs
+expression: code
+---
+Err(
+    StaticNotAllowedHere {
+        static_keyword_addr: Address {
+            source: Source {
+                filepath: "<test>",
+                code: "\nprivate static x = 0\n    ",
+                line_starts: [
+                    0,
+                    1,
+                    22,
+                ],
+            },
+            span: 9..15,
+        },
+    },
+)
