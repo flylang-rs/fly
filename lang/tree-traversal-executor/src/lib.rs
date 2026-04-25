@@ -1,7 +1,7 @@
 use std::{
     collections::{HashMap, LinkedList},
     path::PathBuf,
-    sync::{Arc, Mutex, RwLock, Weak},
+    sync::{Arc, Mutex, RwLock},
 };
 
 use flylang_common::{Address, source::Source, spanned::Spanned};
@@ -251,7 +251,7 @@ impl Interpreter {
                     normal_name: FunctionNameKind::Normal(real_name.clone()),
                     params,
                     body: *function.body.clone(),
-                    closure_realm: Arc::downgrade(&realm),
+                    closure_realm: Arc::clone(&realm),
                 }));
 
                 realm
@@ -698,12 +698,7 @@ impl Interpreter {
                 // If we didn't get a needed value, maybe it can be found in Record's fields?
                 if val.is_none() {
                     let rec_realm = if let Value::RecordInstance(ri) = &obj {
-                        &ri.lock()
-                            .unwrap()
-                            .record
-                            .definition_realm
-                            .upgrade()
-                            .expect("Bug: failed to restore realm from `Weak`.")
+                        &ri.lock().unwrap().record.definition_realm.upgrade().expect("Bug: failed to restore realm from `Weak`.")
                     } else {
                         &realm
                     };
@@ -831,7 +826,7 @@ impl Interpreter {
                         .map(|x| x.value.as_id().unwrap().to_owned())
                         .collect(),
                     body: Statement::Expr(*body.clone()),
-                    closure_realm: Arc::downgrade(&realm),
+                    closure_realm: Arc::clone(&realm),
                 }));
 
                 ControlFlow::Value(value)
@@ -1001,7 +996,7 @@ impl Interpreter {
         }
 
         if let Value::Function(func) = func {
-            let mut new_realm = Realm::dive(Weak::upgrade(&func.closure_realm).unwrap());
+            let mut new_realm = Realm::dive(Arc::clone(&func.closure_realm));
 
             let parameters = &func.params;
 
@@ -1055,7 +1050,7 @@ impl Interpreter {
         }
 
         if let Value::Function(func) = method {
-            let mut new_realm = Realm::dive(Weak::upgrade(&func.closure_realm).unwrap());
+            let mut new_realm = Realm::dive(Arc::clone(&func.closure_realm));
 
             let parameters = &func.params;
 
