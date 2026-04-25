@@ -1,4 +1,4 @@
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, RwLock, Weak};
 
 use flylang_common::spanned::Spanned;
 use flylang_parser::ast::Statement;
@@ -10,7 +10,7 @@ pub struct Function {
     pub normal_name: FunctionNameKind,
     pub params: Vec<String>,
     pub body: Statement,
-    pub closure_realm: Arc<RwLock<Realm>>, // captured at definition time
+    pub closure_realm: Weak<RwLock<Realm>>, // captured at definition time
 }
 
 #[derive(Clone)]
