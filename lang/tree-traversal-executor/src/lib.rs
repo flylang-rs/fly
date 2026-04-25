@@ -433,7 +433,7 @@ impl Interpreter {
                 let value = Record {
                     name: name.clone(),
                     fields,
-                    definition_realm: Arc::clone(&realm),
+                    definition_realm: Arc::downgrade(&realm),
                 };
 
                 realm
@@ -698,9 +698,9 @@ impl Interpreter {
                 // If we didn't get a needed value, maybe it can be found in Record's fields?
                 if val.is_none() {
                     let rec_realm = if let Value::RecordInstance(ri) = &obj {
-                        Arc::clone(&ri.lock().unwrap().record.definition_realm)
+                        &ri.lock().unwrap().record.definition_realm.upgrade().expect("Bug: failed to restore realm from `Weak`.")
                     } else {
-                        Arc::clone(&realm)
+                        &realm
                     };
 
                     if rec_realm.read().unwrap().lookup(&type_name).is_none() {

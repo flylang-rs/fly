@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::{Arc, Mutex, RwLock, Weak};
 
 use flylang_common::visibility::Visibility;
 
@@ -68,14 +68,13 @@ pub enum LValue {
 pub struct Record {
     pub name: String,
     pub fields: Vec<RecordField>,
-    pub definition_realm: Arc<RwLock<Realm>>,
+    pub definition_realm: Weak<RwLock<Realm>>,
 }
 
 #[derive(Debug)]
 pub struct RecordField {
     pub name: String,
     pub visibility: Visibility,
-    // pub value: Value
 }
 
 #[derive(Debug)]
