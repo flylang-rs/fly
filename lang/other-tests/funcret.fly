@@ -1,0 +1,7 @@
+func a() {
+    private b = "Hello, world";
+
+    return b;
+}
+
+print(a())

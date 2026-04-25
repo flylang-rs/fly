@@ -1,4 +1,4 @@
-use std::sync::{Arc, RwLock, Weak};
+use std::sync::{RwLock, Weak};
 
 use flylang_common::spanned::Spanned;
 use flylang_parser::ast::Statement;

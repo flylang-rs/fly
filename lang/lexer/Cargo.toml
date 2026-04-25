@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 flylang-common = { path = "../common" }
 flylang-diagnostics = { path = "../diagnostics" }
+phf = { version = "0.13.1", features = ["macros"] }
 
 [dev-dependencies]
 insta = "1.46.3"
