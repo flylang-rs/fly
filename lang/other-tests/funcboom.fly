@@ -1,0 +1,11 @@
+a = nil
+
+{
+    func x() {
+        print("What");
+    }
+
+    a = x
+}
+
+a()
