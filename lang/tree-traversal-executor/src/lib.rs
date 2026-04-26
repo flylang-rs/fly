@@ -720,10 +720,8 @@ impl Interpreter {
                     let val = record_instance
                         .lock()
                         .unwrap()
-                        .fields
-                        .iter()
-                        .find(|x| x.name == prop)
-                        .map(|x| x.value.clone())
+                        .lookup(prop)
+                        .cloned()
                         .unwrap_or_else(|| panic!("No property `{prop}` on type `{type_name}`"));
 
                     return Ok(ControlFlow::Value(val));

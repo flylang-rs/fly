@@ -77,10 +77,42 @@ pub struct RecordField {
     pub visibility: Visibility,
 }
 
+impl RecordField {
+    pub fn global(name: &str) -> Self {
+        Self {
+            name: name.to_string(),
+            visibility: Visibility::Global,
+        }
+    }
+
+    pub fn local(name: &str) -> Self {
+        Self {
+            name: name.to_string(),
+            visibility: Visibility::Local,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct RecordInstance {
     pub record: Arc<Record>,
     pub fields: Vec<RecordInstanceField>,
+}
+
+impl RecordInstance {
+    pub fn lookup(&self, field_name: &str) -> Option<&Value> {
+        self.fields
+            .iter()
+            .find(|x| x.name == field_name)
+            .map(|x| &x.value)
+    }
+
+    pub fn lookup_mut(&mut self, field_name: &str) -> Option<& mut Value> {
+        self.fields
+            .iter_mut()
+            .find(|x| x.name == field_name)
+            .map(|x| &mut x.value)
+    }
 }
 
 #[derive(Debug)]
