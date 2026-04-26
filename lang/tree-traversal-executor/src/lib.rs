@@ -925,6 +925,7 @@ impl Interpreter {
                     if let Some(val) = result {
                         node = Some(val);
                     } else {
+                        debug!("HRER!");
                         return Err(InterpreterError::NameNotDefined {
                             name: stems[0..=idx].join("::"),
                             address: expr.address.clone(),
