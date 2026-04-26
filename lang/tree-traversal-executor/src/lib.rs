@@ -925,7 +925,6 @@ impl Interpreter {
                     if let Some(val) = result {
                         node = Some(val);
                     } else {
-                        debug!("HRER!");
                         return Err(InterpreterError::NameNotDefined {
                             name: stems[0..=idx].join("::"),
                             address: expr.address.clone(),
@@ -977,12 +976,28 @@ impl Interpreter {
                     obj => panic!("Creating new object from `{obj:?}` is not supported (yet)!"),
                 };
 
-                let record_def = realm.read().unwrap().lookup(&name).ok_or_else(|| {
-                    InterpreterError::NameNotDefined {
-                        name: name.clone(),
-                        address: new_decl.name.address.clone(),
+                let record_def_c = || {
+                    match &new_decl.name.value {
+                        ExprKind::Identifier(id) => {
+                            return realm.read().unwrap().lookup(id).ok_or_else(|| {
+                                InterpreterError::NameNotDefined {
+                                    name: id.clone(),
+                                    address: new_decl.name.address.clone(),
+                                }
+                            });
+                        }
+                        ExprKind::Path { .. } => {
+                            let mut node: Option<Value> = None;
+
+                            let stems = self.path_segments_to_vec(&new_decl.name);
+
+                            todo!("Stems: {stems:?}")
+                        }
+                        _ => unreachable!()
                     }
-                })?;
+                };
+
+                let record_def = record_def_c()?;
 
                 let record_def = match record_def {
                     Value::Record(record) => record,
