@@ -1,4 +1,4 @@
-use std::borrow::Cow::{self, Borrowed};
+use std::borrow::Cow::{self, Borrowed, Owned};
 
 use crate::object::Value;
 
@@ -21,11 +21,15 @@ pub fn value_to_internal_type(val: &Value) -> Option<Cow<'_, str>> {
         Value::Native(_) => Some(Borrowed(TYPE_NATIVE)),
         Value::Nil => Some(Borrowed(TYPE_NIL)),
         Value::String(_) => Some(Borrowed(TYPE_STRING)),
-        Value::Record(rec) => Some(Borrowed(&rec.name)),
+        Value::Record(rec) => Some(Owned(format!("(record \"{}\")", rec.name))),
         Value::RecordInstance(reci) => {
             let lt = reci.lock().unwrap().record.name.clone();
-
-            Some(lt.into())
-        } // unk => panic!("Cannot convert {unk:?} to internal type."),
+            
+            Some(Owned(lt))
+        }
+        Value::Module(m) => {
+            Some(Owned(format!("(module \"{}\"", m.name)))
+        }
+        // unk => panic!("Cannot convert {unk:?} to internal type."),
     }
 }

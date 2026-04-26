@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex, RwLock, Weak};
 
 use flylang_common::visibility::Visibility;
@@ -16,6 +17,7 @@ pub enum Value {
     Array(Arc<Mutex<Vec<Value>>>),
     Function(Arc<Function>),
     Native(RustInteropFn),
+    Module(Arc<Module>),
 
     // Complex types starting from 0.1.1
     Record(Arc<Record>),
@@ -54,6 +56,14 @@ impl Value {
             None
         }
     }
+
+    pub fn as_record(&self) -> Option<Arc<Record>> {
+        if let Value::Record(r) = self {
+            Some(Arc::clone(r))
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -68,6 +78,7 @@ pub enum LValue {
 pub struct Record {
     pub name: String,
     pub fields: Vec<RecordField>,
+    pub methods: Arc<RwLock<HashMap<String, Value>>>,
     pub definition_realm: Weak<RwLock<Realm>>,
 }
 
@@ -119,4 +130,10 @@ impl RecordInstance {
 pub struct RecordInstanceField {
     pub name: String,
     pub value: Value,
+}
+
+#[derive(Debug, Clone)]
+pub struct Module {
+    pub name: String,
+    pub realm: Arc<RwLock<Realm>>
 }

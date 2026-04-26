@@ -1,7 +1,7 @@
 use std::{
     collections::{HashMap, LinkedList},
     path::PathBuf,
-    sync::{Arc, Mutex, RwLock},
+    sync::{Arc, Mutex, RwLock, Weak},
 };
 
 use flylang_common::{Address, source::Source, spanned::Spanned};
@@ -13,7 +13,7 @@ use crate::{
     control_flow::ControlFlow,
     error::{CallError, InterpreterError},
     function::{Function, FunctionNameKind},
-    object::{LValue, Record, RecordField, RecordInstance, RecordInstanceField, Value},
+    object::{LValue, Module, Record, RecordField, RecordInstance, RecordInstanceField, Value},
     realm::Realm,
 };
 
@@ -190,7 +190,7 @@ impl Interpreter {
 
         self.exec_inner(Arc::clone(&module_realm), &ast, false)?;
 
-        let exports = module_realm.read().unwrap().values().clone();
+        // let exports = module_realm.read().unwrap().values().clone();
 
         self.module_registry.write().unwrap().insert(
             path.clone(),
@@ -199,13 +199,21 @@ impl Interpreter {
                                  }) */
         );
 
-        for (name, value) in exports {
-            realm
-                .write()
-                .unwrap()
-                .values_mut()
-                .insert(format!("{}::{}", module_name, name), value);
-        }
+        realm.write().unwrap().values_mut().insert(
+            module_name.clone(),
+            Value::Module(Arc::new(Module {
+                name: module_name,
+                realm: module_realm,
+            })),
+        );
+
+        // for (name, value) in exports {
+        //     realm
+        //         .write()
+        //         .unwrap()
+        //         .values_mut()
+        //         .insert(name, value);
+        // }
 
         Ok(())
     }
@@ -231,9 +239,9 @@ impl Interpreter {
 
                 // Note: it can't be mixed up with module path notation, because we're working with
                 // function definition.
-                let does_belong_to_a_record = match &function.name.value {
-                    ExprKind::Path { .. } => true,
-                    _ => false,
+                let record_path = match &function.name.value {
+                    ExprKind::Path { .. } => Some(self.path_segments_to_vec(&function.name)),
+                    _ => None,
                 };
 
                 let mut params: Vec<String> = function
@@ -243,7 +251,7 @@ impl Interpreter {
                     .collect();
 
                 // If a function belongs to method, add `self` as an object receiver
-                if does_belong_to_a_record && !function.is_static {
+                if record_path.is_some() && !function.is_static {
                     params.insert(0, "self".to_string());
                 }
 
@@ -254,11 +262,40 @@ impl Interpreter {
                     closure_realm: Arc::clone(&realm),
                 }));
 
-                realm
-                    .write()
-                    .unwrap()
-                    .values_mut()
-                    .insert(real_name.value, value);
+                debug!("Record name: {:?}", record_path);
+
+                // If it's a record method, add function to its fields instead.
+                if let Some(stems) = &record_path {
+                    let record = realm
+                        .read()
+                        .unwrap()
+                        .values()
+                        .get(&stems[0])
+                        .and_then(|x| x.as_record())
+                        .unwrap_or_else(|| panic!("Failed to resolve record!"));
+
+                    record
+                        .methods
+                        .write()
+                        .unwrap()
+                        .insert(stems.iter().last().unwrap().to_string(), value);
+
+                    // let mut node: Option<&Value> = None;
+
+                    // for stem in stems {
+                    //     if let Some(n) = realm.read().unwrap().values().get(stem) {
+                    //         node = Some(n);
+                    //     } else {
+                    //         panic!("Failed to resolve record field");
+                    //     }
+                    // }
+                } else {
+                    realm
+                        .write()
+                        .unwrap()
+                        .values_mut()
+                        .insert(real_name.value, value);
+                }
 
                 Ok(ControlFlow::Nothing)
             }
@@ -433,6 +470,7 @@ impl Interpreter {
                 let value = Record {
                     name: name.clone(),
                     fields,
+                    methods: Arc::new(RwLock::new(HashMap::new())),
                     definition_realm: Arc::downgrade(&realm),
                 };
 
@@ -598,16 +636,42 @@ impl Interpreter {
                     };
 
                     let prop = property.value.as_id().unwrap();
-                    let type_name = types::value_to_internal_type(&obj).unwrap();
-                    let method_key = format!("{type_name}::{prop}");
 
-                    let method = realm.read().unwrap().lookup(&method_key).ok_or_else(|| {
-                        InterpreterError::NoPropertyForType {
-                            typename: type_name.to_string(),
-                            property: prop.to_string(),
-                            callee_address: callee.address.clone(),
-                        }
-                    })?;
+                    // let record = realm
+                    //     .read()
+                    //     .unwrap()
+                    //     .lookup(&type_name)
+                    //     .and_then(|x| x.as_record())
+                    //     .expect("Failed to resolve record!");
+
+                    let ri = obj.as_record_instance().unwrap();
+
+                    let type_name = types::value_to_internal_type(&obj).unwrap().to_string();
+
+                    let method = ri
+                        .lock()
+                        .unwrap()
+                        .record
+                        .methods
+                        .read()
+                        .unwrap()
+                        .get(prop)
+                        .cloned()
+                        .ok_or_else(|| {
+                            InterpreterError::NoPropertyForType {
+                                typename: type_name.to_string(),
+                                property: prop.to_string(),
+                                callee_address: callee.address.clone(),
+                            }
+                        })?;
+
+                    // let method = realm.read().unwrap().lookup(&method_key).ok_or_else(|| {
+                    //     InterpreterError::NoPropertyForType {
+                    //         typename: type_name.to_string(),
+                    //         property: prop.to_string(),
+                    //         callee_address: callee.address.clone(),
+                    //     }
+                    // })?;
 
                     // eprintln!("!!! {method:?}");
 
@@ -621,6 +685,8 @@ impl Interpreter {
                         };
                         args.push(v);
                     }
+
+                    let method_key = format!("{type_name}::{prop}");
 
                     self.push_call_frame_for_methodcall(method_key.clone(), callee);
 
@@ -687,49 +753,72 @@ impl Interpreter {
 
                 let prop = property.value.as_id().unwrap();
                 let type_name = types::value_to_internal_type(&obj).unwrap();
-                let method_key = format!("{type_name}::{prop}");
 
-                let val = realm.read().unwrap().lookup(&method_key);
+                let record_instance = if let Value::RecordInstance(ri) = &obj {
+                    &ri.lock().unwrap()
+                } else {
+                    panic!("Failed to get record instance: `{type_name}`");
+                };
 
-                if let Some(val) = val {
-                    return Ok(ControlFlow::Value(val));
-                }
-
-                // If we didn't get a needed value, maybe it can be found in Record's fields?
-                if val.is_none() {
-                    let rec_realm = if let Value::RecordInstance(ri) = &obj {
-                        &ri.lock().unwrap().record.definition_realm.upgrade().expect("Bug: failed to restore realm from `Weak`.")
+                let Some(field) = record_instance.fields.iter().find(|x| x.name == prop) else {
+                    if let Some((_, method)) = record_instance
+                        .record
+                        .methods
+                        .read()
+                        .unwrap()
+                        .iter()
+                        .find(|(name, _)| *name == prop)
+                    {
+                        todo!("Method resolve: {method:?}");
+                        // return Ok(ControlFlow::Value(Value::Function {
                     } else {
-                        &realm
-                    };
-
-                    if rec_realm.read().unwrap().lookup(&type_name).is_none() {
                         return Err(InterpreterError::NoPropertyForType {
                             typename: type_name.to_string(),
                             property: prop.to_string(),
                             callee_address: property.address.clone(),
                         });
                     }
+                };
 
-                    let lhs = self.resolve_lvalue(Arc::clone(&realm), origin)?;
-                    let record_instance = match self.read_lvalue(realm, &lhs) {
-                        Value::RecordInstance(rec) => rec,
-                        v => panic!("Expected record instance, got: {v:?}!"),
-                    };
+                // let lhs = self.resolve_lvalue(Arc::clone(&realm), origin)?;
 
-                    let val = record_instance
-                        .lock()
-                        .unwrap()
-                        .lookup(prop)
-                        .cloned()
-                        .unwrap_or_else(|| panic!("No property `{prop}` on type `{type_name}`"));
+                return Ok(ControlFlow::Value(field.value.clone()));
 
-                    return Ok(ControlFlow::Value(val));
-                }
+                // todo!("WHAT? {field:?}")
 
-                debug!("Property: {prop:?}");
+                //     let rec_realm = if let Some(rec) = record {
+                //         rec.definition_realm.upgrade().expect("Bug: failed to restore realm from `Weak`.")
+                //     } else {
+                //         &realm
+                //     };
 
-                panic!("No property `{prop}` on type `{type_name}`")
+                //     if rec_realm.read().unwrap().lookup(&type_name).is_none() {
+                //         return Err(InterpreterError::NoPropertyForType {
+                //             typename: type_name.to_string(),
+                //             property: prop.to_string(),
+                //             callee_address: property.address.clone(),
+                //         });
+                //     }
+
+                //     let lhs = self.resolve_lvalue(Arc::clone(&realm), origin)?;
+                //     let record_instance = match self.read_lvalue(realm, &lhs) {
+                //         Value::RecordInstance(rec) => rec,
+                //         v => panic!("Expected record instance, got: {v:?}!"),
+                //     };
+
+                //     let val = record_instance
+                //         .lock()
+                //         .unwrap()
+                //         .lookup(prop)
+                //         .cloned()
+                //         .unwrap_or_else(|| panic!("No property `{prop}` on type `{type_name}`"));
+
+                //     return Ok(ControlFlow::Value(val));
+                // }
+
+                // debug!("Property: {prop:?}");
+
+                // panic!("No property `{prop}` on type `{type_name}`")
             }
             ExprKind::IndexedAccess { origin, index } => {
                 let container = self.evaluate_expression(Arc::clone(&realm), origin, true)?;
@@ -797,21 +886,71 @@ impl Interpreter {
             }
 
             ExprKind::Path { .. } => {
-                let key = self.flatten_path(expr);
+                debug!(
+                    "{:?}",
+                    realm.read().unwrap().values().keys().collect::<Vec<_>>()
+                );
 
-                let result = realm.read().unwrap().lookup(&key);
+                let stems = self.path_segments_to_vec(expr);
 
-                match result {
-                    Some(val) => ControlFlow::Value(val),
-                    None => {
-                        // panic!("Undefined path: `{key}`")
+                let mut node: Option<Value> = None;
 
+                for (idx, stem) in stems.iter().enumerate() {
+                    let result_c = || {
+                        if let Some(Value::Record(re)) = &node {
+                            if let Some((_, value)) = re
+                                .methods
+                                .read()
+                                .unwrap()
+                                .iter()
+                                .find(|(name, _)| *name == stem)
+                            {
+                                return Some(value.clone());
+                            }
+                        }
+
+                        let rd_realm = if let Some(Value::Module(mo)) = &node {
+                            &mo.realm
+                        } else {
+                            &realm
+                        };
+
+                        rd_realm.read().unwrap().lookup(&stem)
+                    };
+
+                    let result = result_c();
+
+                    debug!("Got result of {stem}: {:?}", result);
+
+                    if let Some(val) = result {
+                        node = Some(val);
+                    } else {
                         return Err(InterpreterError::NameNotDefined {
-                            name: key,
+                            name: stems[0..=idx].join("::"),
                             address: expr.address.clone(),
                         });
                     }
                 }
+
+                assert!(node.is_some(), "Bug: Path stems are somehow empty");
+
+                ControlFlow::Value(node.unwrap())
+
+                // let key = self.flatten_path(expr);
+
+                // let result = realm.read().unwrap().lookup(&key);
+
+                // match result {
+                //     Some(val) => ControlFlow::Value(val),
+                //     None => {
+                //         // panic!("Undefined path: `{key}`")
+
+                //         return Err(InterpreterError::NameNotDefined {
+                //             name: key,
+                //             address: expr.address.clone(),
+                //         });
+                //     }
+                // }
             }
 
             ExprKind::True => ControlFlow::Value(Value::Bool(true)),

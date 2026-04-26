@@ -1,0 +1,5 @@
+func hi() {
+    print("Ayo!")
+}
+
+record Q {}
