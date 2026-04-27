@@ -5,5 +5,11 @@ func hi() {
 record Q { public x }
 
 func Q::to_string() {
-    return "Q(" + x.to_string() + ")"
+    return "Q(" + self.x.to_string() + ")"
+}
+
+static func Q::with_value(val) {
+    return new Q {
+        x: val
+    }
 }

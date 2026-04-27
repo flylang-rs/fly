@@ -1,0 +1,10 @@
+record Q { public x }
+
+func Q::to_string() {
+    return "Q(" + self.x.to_string() + ")"
+}
+
+a = new Q { x: 4 }
+
+print("HEY")
+print(a)

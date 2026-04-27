@@ -23,7 +23,7 @@ pub fn value_to_internal_type(val: &Value) -> Option<Cow<'_, str>> {
         Value::String(_) => Some(Borrowed(TYPE_STRING)),
         Value::Record(rec) => Some(Owned(format!("(record \"{}\")", rec.name))),
         Value::RecordInstance(reci) => {
-            let lt = reci.lock().unwrap().record.name.clone();
+            let lt = reci.read().unwrap().record.name.clone();
             
             Some(Owned(lt))
         }

@@ -21,7 +21,7 @@ pub enum Value {
 
     // Complex types starting from 0.1.1
     Record(Arc<Record>),
-    RecordInstance(Arc<Mutex<RecordInstance>>),
+    RecordInstance(Arc<RwLock<RecordInstance>>),
 }
 
 impl Value {
@@ -49,7 +49,7 @@ impl Value {
         }
     }
 
-    pub fn as_record_instance(&self) -> Option<Arc<Mutex<RecordInstance>>> {
+    pub fn as_record_instance(&self) -> Option<Arc<RwLock<RecordInstance>>> {
         if let Value::RecordInstance(r) = self {
             Some(Arc::clone(r))
         } else {

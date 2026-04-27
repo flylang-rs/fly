@@ -1,6 +1,6 @@
 use log::info;
 
-use std::{mem::ManuallyDrop, sync::Arc};
+use std::sync::Arc;
 
 use flylang_common::source::Source;
 use flylang_diagnostics::error::DiagnosticsReport;
