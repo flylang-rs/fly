@@ -647,7 +647,7 @@ impl Interpreter {
                                 InterpreterError::NoPropertyForType {
                                     typename: type_name.to_string(),
                                     property: prop.to_string(),
-                                    callee_address: callee.address.clone(),
+                                    callee_address: property.address.clone(),
                                 }
                             })?
                         } else {
@@ -658,7 +658,7 @@ impl Interpreter {
                                 InterpreterError::NoPropertyForType {
                                     typename: type_name.to_string(),
                                     property: prop.to_string(),
-                                    callee_address: callee.address.clone(),
+                                    callee_address: property.address.clone(),
                                 }
                             })?
                         }
