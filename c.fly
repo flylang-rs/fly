@@ -27,4 +27,6 @@ print(val.c)
 
 b::hi();
 
-q = new b::Q {}
+q = new b::Q { x: 4 }
+
+print(q)

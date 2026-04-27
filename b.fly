@@ -2,4 +2,8 @@ func hi() {
     print("Ayo!")
 }
 
-record Q {}
+record Q { public x }
+
+func Q::to_string() {
+    return "Q(" + x.to_string() + ")"
+}

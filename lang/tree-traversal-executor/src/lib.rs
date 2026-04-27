@@ -976,28 +976,9 @@ impl Interpreter {
                     obj => panic!("Creating new object from `{obj:?}` is not supported (yet)!"),
                 };
 
-                let record_def_c = || {
-                    match &new_decl.name.value {
-                        ExprKind::Identifier(id) => {
-                            return realm.read().unwrap().lookup(id).ok_or_else(|| {
-                                InterpreterError::NameNotDefined {
-                                    name: id.clone(),
-                                    address: new_decl.name.address.clone(),
-                                }
-                            });
-                        }
-                        ExprKind::Path { .. } => {
-                            let mut node: Option<Value> = None;
+                let lvalue = self.resolve_lvalue(Arc::clone(&realm), &new_decl.name)?;
 
-                            let stems = self.path_segments_to_vec(&new_decl.name);
-
-                            todo!("Stems: {stems:?}")
-                        }
-                        _ => unreachable!()
-                    }
-                };
-
-                let record_def = record_def_c()?;
+                let record_def = self.read_lvalue(Arc::clone(&realm), &lvalue);
 
                 let record_def = match record_def {
                     Value::Record(record) => record,
@@ -1349,13 +1330,28 @@ impl Interpreter {
                 Ok(LValue::Property { object, name })
             }
 
-            // FIXME: I'm not sure it should look like this!
-            // ExprKind::Path { .. } => {
-            //     let fullpath = self.path_segments_to_vec(expr).join("::");
+            ExprKind::Path { .. } => {
+                let stems = self.path_segments_to_vec(expr);
+                let (name, path) = stems.split_last().unwrap();
 
-            //     Ok(LValue::Identifier(fullpath))
-            // }
-            _ => panic!("Invalid assignment target ({:?})", expr.value),
+                let mut node: Option<Value> = None;
+
+                for (idx, i) in path.iter().enumerate() {
+                    if let Some(v) = realm.read().unwrap().lookup(i) {
+                        node = Some(v);
+                    } else {
+                        return Err(InterpreterError::NameNotDefined {
+                            name: stems[0..=idx].join("::"),
+                            address: expr.address.clone(),
+                        });
+                    }
+                }
+
+                // todo!("Resolved {path:?} into {node:?}")
+
+                Ok(LValue::Property { object: node.unwrap(), name: name.clone() })
+            }
+            _ => panic!("Invalid target ({:?})", expr.value),
         }
     }
 
@@ -1374,16 +1370,17 @@ impl Interpreter {
 
                 arr.lock().unwrap()[*i as usize].clone()
             }
-            LValue::Property { object, name } => object
-                .as_record_instance()
-                .unwrap_or_else(|| panic!("Expected record instance!"))
-                .lock()
-                .unwrap()
-                .fields
-                .iter()
-                .find(|&fi| fi.name == *name)
-                .map(|x| x.value.clone())
-                .unwrap_or_else(|| panic!("Lookup of field `{name}` failed!")),
+            LValue::Property { object, name } => {
+                if let Value::RecordInstance(object) = object {
+                    return object.lock().unwrap().lookup(name).unwrap().clone();
+                }
+
+                if let Value::Module(mo) = object {
+                    return mo.realm.read().unwrap().lookup(name).unwrap().clone();
+                }
+
+                panic!("Unexpected property object type: {object:?}")
+            },
         }
     }
 
