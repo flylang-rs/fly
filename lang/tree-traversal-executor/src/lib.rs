@@ -12,8 +12,13 @@ use crate::{
     calltrace::{CallFrame, CallSegment},
     control_flow::ControlFlow,
     error::{CallError, InterpreterError},
-    function::{Function, FunctionNameKind},
-    object::{LValue, Module, Record, RecordField, RecordInstance, RecordInstanceField, Value},
+    object::{
+        Value,
+        function::{Function, FunctionNameKind},
+        lvalue::LValue,
+        module::Module,
+        record::{Record, RecordField, RecordInstance, RecordInstanceField},
+    },
     realm::Realm,
 };
 
@@ -23,7 +28,6 @@ pub mod tests;
 pub mod calltrace;
 pub mod control_flow;
 pub mod error;
-pub mod function;
 pub mod object;
 pub mod realm;
 pub mod runtime;
@@ -470,7 +474,7 @@ impl Interpreter {
                     name: name.clone(),
                     fields,
                     methods: Arc::new(RwLock::new(HashMap::new())),
-                    definition_realm: Arc::downgrade(&realm),
+                    definition_realm: Arc::clone(&realm),
                 };
 
                 realm
@@ -640,7 +644,7 @@ impl Interpreter {
                     let prop = property.value.as_id().unwrap();
 
                     let type_name = types::value_to_internal_type(&obj).unwrap().to_string();
-                    
+
                     let method: Value = {
                         // If callee is a part of a record method call, get its method.
                         if let Value::RecordInstance(ri) = &obj {
