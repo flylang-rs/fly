@@ -1,10 +1,7 @@
-record Q { public x }
+use b;
 
-func Q::to_string() {
-    return "Q(" + self.x.to_string() + ")"
-}
+print(b::w)
 
-a = new Q { x: 4 }
+b::change()
 
-print("HEY")
-print(a)
+print(b::w)

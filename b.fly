@@ -13,3 +13,9 @@ static func Q::with_value(val) {
         x: val
     }
 }
+
+w = 321
+
+func change() {
+    w += 4
+}

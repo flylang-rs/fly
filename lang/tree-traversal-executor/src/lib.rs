@@ -81,6 +81,23 @@ impl Interpreter {
         }
 
         let builtins = Arc::new(RwLock::new(builtins));
+
+        let modules = [runtime::booleans::init(&builtins)];
+
+        for i in modules {
+            debug!(
+                "Adding: {} ({:?})",
+                &i.name,
+                i.realm.read().unwrap().values().keys().collect::<Vec<_>>()
+            );
+
+            builtins
+                .write()
+                .unwrap()
+                .values_mut()
+                .insert(i.name.clone(), Value::Module(i.into()));
+        }
+
         let world = Arc::new(RwLock::new(Realm::dive(Arc::clone(&builtins))));
 
         Self {
@@ -271,16 +288,6 @@ impl Interpreter {
                         .write()
                         .unwrap()
                         .insert(stems.iter().last().unwrap().to_string(), value);
-
-                    // let mut node: Option<&Value> = None;
-
-                    // for stem in stems {
-                    //     if let Some(n) = realm.read().unwrap().values().get(stem) {
-                    //         node = Some(n);
-                    //     } else {
-                    //         panic!("Failed to resolve record field");
-                    //     }
-                    // }
                 } else {
                     realm
                         .write()
@@ -564,7 +571,10 @@ impl Interpreter {
             }
             ExprKind::Nil => ControlFlow::Value(Value::Nil),
             ExprKind::Identifier(id) => {
-                debug!("Looking for {id:#?} from realm module {:?}", realm.read().unwrap().values().keys().collect::<Vec<_>>());
+                debug!(
+                    "Looking for {id:#?} from realm module {:?}",
+                    realm.read().unwrap().values().keys().collect::<Vec<_>>()
+                );
 
                 let value = realm.read().unwrap().lookup(id.as_str());
 
@@ -630,37 +640,44 @@ impl Interpreter {
                     let prop = property.value.as_id().unwrap();
 
                     let type_name = types::value_to_internal_type(&obj).unwrap().to_string();
-                
-                    let method = {
+                    
+                    let method: Value = {
                         // If callee is a part of a record method call, get its method.
                         if let Value::RecordInstance(ri) = &obj {
-                            ri
-                            .read()
-                            .unwrap()
-                            .record
-                            .methods
-                            .read()
-                            .unwrap()
-                            .get(prop)
-                            .cloned()
-                            .ok_or_else(|| {
-                                InterpreterError::NoPropertyForType {
+                            ri.read()
+                                .unwrap()
+                                .record
+                                .methods
+                                .read()
+                                .unwrap()
+                                .get(prop)
+                                .cloned()
+                                .ok_or_else(|| InterpreterError::NoPropertyForType {
                                     typename: type_name.to_string(),
                                     property: prop.to_string(),
                                     callee_address: property.address.clone(),
-                                }
-                            })?
+                                })?
                         } else {
                             // If not, use oldstyle mode, format strings into a path.
                             let method_key = format!("{type_name}::{prop}");
 
-                            realm.read().unwrap().lookup(&method_key).ok_or_else(|| {
-                                InterpreterError::NoPropertyForType {
-                                    typename: type_name.to_string(),
-                                    property: prop.to_string(),
-                                    callee_address: property.address.clone(),
-                                }
-                            })?
+                            let oldstyle_value = realm.read().unwrap().lookup(&method_key);
+
+                            if oldstyle_value.is_none() {
+                                realm
+                                    .read()
+                                    .unwrap()
+                                    .lookup(&type_name)
+                                    .and_then(|x| x.as_module())
+                                    .and_then(|x| x.realm.read().unwrap().lookup(&prop))
+                                    .ok_or_else(|| InterpreterError::NoPropertyForType {
+                                        typename: type_name.to_string(),
+                                        property: prop.to_string(),
+                                        callee_address: property.address.clone(),
+                                    })?
+                            } else {
+                                oldstyle_value.unwrap()
+                            }
                         }
                     };
 
@@ -965,17 +982,19 @@ impl Interpreter {
                     }
                 }
             },
-            Value::Native(_) => {
-                if let Spanned {
+            Value::Native(_) => match callee {
+                Spanned {
                     value: ExprKind::Identifier(id),
                     address: saddr,
-                } = callee
-                {
-                    Spanned::new(id.clone(), saddr.clone())
-                } else {
+                } => Spanned::new(id.clone(), saddr.clone()),
+                Spanned {
+                    value: ExprKind::Path { .. },
+                    address: saddr,
+                } => Spanned::new(self.flatten_path(callee), saddr.clone()),
+                _ => {
                     todo!("Make a stringified value of native func {callee:?}")
                 }
-            }
+            },
             _ => todo!(),
         };
 
@@ -1259,7 +1278,10 @@ impl Interpreter {
 
                 // todo!("Resolved {path:?} into {node:?}")
 
-                Ok(LValue::Property { object: node.unwrap(), name: name.clone() })
+                Ok(LValue::Property {
+                    object: node.unwrap(),
+                    name: name.clone(),
+                })
             }
             _ => panic!("Invalid target ({:?})", expr.value),
         }
@@ -1290,7 +1312,7 @@ impl Interpreter {
                 }
 
                 panic!("Unexpected property object type: {object:?}")
-            },
+            }
         }
     }
 

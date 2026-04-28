@@ -64,6 +64,14 @@ impl Value {
             None
         }
     }
+
+    pub fn as_module(&self) -> Option<Arc<Module>> {
+        if let Value::Module(mo) = self {
+            Some(Arc::clone(mo))
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -132,8 +140,18 @@ pub struct RecordInstanceField {
     pub value: Value,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Module {
     pub name: String,
     pub realm: Arc<RwLock<Realm>>
+}
+
+// It will avoid stack overflowing
+impl core::fmt::Debug for Module {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Module")
+            .field("name", &self.name)
+            .field("realm", &"...")
+            .finish()
+    }
 }

@@ -1,6 +1,7 @@
+use std::sync::{Arc, RwLock};
+
 use crate::{
-    InterpreterResult, SharedRealm, Value, common_operation_binary, common_operation_unary,
-    control_flow::ControlFlow, runtime::RustInteropFn,
+    InterpreterResult, SharedRealm, Value, common_operation_binary, common_operation_unary, control_flow::ControlFlow, object::Module, realm::Realm, runtime::RustInteropFn
 };
 
 pub static EXPORT: &[(&str, RustInteropFn)] = &[
@@ -11,8 +12,8 @@ pub static EXPORT: &[(&str, RustInteropFn)] = &[
     ("bool::operator==bool", bool_eq),
     ("bool::operator!=bool", bool_neq),
     // To string
-    ("bool::to_string", bool_to_string),
-    ("bool::to_displayable", bool_to_displayable),
+    // ("bool::to_string", bool_to_string),
+    // ("bool::to_displayable", bool_to_displayable),
 ];
 
 common_operation_unary!(bool_not, Bool, Bool, |x: &bool| !x);
@@ -35,10 +36,18 @@ fn bool_to_string(
     Ok(ControlFlow::Value(Value::String(i.to_string().into())))
 }
 
-fn bool_to_displayable(
-    interpreter: &mut crate::Interpreter,
-    realm: SharedRealm,
-    args: &[Value],
-) -> InterpreterResult<ControlFlow> {
-    bool_to_string(interpreter, realm, args)
+pub fn init(builtins: &Arc<RwLock<Realm>>) -> Module {
+    let mo = Module {
+        name: String::from("bool"),
+        realm: Arc::new(RwLock::new(Realm::dive(Arc::clone(builtins)))),
+    };
+
+    let mut bind = mo.realm.write().unwrap();
+
+    bind.values_mut().insert(String::from("to_string"), Value::Native(bool_to_string));
+    bind.values_mut().insert(String::from("to_displayable"), Value::Native(bool_to_string));
+
+    drop(bind);
+
+    mo
 }

@@ -1,1 +1,2 @@
-print((5).to_string())
+print((true).to_string())
+print(bool::to_string(true))
