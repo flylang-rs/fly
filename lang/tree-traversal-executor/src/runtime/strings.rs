@@ -1,8 +1,7 @@
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 use crate::{
-    InterpreterResult, SharedRealm, common_operation_binary, control_flow::ControlFlow,
-    object::Value, runtime::RustInteropFn,
+    InterpreterResult, SharedRealm, common_operation_binary, control_flow::ControlFlow, object::{Value, module::Module}, realm::Realm, runtime::RustInteropFn
 };
 
 pub static EXPORT: &[(&str, RustInteropFn)] = &[
@@ -102,4 +101,21 @@ fn string_to_displayable(
     let disp = format!("\"{i}\"");
 
     Ok(ControlFlow::Value(Value::String(disp.into())))
+}
+
+pub fn init(builtins: &Arc<RwLock<Realm>>) -> Module {
+    let mo = Module {
+        name: String::from("string"),
+        realm: Arc::new(RwLock::new(Realm::dive(Arc::clone(builtins)))),
+    };
+
+    let mut bind = mo.realm.write().unwrap();
+
+    // To string
+    bind.values_mut().insert(String::from("to_string"), Value::Native(string_to_string));
+    bind.values_mut().insert(String::from("to_displayable"), Value::Native(string_to_displayable));
+
+    drop(bind);
+
+    mo
 }

@@ -67,11 +67,9 @@ impl Interpreter {
         // Chain 'em all!
         let natives = core::iter::empty()
             .chain(runtime::arrays::EXPORT.iter())
-            .chain(runtime::booleans::EXPORT.iter())
             .chain(runtime::exit::EXPORT.iter())
             .chain(runtime::functions::EXPORT.iter())
             .chain(runtime::reals::EXPORT.iter())
-            .chain(runtime::integers::EXPORT.iter())
             .chain(runtime::nil::EXPORT.iter())
             .chain(runtime::print::EXPORT.iter())
             .chain(runtime::strings::EXPORT.iter())
@@ -86,7 +84,11 @@ impl Interpreter {
 
         let builtins = Arc::new(RwLock::new(builtins));
 
-        let modules = [runtime::booleans::init(&builtins)];
+        let modules = [
+            runtime::booleans::init(&builtins),
+            runtime::integers::init(&builtins),
+            runtime::strings::init(&builtins)
+        ];
 
         for i in modules {
             debug!(
@@ -1179,10 +1181,17 @@ impl Interpreter {
         let l_type = types::value_to_internal_type(&lhs.value).unwrap();
         let r_type = types::value_to_internal_type(&rhs.value).unwrap();
 
-        let method_name = format!("{l_type}::operator{op}{r_type}");
+        let method_name = format!("operator{op}{r_type}");
 
-        let method = realm.read().unwrap().lookup(&method_name).ok_or_else(|| {
-            InterpreterError::IncompatibleTypesForOperation {
+        let method = realm
+            .read()
+            .unwrap()
+            .lookup(&l_type)
+            .and_then(|x| x.as_module())
+            .map(|x| x.realm.read().unwrap().lookup(&method_name))
+            .flatten()
+            .ok_or_else(|| {
+            InterpreterError::IncompatibleTypesForBinaryOperation {
                 op: op.to_string(),
                 lhs_addr: lhs.address.clone(),
                 rhs_addr: rhs.address.clone(),
@@ -1214,13 +1223,22 @@ impl Interpreter {
 
         let ty = types::value_to_internal_type(&expr_val).unwrap();
 
-        let method_name = format!("{ty}::operator{op}");
+        let method_name = format!("operator{op}");
 
         let method = realm
             .read()
             .unwrap()
-            .lookup(&method_name)
-            .unwrap_or_else(|| panic!("Incompatible type for operation `{op}`: `{ty}`"));
+            .lookup(&ty)
+            .and_then(|x| x.as_module())
+            .map(|x| x.realm.read().unwrap().lookup(&method_name))
+            .flatten()
+            .ok_or_else(|| {
+            InterpreterError::IncompatibleTypesForUnaryOperation {
+                op: op.to_string(),
+                addr: expr.address.clone(),
+                ty: ty.to_string(),
+            }
+        })?;
 
         if let ControlFlow::Value(va) = self.call_func(realm, None, &method, &[expr_val])? {
             Ok(Some(va))

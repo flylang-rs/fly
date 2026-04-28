@@ -51,27 +51,28 @@ fn inner_print(
 
         let ty = types::value_to_internal_type(&i).unwrap();
 
-        let method_name = format!("{ty}::to_string");
-
         // eprintln!("{method_name:?}");
 
-        let method = realm.read().unwrap().lookup(&method_name);
+        let method = realm
+            .read()
+            .unwrap()
+            .lookup(&ty)
+            .and_then(|x| x.as_module())
+            .map(|x| x.realm.read().unwrap().lookup("to_string"))
+            .flatten()
+            .ok_or_else(|| panic!("Method `to_string` is not implemented for type: {ty}"))?;
 
-        if let Some(method) = method {
-            let string_value =
-                interpreter.call_func(Arc::clone(&realm), None, &method, &[i.clone()])?;
+        let string_value =
+            interpreter.call_func(Arc::clone(&realm), None, &method, &[i.clone()])?;
 
-            let ControlFlow::Value(Value::String(display_value)) = string_value else {
-                panic!("Failed `{}` to string conversion!", ty);
-            };
+        let ControlFlow::Value(Value::String(display_value)) = string_value else {
+            panic!("Failed `{}` to string conversion!", ty);
+        };
 
-            print!("{display_value}");
+        print!("{display_value}");
 
-            if n < len - 1 {
-                print!(" ");
-            }
-        } else {
-            panic!("Method `to_string` is not implemented for type: {}", ty);
+        if n < len - 1 {
+            print!(" ");
         }
     }
 

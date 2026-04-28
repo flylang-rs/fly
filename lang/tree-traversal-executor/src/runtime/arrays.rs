@@ -56,17 +56,16 @@ fn render_value(
     }
 
     let ty = types::value_to_internal_type(val).unwrap();
-    let method_name = format!("{ty}::to_displayable");
+
     let method = realm
-        .read()
-        .unwrap()
-        .lookup(&method_name)
-        .unwrap_or_else(|| {
-            panic!(
-                "Method `to_displayable` is not implemented for type: {}",
-                ty
-            )
-        });
+            .read()
+            .unwrap()
+            .lookup(&ty)
+            .and_then(|x| x.as_module())
+            .map(|x| x.realm.read().unwrap().lookup("to_displayable"))
+            .flatten()
+            .ok_or_else(|| panic!("Method `to_displayable` is not implemented for type: {ty}"))
+            .unwrap();
 
     interpreter
         .call_func(Arc::clone(realm), None, &method, &[val.clone()])

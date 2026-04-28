@@ -1,37 +1,11 @@
+use std::sync::{Arc, RwLock};
+
 use crate::control_flow::ControlFlow;
-use crate::{SharedRealm, Value, runtime::RustInteropFn};
+use crate::object::module::Module;
+use crate::realm::Realm;
+use crate::{SharedRealm, Value};
 
 use crate::{InterpreterResult, common_operation_binary, common_operation_unary};
-
-pub static EXPORT: &[(&str, RustInteropFn)] = &[
-    ("integer::operator+integer", integers_add),
-    ("integer::operator+float", integer_add_float),
-    ("integer::operator-integer", integers_sub),
-    ("integer::operator-float", integer_sub_float),
-    ("integer::operator*integer", integers_mul),
-    ("integer::operator*float", integer_mul_float),
-    ("integer::operator/integer", integers_div),
-    ("integer::operator/-integer", integers_div_rdown),
-    ("integer::operator/+integer", integers_div_rup),
-    ("integer::operator%integer", integers_mod),
-    // Binary operations
-    ("integer::operator&integer", integers_bit_and),
-    ("integer::operator|integer", integers_bit_or),
-    ("integer::operator<<integer", integers_bit_shift_left),
-    ("integer::operator>>integer", integers_bit_shift_right),
-    // Comparison
-    ("integer::operator==integer", integers_eq),
-    ("integer::operator!=integer", integers_neq),
-    ("integer::operator>integer", integers_gt),
-    ("integer::operator<integer", integers_lt),
-    ("integer::operator>=integer", integers_gte),
-    ("integer::operator<=integer", integers_lte),
-    // Unary operations
-    ("integer::operator-", integer_neg),
-    // To string
-    ("integer::to_string", integer_to_string),
-    ("integer::to_displayable", integer_to_displayable),
-];
 
 common_operation_binary!(
     integers_add,
@@ -184,10 +158,49 @@ fn integer_to_string(
     Ok(ControlFlow::Value(Value::String(i.to_string().into())))
 }
 
-fn integer_to_displayable(
-    interpreter: &mut crate::Interpreter,
-    realm: SharedRealm,
-    args: &[Value],
-) -> InterpreterResult<ControlFlow> {
-    integer_to_string(interpreter, realm, args)
+
+pub fn init(builtins: &Arc<RwLock<Realm>>) -> Module {
+    let mo = Module {
+        name: String::from("integer"),
+        realm: Arc::new(RwLock::new(Realm::dive(Arc::clone(builtins)))),
+    };
+
+    let mut bind = mo.realm.write().unwrap();
+
+    // To string
+    bind.values_mut().insert(String::from("to_string"), Value::Native(integer_to_string));
+    bind.values_mut().insert(String::from("to_displayable"), Value::Native(integer_to_string));
+
+    // Basic operations
+    bind.values_mut().insert(String::from("operator+integer"), Value::Native(integers_add));
+    bind.values_mut().insert(String::from("operator+float"), Value::Native(integer_add_float));
+    bind.values_mut().insert(String::from("operator-integer"), Value::Native(integers_sub));
+    bind.values_mut().insert(String::from("operator-float"), Value::Native(integer_sub_float));
+    bind.values_mut().insert(String::from("operator*integer"), Value::Native(integers_mul));
+    bind.values_mut().insert(String::from("operator*float"), Value::Native(integer_mul_float));
+    bind.values_mut().insert(String::from("operator/integer"), Value::Native(integers_div));
+    bind.values_mut().insert(String::from("operator/-integer"), Value::Native(integers_div_rdown));
+    bind.values_mut().insert(String::from("operator/+integer"), Value::Native(integers_div_rup));
+    bind.values_mut().insert(String::from("operator%integer"), Value::Native(integers_mod));
+
+    // Binary operations
+    bind.values_mut().insert(String::from("operator&integer"), Value::Native(integers_bit_and));
+    bind.values_mut().insert(String::from("operator|integer"), Value::Native(integers_bit_or));
+    bind.values_mut().insert(String::from("operator<<integer"), Value::Native(integers_bit_shift_left));
+    bind.values_mut().insert(String::from("operator>>integer"), Value::Native(integers_bit_shift_right));
+
+    // Comparison
+    bind.values_mut().insert(String::from("operator==integer"), Value::Native(integers_eq));
+    bind.values_mut().insert(String::from("operator!=integer"), Value::Native(integers_neq));
+    bind.values_mut().insert(String::from("operator>integer"), Value::Native(integers_gt));
+    bind.values_mut().insert(String::from("operator<integer"), Value::Native(integers_lt));
+    bind.values_mut().insert(String::from("operator>=integer"), Value::Native(integers_gte));
+    bind.values_mut().insert(String::from("operator<=integer"), Value::Native(integers_lte));
+
+    // Unary operations
+    bind.values_mut().insert(String::from("operator-"), Value::Native(integer_neg));
+
+    drop(bind);
+
+    mo
 }

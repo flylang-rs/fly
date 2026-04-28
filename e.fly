@@ -1,2 +1,11 @@
 print((true).to_string())
 print(bool::to_string(true))
+
+a = true
+b = false
+
+c = a && b
+d = a || b
+e = !a
+
+print(c, d, e)

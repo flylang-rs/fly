@@ -8,12 +8,17 @@ pub enum InterpreterError {
         name: String,
         address: Address
     },
-    IncompatibleTypesForOperation {
+    IncompatibleTypesForBinaryOperation {
         op: String,
         lhs_addr: Address,
         rhs_addr: Address,
         lhs_type: String,
         rhs_type: String,
+    },
+    IncompatibleTypesForUnaryOperation {
+        op: String,
+        addr: Address,
+        ty: String,
     },
     NoPropertyForType {
         typename: String,
@@ -27,7 +32,8 @@ impl InterpreterError {
     pub fn try_get_error_loc(&self) -> Option<&Address> {
         match self {
             InterpreterError::NameNotDefined { address, .. } => Some(address),
-            InterpreterError::IncompatibleTypesForOperation { lhs_addr, .. } => Some(lhs_addr),
+            InterpreterError::IncompatibleTypesForBinaryOperation { lhs_addr, .. } => Some(lhs_addr),
+            InterpreterError::IncompatibleTypesForUnaryOperation { addr, .. } => Some(addr),
             InterpreterError::CallError(call_error) => call_error.try_get_error_loc(),
             InterpreterError::NoPropertyForType { callee_address, .. } => Some(callee_address),
         }
@@ -67,7 +73,7 @@ impl DiagnosticsReport for InterpreterError {
                     &[],
                 )
             }
-            InterpreterError::IncompatibleTypesForOperation {
+            InterpreterError::IncompatibleTypesForBinaryOperation {
                 op,
                 lhs_type,
                 rhs_type,
@@ -75,7 +81,7 @@ impl DiagnosticsReport for InterpreterError {
                 rhs_addr,
             } => flylang_diagnostics::Diagnostics {}.error_ext(
                 &mut result,
-                &format!("Incompatible types for operation `{op}`: `{lhs_type}` and `{rhs_type}`"),
+                &format!("Incompatible types for binary operation `{op}`: `{lhs_type}` and `{rhs_type}`"),
                 &lhs_addr,
                 &[
                     // Swap them to make RHS point upper than LHS that shows lower.
@@ -84,6 +90,19 @@ impl DiagnosticsReport for InterpreterError {
                     // ^^^^^^^^ Has type: string
                     Note::new(rhs_addr.clone(), &format!("Has type: `{rhs_type}`")),
                     Note::new(lhs_addr.clone(), &format!("Has type: `{lhs_type}`")),
+                ],
+                &[],
+            ),
+            InterpreterError::IncompatibleTypesForUnaryOperation {
+                op,
+                ty,
+                addr,
+            } => flylang_diagnostics::Diagnostics {}.error_ext(
+                &mut result,
+                &format!("Incompatible types for unary operation `{op}`: `{ty}`"),
+                &addr,
+                &[
+                    Note::new(addr.clone(), &format!("Has type: `{ty}`")),
                 ],
                 &[],
             ),
