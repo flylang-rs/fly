@@ -5,7 +5,6 @@ use crate::{
 };
 
 pub static EXPORT: &[(&str, RustInteropFn)] = &[
-    ("string::operator+string", string_add_string),
     ("string::operator*integer", string_mul_integer),
     // Comparison
     ("string::operator==string", strings_eq),
@@ -14,9 +13,6 @@ pub static EXPORT: &[(&str, RustInteropFn)] = &[
     ("string::operator<string", strings_lt),
     ("string::operator>=string", strings_gte),
     ("string::operator<=string", strings_lte),
-    // To string
-    ("string::to_string", string_to_string),
-    ("string::to_displayable", string_to_displayable),
 ];
 
 common_operation_binary!(
@@ -114,6 +110,9 @@ pub fn init(builtins: &Arc<RwLock<Realm>>) -> Module {
     // To string
     bind.values_mut().insert(String::from("to_string"), Value::Native(string_to_string));
     bind.values_mut().insert(String::from("to_displayable"), Value::Native(string_to_displayable));
+
+    // Basic operations
+    bind.values_mut().insert(String::from("operator+string"), Value::Native(string_add_string));
 
     drop(bind);
 

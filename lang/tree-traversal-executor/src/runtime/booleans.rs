@@ -1,7 +1,7 @@
 use std::sync::{Arc, RwLock};
 
 use crate::{
-    InterpreterResult, SharedRealm, Value, common_operation_binary, common_operation_unary, control_flow::ControlFlow, object::module::Module, realm::Realm, runtime::RustInteropFn
+    InterpreterResult, SharedRealm, Value, common_operation_binary, common_operation_unary, control_flow::ControlFlow, object::module::Module, realm::Realm
 };
 
 common_operation_unary!(bool_not, Bool, Bool, |x: &bool| !x);
