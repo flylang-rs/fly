@@ -1,12 +1,8 @@
-use crate::{
-    Interpreter, InterpreterResult, SharedRealm, control_flow::ControlFlow, object::Value,
-    runtime::RustInteropFn,
-};
+use std::sync::{Arc, RwLock};
 
-#[rustfmt::skip]
-pub static EXPORT: &[(&str, RustInteropFn)] = &[
-    ("exit", inner_exit)
-];
+use crate::{
+    Interpreter, InterpreterResult, SharedRealm, control_flow::ControlFlow, object::{Value, module::Module}, realm::Realm
+};
 
 fn inner_exit(
     _interpreter: &mut Interpreter,
@@ -26,4 +22,14 @@ fn inner_exit(
     } else {
         panic!("Cannot use value `{code:?}` as exit code.")
     }
+}
+
+pub fn init(builtins: &Arc<RwLock<Realm>>) -> Option<Module> {
+    let mut bind = builtins.write().unwrap();
+
+    bind.values_mut().insert(String::from("exit"), Value::Native(inner_exit));
+
+    drop(bind);
+
+    None
 }

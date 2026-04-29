@@ -1,6 +1,6 @@
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
-use crate::{Interpreter, InterpreterResult, SharedRealm, control_flow::ControlFlow, object::Value, runtime::RustInteropFn};
+use crate::{Interpreter, InterpreterResult, SharedRealm, control_flow::ControlFlow, object::{Value, module::Module}, realm::Realm, runtime::RustInteropFn};
 
 #[rustfmt::skip]
 pub static EXPORT: &[(&str, RustInteropFn)] = &[
@@ -19,4 +19,19 @@ fn func_to_displayable(
     } else {
         panic!("Expected function, found: {value:?}");
     }
+}
+
+pub fn init(builtins: &Arc<RwLock<Realm>>) -> Option<Module> {
+    let mo = Module {
+        name: String::from("func"),
+        realm: Arc::new(RwLock::new(Realm::dive(Arc::clone(builtins)))),
+    };
+
+    let mut bind = mo.realm.write().unwrap();
+
+    bind.values_mut().insert(String::from("to_displayable"), Value::Native(func_to_displayable));
+
+    drop(bind);
+
+    Some(mo)
 }

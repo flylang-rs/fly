@@ -1,34 +1,8 @@
-use crate::{
-    InterpreterResult, SharedRealm, common_operation_binary, common_operation_unary,
-    control_flow::ControlFlow, object::Value, runtime::RustInteropFn,
-};
+use std::sync::{Arc, RwLock};
 
-pub static EXPORT: &[(&str, RustInteropFn)] = &[
-    ("real::operator+real", reals_add),
-    ("real::operator+integer", real_add_integer),
-    ("real::operator-real", reals_sub),
-    ("real::operator-integer", real_sub_integer),
-    ("real::operator*real", reals_mul),
-    ("real::operator*integer", real_mul_integer),
-    ("real::operator/real", reals_div),
-    ("real::operator/integer", real_div_integer),
-    ("real::operator/-real", reals_div_rdown),
-    ("real::operator/-integer", real_div_integer_rdown),
-    ("real::operator/+real", reals_div_rup),
-    ("real::operator/+integer", real_div_integer_rup),
-    // Comparison
-    ("real::operator==real", reals_eq),
-    ("real::operator!=real", reals_neq),
-    ("real::operator>real", reals_gt),
-    ("real::operator<real", reals_lt),
-    ("real::operator>=real", reals_gte),
-    ("real::operator<=real", reals_lte),
-    // Unary operations
-    ("real::operator-", real_neg),
-    // To string
-    ("real::to_string", real_to_string),
-    ("real::to_displayable", real_to_displayable),
-];
+use crate::{
+    InterpreterResult, SharedRealm, common_operation_binary, common_operation_unary, control_flow::ControlFlow, object::{Value, module::Module}, realm::Realm
+};
 
 common_operation_binary!(reals_add, Real, Real, Real, |x: &f64, y: &f64| x + y);
 common_operation_binary!(
@@ -123,4 +97,43 @@ fn real_to_displayable(
     args: &[Value],
 ) -> InterpreterResult<ControlFlow> {
     real_to_string(interpreter, realm, args)
+}
+
+pub fn init(builtins: &Arc<RwLock<Realm>>) -> Option<Module> {
+    let mo = Module {
+        name: String::from("real"),
+        realm: Arc::new(RwLock::new(Realm::dive(Arc::clone(builtins)))),
+    };
+
+    let mut bind = mo.realm.write().unwrap();
+
+    // Basic operations
+    bind.values_mut().insert(String::from("operator+real"), Value::Native(reals_add));
+    bind.values_mut().insert(String::from("operator+integer"), Value::Native(real_add_integer));
+    bind.values_mut().insert(String::from("operator-real"), Value::Native(reals_sub));
+    bind.values_mut().insert(String::from("operator-integer"), Value::Native(real_sub_integer));
+    bind.values_mut().insert(String::from("operator*real"), Value::Native(reals_mul));
+    bind.values_mut().insert(String::from("operator*integer"), Value::Native(real_mul_integer));
+    bind.values_mut().insert(String::from("operator/real"), Value::Native(reals_div));
+    bind.values_mut().insert(String::from("operator/integer"), Value::Native(real_div_integer));
+    bind.values_mut().insert(String::from("operator/-real"), Value::Native(reals_div_rdown));
+    bind.values_mut().insert(String::from("operator/-integer"), Value::Native(real_div_integer_rdown));
+    bind.values_mut().insert(String::from("operator/+real"), Value::Native(reals_div_rup));
+    bind.values_mut().insert(String::from("operator/+integer"), Value::Native(real_div_integer_rup));
+
+    // Comparison
+    bind.values_mut().insert(String::from("operator==real"), Value::Native(reals_eq));
+    bind.values_mut().insert(String::from("operator!=real"), Value::Native(reals_neq));
+    bind.values_mut().insert(String::from("operator>real"), Value::Native(reals_gt));
+    bind.values_mut().insert(String::from("operator<real"), Value::Native(reals_lt));
+    bind.values_mut().insert(String::from("operator>=real"), Value::Native(reals_gte));
+    bind.values_mut().insert(String::from("operator<=real"), Value::Native(reals_lte));
+
+    // To string
+    bind.values_mut().insert(String::from("to_string"), Value::Native(real_to_string));
+    bind.values_mut().insert(String::from("to_displayable"), Value::Native(real_to_displayable));
+
+    drop(bind);
+
+    Some(mo)
 }

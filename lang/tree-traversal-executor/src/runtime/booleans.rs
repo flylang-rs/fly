@@ -24,7 +24,7 @@ fn bool_to_string(
     Ok(ControlFlow::Value(Value::String(i.to_string().into())))
 }
 
-pub fn init(builtins: &Arc<RwLock<Realm>>) -> Module {
+pub fn init(builtins: &Arc<RwLock<Realm>>) -> Option<Module> {
     let mo = Module {
         name: String::from("bool"),
         realm: Arc::new(RwLock::new(Realm::dive(Arc::clone(builtins)))),
@@ -47,5 +47,5 @@ pub fn init(builtins: &Arc<RwLock<Realm>>) -> Module {
 
     drop(bind);
 
-    mo
+    Some(mo)
 }

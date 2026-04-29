@@ -1,14 +1,8 @@
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 use crate::{
-    Interpreter, InterpreterResult, SharedRealm, control_flow::ControlFlow, object::Value,
-    runtime::RustInteropFn, types,
+    Interpreter, InterpreterResult, SharedRealm, control_flow::ControlFlow, object::{Value, module::Module}, realm::Realm, types
 };
-
-#[rustfmt::skip]
-pub static EXPORT: &[(&str, RustInteropFn)] = &[
-    ("print", inner_print)
-];
 
 fn inner_print(
     interpreter: &mut Interpreter,
@@ -58,7 +52,7 @@ fn inner_print(
             .unwrap()
             .lookup(&ty)
             .and_then(|x| x.as_module())
-            .map(|x| x.realm.read().unwrap().lookup("to_string"))
+            .map(|x| x.method_lookup("to_string"))
             .flatten()
             .ok_or_else(|| panic!("Method `to_string` is not implemented for type: {ty}"))?;
 
@@ -79,4 +73,14 @@ fn inner_print(
     println!();
 
     Ok(ControlFlow::Value(Value::Nil))
+}
+
+pub fn init(builtins: &Arc<RwLock<Realm>>) -> Option<Module> {
+    let mut bind = builtins.write().unwrap();
+
+    bind.values_mut().insert(String::from("print"), Value::Native(inner_print));
+
+    drop(bind);
+
+    None
 }

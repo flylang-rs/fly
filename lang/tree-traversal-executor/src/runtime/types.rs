@@ -1,9 +1,6 @@
-use crate::{Interpreter, InterpreterResult, SharedRealm, control_flow::ControlFlow, object::Value, runtime::RustInteropFn};
+use std::sync::{Arc, RwLock};
 
-#[rustfmt::skip]
-pub static EXPORT: &[(&str, RustInteropFn)] = &[
-    ("typename", typename)
-];
+use crate::{Interpreter, InterpreterResult, SharedRealm, control_flow::ControlFlow, object::{Value, module::Module}, realm::Realm};
 
 fn typename(
     _interpreter: &mut Interpreter,
@@ -19,4 +16,14 @@ fn typename(
     let ty = crate::types::value_to_internal_type(&val).unwrap();
 
     Ok(ControlFlow::Value(crate::object::Value::String(ty.to_string().into())))
+}
+
+pub fn init(builtins: &Arc<RwLock<Realm>>) -> Option<Module> {
+    let mut bind = builtins.write().unwrap();
+
+    bind.values_mut().insert(String::from("typename"), Value::Native(typename));
+
+    drop(bind);
+
+    None
 }

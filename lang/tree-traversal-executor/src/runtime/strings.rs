@@ -1,19 +1,8 @@
 use std::sync::{Arc, RwLock};
 
 use crate::{
-    InterpreterResult, SharedRealm, common_operation_binary, control_flow::ControlFlow, object::{Value, module::Module}, realm::Realm, runtime::RustInteropFn
+    InterpreterResult, SharedRealm, common_operation_binary, control_flow::ControlFlow, object::{Value, module::Module}, realm::Realm
 };
-
-pub static EXPORT: &[(&str, RustInteropFn)] = &[
-    ("string::operator*integer", string_mul_integer),
-    // Comparison
-    ("string::operator==string", strings_eq),
-    ("string::operator!=string", strings_neq),
-    ("string::operator>string", strings_gt),
-    ("string::operator<string", strings_lt),
-    ("string::operator>=string", strings_gte),
-    ("string::operator<=string", strings_lte),
-];
 
 common_operation_binary!(
     string_add_string,
@@ -99,7 +88,7 @@ fn string_to_displayable(
     Ok(ControlFlow::Value(Value::String(disp.into())))
 }
 
-pub fn init(builtins: &Arc<RwLock<Realm>>) -> Module {
+pub fn init(builtins: &Arc<RwLock<Realm>>) -> Option<Module> {
     let mo = Module {
         name: String::from("string"),
         realm: Arc::new(RwLock::new(Realm::dive(Arc::clone(builtins)))),
@@ -113,8 +102,17 @@ pub fn init(builtins: &Arc<RwLock<Realm>>) -> Module {
 
     // Basic operations
     bind.values_mut().insert(String::from("operator+string"), Value::Native(string_add_string));
+    bind.values_mut().insert(String::from("operator*integer"), Value::Native(string_mul_integer));
+
+    // Comparison
+    bind.values_mut().insert(String::from("operator==string"), Value::Native(strings_eq));
+    bind.values_mut().insert(String::from("operator!=string"), Value::Native(strings_neq));
+    bind.values_mut().insert(String::from("operator>string"), Value::Native(strings_gt));
+    bind.values_mut().insert(String::from("operator<string"), Value::Native(strings_lt));
+    bind.values_mut().insert(String::from("operator>=string"), Value::Native(strings_gte));
+    bind.values_mut().insert(String::from("operator<=string"), Value::Native(strings_lte));
 
     drop(bind);
 
-    mo
+    Some(mo)
 }

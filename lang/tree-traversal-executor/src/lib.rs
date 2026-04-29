@@ -61,47 +61,40 @@ pub struct Interpreter {
 
 impl Interpreter {
     pub fn new() -> Self {
-        let mut builtins = Realm::new();
-
+        let builtins = Arc::new(RwLock::new(Realm::new()));
+        
         // Import native functions from modules.
         // Chain 'em all!
-        let natives = core::iter::empty()
-            .chain(runtime::arrays::EXPORT.iter())
-            .chain(runtime::exit::EXPORT.iter())
-            .chain(runtime::functions::EXPORT.iter())
-            .chain(runtime::reals::EXPORT.iter())
-            .chain(runtime::nil::EXPORT.iter())
-            .chain(runtime::print::EXPORT.iter())
-            .chain(runtime::strings::EXPORT.iter())
-            .chain(runtime::types::EXPORT.iter());
-
-        // Import native functions into the builtins subworld.
-        for (name, func) in natives {
-            builtins
-                .values_mut()
-                .insert(name.to_string(), Value::Native(*func));
-        }
-
-        let builtins = Arc::new(RwLock::new(builtins));
-
         let modules = [
-            runtime::booleans::init(&builtins),
-            runtime::integers::init(&builtins),
-            runtime::strings::init(&builtins)
+            runtime::arrays::init,
+            runtime::booleans::init,
+            runtime::exit::init,
+            runtime::functions::init,
+            runtime::integers::init,
+            runtime::nil::init,
+            runtime::print::init,
+            runtime::reals::init,
+            runtime::strings::init,
+            runtime::types::init
         ];
 
         for i in modules {
+            let mo = match i(&builtins) {
+                Some(x) => x,
+                None => continue
+            };
+
             debug!(
                 "Adding: {} ({:?})",
-                &i.name,
-                i.realm.read().unwrap().values().keys().collect::<Vec<_>>()
+                &mo.name,
+                mo.realm.read().unwrap().values().keys().collect::<Vec<_>>()
             );
 
             builtins
                 .write()
                 .unwrap()
                 .values_mut()
-                .insert(i.name.clone(), Value::Module(i.into()));
+                .insert(mo.name.clone(), Value::Module(mo.into()));
         }
 
         let world = Arc::new(RwLock::new(Realm::dive(Arc::clone(&builtins))));
@@ -1049,7 +1042,7 @@ impl Interpreter {
 
     // Performs a function call.
     // Supported both native and regular functions.
-    fn call_func(
+    pub fn call_func(
         &mut self,
         realm: SharedRealm,
         callee_addr: Option<&Address>,
@@ -1230,7 +1223,7 @@ impl Interpreter {
             .unwrap()
             .lookup(&ty)
             .and_then(|x| x.as_module())
-            .map(|x| x.realm.read().unwrap().lookup(&method_name))
+            .map(|x| x.method_lookup(&method_name))
             .flatten()
             .ok_or_else(|| {
             InterpreterError::IncompatibleTypesForUnaryOperation {

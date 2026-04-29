@@ -35,6 +35,24 @@ c.to_string()
 }
 
 #[test]
+fn string_comparison() {
+    let result = execute(r#"
+a = "hello"
+b = "world"
+
+c = [a == b, a != b, a < b, a > b]
+
+c.to_string()
+"#).unwrap();
+
+	let bind = result.as_value().unwrap();
+	let bind2 = bind.as_arc_string().unwrap();
+	let val = bind2.as_str();
+
+    assert_eq!(val, "[false, true, true, false]");
+}
+
+#[test]
 fn global_values() {
     let code = r#"
 glo = 7

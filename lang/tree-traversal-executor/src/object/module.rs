@@ -1,11 +1,18 @@
 use std::sync::{Arc, RwLock};
 
-use crate::realm::Realm;
+use crate::{object::Value, realm::Realm};
 
 #[derive(Clone)]
 pub struct Module {
     pub name: String,
     pub realm: Arc<RwLock<Realm>>
+}
+
+impl Module {
+    pub fn method_lookup(&self, name: &str) -> Option<Value> {
+        let realm = self.realm.read().unwrap();
+        realm.lookup(name)
+    }
 }
 
 // It will avoid stack overflowing

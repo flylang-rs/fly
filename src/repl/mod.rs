@@ -5,7 +5,7 @@ use crossterm::{
     terminal,
 };
 use flylang_common::source::Source;
-use flylang_diagnostics::error::DiagnosticsReport;
+use flylang_diagnostics::{error::DiagnosticsReport};
 use flylang_tte::{Interpreter, control_flow::ControlFlow, object::Value};
 
 use crate::repl::{
@@ -48,25 +48,6 @@ impl REPL {
     }
 
     fn format_line(&self, line: &str) {
-        // Do a simple split here
-        /*
-        let stems = Self::split_and_keep(line);
-
-        for i in stems.iter() {
-            if flylang_lexer::kw_lookup_table::KEYWORDS.contains_key(i) {
-                print!(
-                    "{}",
-                    i.if_supports_color(Stream::Stdout, |x| x.bold())
-                        .if_supports_color(Stream::Stdout, |x| x.bright_magenta())
-                );
-
-                continue;
-            }
-
-            print!("{}", i);
-        }
-        */
-
         let formatted = REPLFormatter::format(line);
         let ln = formatted.as_deref().unwrap_or(line);
 
@@ -268,30 +249,69 @@ impl REPL {
                             eprintln!("{}", e.render());
                         }
                         Ok(ControlFlow::Value(val)) => {
-                            let ty = flylang_tte::types::value_to_internal_type(&val).unwrap();
+                            // let ty = flylang_tte::types::value_to_internal_type(&val).unwrap();
 
-                            let methodname = format!("{ty}::to_displayable");
+                            // let method = self.interpreter.world()
+                            //     .read()
+                            //     .unwrap()
+                            //     .lookup(&ty)
+                            //     .and_then(|x| x.as_module())
+                            //     .map(|x| x.method_lookup("to_displayable"))
+                            //     .flatten()
+                            //     .ok_or_else(|| InterpreterError::NoPropertyForType { typename: ty, property: String::from("to_displayable"), callee_address: () })
+                            //     .unwrap();
 
-                            let stringres =
-                                match self.interpreter.call_func_extern(&methodname, &[val]) {
-                                    Ok(cf) => cf,
-                                    Err(e) => {
-                                        eprintln!("{}", e.render());
+                            // let stringres =
+                            //     match self.interpreter.call_func(Arc::clone(self.interpreter.world()), None, &method, &[val]) {
+                            //         Ok(cf) => cf,
+                            //         Err(e) => {
+                            //             eprintln!("{}", e.render());
 
-                                        continue;
-                                    }
-                                };
+                            //             continue;
+                            //         }
+                            //     };
 
-                            if let Some(cf) = stringres {
-                                if let ControlFlow::Value(Value::String(v)) = cf {
-                                    let output_fmt =
-                                        REPLFormatter::format(&v).unwrap_or_else(|_| v.to_string());
+                            // if let ControlFlow::Value(Value::String(v)) = stringres {
+                            //     let output_fmt =
+                            //         REPLFormatter::format(&v).unwrap_or_else(|_| v.to_string());
+
+                            //     println!("      = {output_fmt}");
+                            // } else {
+                            //     panic!("Expected string value, got: {stringres:?}");
+                            // }
+
+                            self.interpreter
+                                .world()
+                                .write()
+                                .unwrap()
+                                .values_mut()
+                                .insert(String::from("_1"), val);
+
+                            let stringified = self.execute("_1.to_displayable()".to_owned());
+
+                            match stringified {
+                                Ok(ControlFlow::Value(Value::String(st))) => {
+                                    let output_fmt = REPLFormatter::format(&st)
+                                        .unwrap_or_else(|_| st.to_string());
 
                                     println!("      = {output_fmt}");
-                                } else {
-                                    panic!("Expected string value, got: {cf:?}");
+                                }
+                                Ok(cf) => {
+                                    panic!("Bug: got non-string value: {cf:?}");
+                                }
+                                Err(_) => {
+                                    flylang_diagnostics::report_simple_error(
+                                        "Cannot transform value to its string representation",
+                                    );
                                 }
                             }
+
+                            self.interpreter
+                                .world()
+                                .write()
+                                .unwrap()
+                                .values_mut()
+                                .remove("_1");
                         }
                         Ok(ControlFlow::Nothing) => (),
                         _ => panic!("Don't know what to show for CF = {result:?}"),

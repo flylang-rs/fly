@@ -126,7 +126,7 @@ impl DiagnosticsReport for InterpreterError {
             InterpreterError::NoPropertyForType { typename, property, callee_address } => {
                 flylang_diagnostics::Diagnostics {}.error_ext(
                     &mut result,
-                    &format!("Proptery `{property}` is not defined for type `{typename}`"),
+                    &format!("Property `{property}` is not defined for type `{typename}`"),
                     &callee_address,
                     &[
                         Note::new(callee_address.clone(), "here"),

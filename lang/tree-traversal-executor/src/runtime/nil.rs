@@ -1,12 +1,8 @@
-use crate::{
-    InterpreterResult, SharedRealm, control_flow::ControlFlow, object::Value,
-    runtime::RustInteropFn,
-};
+use std::sync::{Arc, RwLock};
 
-pub static EXPORT: &[(&str, RustInteropFn)] = &[
-    ("nil::to_string", nil_to_string),
-    ("nil::to_displayable", nil_to_string),
-];
+use crate::{
+    InterpreterResult, SharedRealm, control_flow::ControlFlow, object::{Value, module::Module}, realm::Realm
+};
 
 fn nil_to_string(
     _interpreter: &mut crate::Interpreter,
@@ -14,4 +10,20 @@ fn nil_to_string(
     _args: &[Value],
 ) -> InterpreterResult<ControlFlow> {
     Ok(ControlFlow::Value(Value::String("nil".to_owned().into())))
+}
+
+pub fn init(builtins: &Arc<RwLock<Realm>>) -> Option<Module> {
+    let mo = Module {
+        name: String::from("nil"),
+        realm: Arc::new(RwLock::new(Realm::dive(Arc::clone(builtins)))),
+    };
+
+    let mut bind = mo.realm.write().unwrap();
+
+    bind.values_mut().insert(String::from("to_string"), Value::Native(nil_to_string));
+    bind.values_mut().insert(String::from("to_displayable"), Value::Native(nil_to_string));
+
+    drop(bind);
+
+    Some(mo)
 }

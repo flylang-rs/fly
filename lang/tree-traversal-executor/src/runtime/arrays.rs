@@ -1,17 +1,8 @@
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
 
 use crate::{
-    Interpreter, InterpreterResult, SharedRealm, control_flow::ControlFlow, object::Value,
-    runtime::RustInteropFn, types,
+    Interpreter, InterpreterResult, SharedRealm, control_flow::ControlFlow, object::{Value, module::Module}, realm::Realm, types
 };
-
-pub static EXPORT: &[(&str, RustInteropFn)] = &[
-    ("array::push", array_push),
-    ("array::len", array_len),
-    // To string
-    ("array::to_string", array_to_string),
-    ("array::to_displayable", array_to_displayable),
-];
 
 pub fn array_push(
     _interp: &mut Interpreter,
@@ -128,4 +119,25 @@ fn array_to_displayable(
     args: &[Value],
 ) -> InterpreterResult<ControlFlow> {
     array_to_string(interpreter, realm, args)
+}
+
+pub fn init(builtins: &Arc<RwLock<Realm>>) -> Option<Module> {
+    let mo = Module {
+        name: String::from("array"),
+        realm: Arc::new(RwLock::new(Realm::dive(Arc::clone(builtins)))),
+    };
+
+    let mut bind = mo.realm.write().unwrap();
+
+    // To string
+    bind.values_mut().insert(String::from("to_string"), Value::Native(array_to_string));
+    bind.values_mut().insert(String::from("to_displayable"), Value::Native(array_to_displayable));
+
+    // Basic operations
+    bind.values_mut().insert(String::from("push"), Value::Native(array_push));
+    bind.values_mut().insert(String::from("len"), Value::Native(array_len));
+
+    drop(bind);
+
+    Some(mo)
 }

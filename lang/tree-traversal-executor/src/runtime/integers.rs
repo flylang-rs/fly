@@ -159,7 +159,7 @@ fn integer_to_string(
 }
 
 
-pub fn init(builtins: &Arc<RwLock<Realm>>) -> Module {
+pub fn init(builtins: &Arc<RwLock<Realm>>) -> Option<Module> {
     let mo = Module {
         name: String::from("integer"),
         realm: Arc::new(RwLock::new(Realm::dive(Arc::clone(builtins)))),
@@ -202,5 +202,5 @@ pub fn init(builtins: &Arc<RwLock<Realm>>) -> Module {
 
     drop(bind);
 
-    mo
+    Some(mo)
 }
