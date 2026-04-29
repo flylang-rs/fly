@@ -10,6 +10,31 @@ fn simple_arithmetics() {
 }
 
 #[test]
+fn string_concat() {
+    let result = execute("'Hi, ' + 'Flylang!'").unwrap();
+
+    assert_eq!(result.as_value().unwrap().as_arc_string().unwrap().as_str(), "Hi, Flylang!");
+}
+
+#[test]
+fn bool_operations() {
+    let result = execute(r#"
+a = true
+b = false
+
+c = [a && b, a || b, !a, !b]
+
+c.to_string()
+"#).unwrap();
+
+	let bind = result.as_value().unwrap();
+	let bind2 = bind.as_arc_string().unwrap();
+	let val = bind2.as_str();
+
+    assert_eq!(val, "[false, true, false, true]");
+}
+
+#[test]
 fn global_values() {
     let code = r#"
 glo = 7
