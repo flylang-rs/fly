@@ -1,7 +1,0 @@
-use b;
-
-print(b::w)
-
-b::change()
-
-print(b::w)
