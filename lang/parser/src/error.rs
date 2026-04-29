@@ -107,7 +107,7 @@ impl DiagnosticsReport for ParserError {
             } => {
                 Diagnostics {}.error_ext(
                     &mut report,
-                    &format!("Unexpected token `{{`, maybe you're missing the `new` keyword?"),
+                    "Unexpected token `{{`, maybe you're missing the `new` keyword?",
                     &token.address,
                     &[Note::new(token.address.clone(), "here")],
                     &[Help::new(
@@ -122,7 +122,7 @@ impl DiagnosticsReport for ParserError {
             ParserError::StaticNotAllowedHere { static_keyword_addr } => {
                 Diagnostics {}.error_ext(
                     &mut report,
-                    &format!("`static` keyword is not allowed here"),
+                    "`static` keyword is not allowed here",
                     &static_keyword_addr,
                     &[Note::new(static_keyword_addr.clone(), "here")],
                     &[Help::new(

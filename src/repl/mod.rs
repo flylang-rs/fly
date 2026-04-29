@@ -58,7 +58,7 @@ impl REPL {
         print!("\r");
 
         self.show_prompt();
-        self.format_line(&line.into_iter().collect::<String>());
+        self.format_line(&line.iter().collect::<String>());
 
         print!("\x1b[K");
 

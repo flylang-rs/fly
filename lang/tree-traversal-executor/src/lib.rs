@@ -322,7 +322,7 @@ impl Interpreter {
                     };
 
                     if let ExprKind::Block(bk) = &block_value.value {
-                        return self.exec_inner(Arc::clone(&realm), &bk, false);
+                        self.exec_inner(Arc::clone(&realm), &bk, false)
                     } else {
                         panic!("Expected a block!")
                     }
@@ -646,11 +646,7 @@ impl Interpreter {
                             ri.read()
                                 .unwrap()
                                 .record
-                                .methods
-                                .read()
-                                .unwrap()
-                                .get(prop)
-                                .cloned()
+                                .lookup_method(prop)
                                 .ok_or_else(|| InterpreterError::NoPropertyForType {
                                     typename: type_name.to_string(),
                                     property: prop.to_string(),
@@ -658,24 +654,26 @@ impl Interpreter {
                                 })?
                         } else {
                             // If not, use oldstyle mode, format strings into a path.
+                            // But it's no longer actual since everything is moved into modules.
+                            
                             let method_key = format!("{type_name}::{prop}");
 
                             let oldstyle_value = realm.read().unwrap().lookup(&method_key);
-
-                            if oldstyle_value.is_none() {
+                            
+                            if oldstyle_value.is_some() {
+                                todo!("call: Oldstyle mode is no longer actual!");
+                            } else {
                                 realm
                                     .read()
                                     .unwrap()
                                     .lookup(&type_name)
                                     .and_then(|x| x.as_module())
-                                    .and_then(|x| x.realm.read().unwrap().lookup(&prop))
+                                    .and_then(|x| x.method_lookup(&prop))
                                     .ok_or_else(|| InterpreterError::NoPropertyForType {
                                         typename: type_name.to_string(),
                                         property: prop.to_string(),
                                         callee_address: property.address.clone(),
                                     })?
-                            } else {
-                                oldstyle_value.unwrap()
                             }
                         }
                     };
@@ -1181,8 +1179,7 @@ impl Interpreter {
             .unwrap()
             .lookup(&l_type)
             .and_then(|x| x.as_module())
-            .map(|x| x.realm.read().unwrap().lookup(&method_name))
-            .flatten()
+            .and_then(|x| x.realm.read().unwrap().lookup(&method_name))
             .ok_or_else(|| {
             InterpreterError::IncompatibleTypesForBinaryOperation {
                 op: op.to_string(),
@@ -1223,8 +1220,7 @@ impl Interpreter {
             .unwrap()
             .lookup(&ty)
             .and_then(|x| x.as_module())
-            .map(|x| x.method_lookup(&method_name))
-            .flatten()
+            .and_then(|x| x.method_lookup(&method_name))
             .ok_or_else(|| {
             InterpreterError::IncompatibleTypesForUnaryOperation {
                 op: op.to_string(),

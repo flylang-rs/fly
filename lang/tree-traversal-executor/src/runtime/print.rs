@@ -43,7 +43,7 @@ fn inner_print(
             }
         }
 
-        let ty = types::value_to_internal_type(&i).unwrap();
+        let ty = types::value_to_internal_type(i).unwrap();
 
         // eprintln!("{method_name:?}");
 
@@ -52,8 +52,7 @@ fn inner_print(
             .unwrap()
             .lookup(&ty)
             .and_then(|x| x.as_module())
-            .map(|x| x.method_lookup("to_string"))
-            .flatten()
+            .and_then(|x| x.method_lookup("to_string"))
             .ok_or_else(|| panic!("Method `to_string` is not implemented for type: {ty}"))?;
 
         let string_value =

@@ -1,4 +1,7 @@
-use std::{collections::HashMap, sync::{Arc, RwLock}};
+use std::{
+    collections::HashMap,
+    sync::{Arc, RwLock},
+};
 
 use flylang_common::visibility::Visibility;
 
@@ -10,6 +13,12 @@ pub struct Record {
     pub fields: Vec<RecordField>,
     pub methods: Arc<RwLock<HashMap<String, Value>>>,
     pub definition_realm: Arc<RwLock<Realm>>,
+}
+
+impl Record {
+    pub fn lookup_method(&self, name: &str) -> Option<Value> {
+        self.methods.read().unwrap().get(name).cloned()
+    }
 }
 
 #[derive(Debug)]
@@ -48,7 +57,7 @@ impl RecordInstance {
             .map(|x| &x.value)
     }
 
-    pub fn lookup_mut(&mut self, field_name: &str) -> Option<& mut Value> {
+    pub fn lookup_mut(&mut self, field_name: &str) -> Option<&mut Value> {
         self.fields
             .iter_mut()
             .find(|x| x.name == field_name)

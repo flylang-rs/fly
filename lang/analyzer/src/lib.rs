@@ -131,7 +131,7 @@ impl<'a> Analyzer<'a> {
                     // But it's just a trap, placed here.
                     if lhs_arr.is_empty() {
                         self.diag.error(
-                            &format!("Cannot assign to nothing"),
+                            "Cannot assign to nothing",
                             &name.address,
                             &[Note::new(name.address.clone(), "absolutely nothing")],
                             &[],
