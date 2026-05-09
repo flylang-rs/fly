@@ -9,14 +9,14 @@ common_operation_binary!(
     String,
     String,
     String,
-    |x: &String, y: &String| Arc::new(x.clone() + y)
+    |x: &String, y: &String| Gc::new(x.clone() + y)
 );
 common_operation_binary!(
     string_mul_integer,
     String,
     Integer,
     String,
-    |x: &String, y: &i128| Arc::new(x.repeat(*y as _))
+    |x: &String, y: &i128| Gc::new(x.repeat(*y as _))
 );
 
 common_operation_binary!(
@@ -71,7 +71,7 @@ fn string_to_string(
         panic!("It's not a string, it's {:?}", args[0]);
     };
 
-    Ok(ControlFlow::Value(Value::String(Arc::clone(i))))
+    Ok(ControlFlow::Value(Value::String(Gc::clone(i))))
 }
 
 fn string_to_displayable(
@@ -83,15 +83,16 @@ fn string_to_displayable(
         panic!("It's not a string, it's {:?}", args[0]);
     };
 
-    let disp = format!("\"{i}\"");
+    let disp = format!("\"{:?}\"", i);
 
     Ok(ControlFlow::Value(Value::String(disp.into())))
 }
 
-pub fn init(builtins: &Arc<RwLock<Realm>>) -> Option<Module> {
+use dumpster::sync::Gc;
+pub fn init(builtins: &Gc<RwLock<Realm>>) -> Option<Module> {
     let mo = Module {
         name: String::from("string"),
-        realm: Arc::new(RwLock::new(Realm::dive(Arc::clone(builtins)))),
+        realm: Gc::new(RwLock::new(Realm::dive(Gc::clone(builtins)))),
     };
 
     let mut bind = mo.realm.write().unwrap();

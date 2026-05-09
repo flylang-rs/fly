@@ -1,8 +1,10 @@
 use std::sync::{Arc, RwLock};
 
 use crate::{
-    InterpreterResult, SharedRealm, control_flow::ControlFlow, object::{Value, module::Module}, realm::Realm
+    InterpreterResult, control_flow::ControlFlow, object::{Value, module::Module}, realm::Realm
 };
+
+use crate::SharedRealm;
 
 fn nil_to_string(
     _interpreter: &mut crate::Interpreter,
@@ -12,10 +14,12 @@ fn nil_to_string(
     Ok(ControlFlow::Value(Value::String("nil".to_owned().into())))
 }
 
-pub fn init(builtins: &Arc<RwLock<Realm>>) -> Option<Module> {
+use dumpster::sync::Gc;
+
+pub fn init(builtins: &Gc<RwLock<Realm>>) -> Option<Module> {
     let mo = Module {
         name: String::from("nil"),
-        realm: Arc::new(RwLock::new(Realm::dive(Arc::clone(builtins)))),
+        realm: Gc::new(RwLock::new(Realm::dive(Gc::clone(builtins)))),
     };
 
     let mut bind = mo.realm.write().unwrap();

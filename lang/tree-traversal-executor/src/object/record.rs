@@ -5,14 +5,16 @@ use std::{
 
 use flylang_common::visibility::Visibility;
 
-use crate::{object::Value, realm::Realm};
+use dumpster::{Trace, sync::Gc};
 
-#[derive(Debug)]
+use crate::{object::Value, realm::SharedRealm};
+
+#[derive(Debug, Trace)]
 pub struct Record {
     pub name: String,
     pub fields: Vec<RecordField>,
-    pub methods: Arc<RwLock<HashMap<String, Value>>>,
-    pub definition_realm: Arc<RwLock<Realm>>,
+    pub methods: Gc<RwLock<HashMap<String, Value>>>,
+    pub definition_realm: SharedRealm,
 }
 
 impl Record {
@@ -21,7 +23,7 @@ impl Record {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Trace)]
 pub struct RecordField {
     pub name: String,
     pub visibility: Visibility,
@@ -43,9 +45,9 @@ impl RecordField {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Trace)]
 pub struct RecordInstance {
-    pub record: Arc<Record>,
+    pub record: Gc<Record>,
     pub fields: Vec<RecordInstanceField>,
 }
 
@@ -65,7 +67,7 @@ impl RecordInstance {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Trace)]
 pub struct RecordInstanceField {
     pub name: String,
     pub value: Value,

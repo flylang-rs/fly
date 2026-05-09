@@ -214,7 +214,7 @@ impl REPL {
     }
 
     pub fn execute(&mut self, line: String) -> REPLResult<ControlFlow> {
-        let ast = flylang_lexparse_glue::parse_source(Arc::new(Source::new(
+        let ast = flylang_lexparse_glue::parse_source(Gc::new(Source::new(
             String::from("<REPL>"),
             line,
         )))

@@ -1,7 +1,7 @@
 use std::sync::{Arc, RwLock};
 
 use crate::{
-    InterpreterResult, SharedRealm, Value, common_operation_binary, common_operation_unary, control_flow::ControlFlow, object::module::Module, realm::Realm
+    InterpreterResult, Value, common_operation_binary, common_operation_unary, control_flow::ControlFlow, object::module::Module, realm::{Realm, SharedRealm}
 };
 
 common_operation_unary!(bool_not, Bool, Bool, |x: &bool| !x);
@@ -20,14 +20,15 @@ fn bool_to_string(
     let Value::Bool(i) = args[0] else {
         panic!("Exptected bool, got {:?}", args[0]);
     };
-
+    
     Ok(ControlFlow::Value(Value::String(i.to_string().into())))
 }
 
-pub fn init(builtins: &Arc<RwLock<Realm>>) -> Option<Module> {
+use dumpster::sync::Gc;
+pub fn init(builtins: &Gc<RwLock<Realm>>) -> Option<Module> {
     let mo = Module {
         name: String::from("bool"),
-        realm: Arc::new(RwLock::new(Realm::dive(Arc::clone(builtins)))),
+        realm: Gc::new(RwLock::new(Realm::dive(Gc::clone(builtins)))),
     };
 
     let mut bind = mo.realm.write().unwrap();

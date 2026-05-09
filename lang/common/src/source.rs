@@ -1,7 +1,9 @@
 use std::ops::Range;
 
+use dumpster::Trace;
+
 /// Describes the source file with code.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Trace)]
 pub struct Source {
     pub filepath: String,
     pub code: String,

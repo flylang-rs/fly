@@ -3,16 +3,18 @@ use std::{
     sync::{Arc, RwLock},
 };
 
+use dumpster::{Trace, sync::Gc};
 use log::debug;
 
-use crate::{SharedRealm, object::Value};
+use crate::object::Value;
+
+pub type SharedRealm = Gc<RwLock<Realm>>;
 
 /// Realm (Context or Environment) is a place where runtime objects are stored.
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Trace)]
 pub struct Realm {
     values: HashMap<String, Value>,
-    pub parent: Option<Arc<RwLock<Realm>>>,
+    pub parent: Option<SharedRealm>,
 }
 
 impl Realm {

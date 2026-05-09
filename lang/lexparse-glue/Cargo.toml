@@ -9,3 +9,5 @@ flylang-common = { path = "../common" }
 flylang-lexer = { path = "../lexer" }
 flylang-parser = { path = "../parser" }
 flylang-diagnostics = { path = "../diagnostics" }
+
+dumpster = "2.1.0"

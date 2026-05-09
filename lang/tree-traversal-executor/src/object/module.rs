@@ -1,11 +1,12 @@
-use std::sync::{Arc, RwLock};
+use std::sync::{RwLock};
+use dumpster::{Trace, sync::Gc};
 
-use crate::{object::Value, realm::Realm};
+use crate::{object::Value, realm::{Realm, SharedRealm}};
 
-#[derive(Clone)]
+#[derive(Clone, Trace)]
 pub struct Module {
     pub name: String,
-    pub realm: Arc<RwLock<Realm>>
+    pub realm: SharedRealm
 }
 
 impl Module {

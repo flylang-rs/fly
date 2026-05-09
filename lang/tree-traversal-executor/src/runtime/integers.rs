@@ -158,11 +158,12 @@ fn integer_to_string(
     Ok(ControlFlow::Value(Value::String(i.to_string().into())))
 }
 
+use dumpster::sync::Gc;
 
-pub fn init(builtins: &Arc<RwLock<Realm>>) -> Option<Module> {
+pub fn init(builtins: &Gc<RwLock<Realm>>) -> Option<Module> {
     let mo = Module {
         name: String::from("integer"),
-        realm: Arc::new(RwLock::new(Realm::dive(Arc::clone(builtins)))),
+        realm: Gc::new(RwLock::new(Realm::dive(Gc::clone(builtins)))),
     };
 
     let mut bind = mo.realm.write().unwrap();

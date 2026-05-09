@@ -1,8 +1,10 @@
 use std::sync::{Arc, RwLock};
 
 use crate::{
-    Interpreter, InterpreterResult, SharedRealm, control_flow::ControlFlow, object::{Value, module::Module}, realm::Realm, types
+    Interpreter, InterpreterResult, control_flow::ControlFlow, object::{Value, module::Module}, realm::{Realm, SharedRealm}, types
 };
+
+use dumpster::sync::Gc;
 
 fn inner_print(
     interpreter: &mut Interpreter,
@@ -25,13 +27,13 @@ fn inner_print(
                 .get("to_string")
             {
                 let value =
-                    interpreter.call_func(Arc::clone(&realm), None, method, &[i.clone()])?;
+                    interpreter.call_func(Gc::clone(&realm), None, method, &[i.clone()])?;
 
                 let ControlFlow::Value(Value::String(display_value)) = value else {
                     panic!("Failed `{}` to string conversion!", ty);
                 };
 
-                print!("{display_value}");
+                print!("{display_value:?}");
 
                 if n < len - 1 {
                     print!(" ");
@@ -56,13 +58,13 @@ fn inner_print(
             .ok_or_else(|| panic!("Method `to_string` is not implemented for type: {ty}"))?;
 
         let string_value =
-            interpreter.call_func(Arc::clone(&realm), None, &method, &[i.clone()])?;
+            interpreter.call_func(Gc::clone(&realm), None, &method, &[i.clone()])?;
 
         let ControlFlow::Value(Value::String(display_value)) = string_value else {
             panic!("Failed `{}` to string conversion!", ty);
         };
 
-        print!("{display_value}");
+        print!("{:?}", display_value);
 
         if n < len - 1 {
             print!(" ");
@@ -74,7 +76,7 @@ fn inner_print(
     Ok(ControlFlow::Value(Value::Nil))
 }
 
-pub fn init(builtins: &Arc<RwLock<Realm>>) -> Option<Module> {
+pub fn init(builtins: &Gc<RwLock<Realm>>) -> Option<Module> {
     let mut bind = builtins.write().unwrap();
 
     bind.values_mut().insert(String::from("print"), Value::Native(inner_print));

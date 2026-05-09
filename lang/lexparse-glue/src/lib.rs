@@ -7,6 +7,8 @@ use flylang_parser::{Parser, ast::Statement, error::ParserError, state::ParserSt
 
 pub type LoadingResult<T> = Result<T, LoadingError>;
 
+use dumpster::sync::Gc;
+
 #[derive(Debug, Clone)]
 pub enum LoadingError {
     LexerError(LexerError),
@@ -24,8 +26,8 @@ impl DiagnosticsReport for LoadingError {
     }
 }
 
-pub fn lex_source(source: Arc<Source>, make_error: bool) -> LoadingResult<Vec<Token>> {
-    let mut lexer = flylang_lexer::Lexer::new(Arc::clone(&source));
+pub fn lex_source(source: Gc<Source>, make_error: bool) -> LoadingResult<Vec<Token>> {
+    let mut lexer = flylang_lexer::Lexer::new(Gc::clone(&source));
     let mut tokens: Vec<Token> = vec![];
 
     loop {
@@ -51,8 +53,8 @@ pub fn lex_source(source: Arc<Source>, make_error: bool) -> LoadingResult<Vec<To
     Ok(tokens)
 }
 
-pub fn parse_source(source: Arc<Source>) -> LoadingResult<Vec<Statement>> {
-    let tokens = lex_source(Arc::clone(&source), true)?;
+pub fn parse_source(source: Gc<Source>) -> LoadingResult<Vec<Statement>> {
+    let tokens = lex_source(Gc::clone(&source), true)?;
 
     // Parse here...
 

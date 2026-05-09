@@ -18,7 +18,8 @@ fn typename(
     Ok(ControlFlow::Value(crate::object::Value::String(ty.to_string().into())))
 }
 
-pub fn init(builtins: &Arc<RwLock<Realm>>) -> Option<Module> {
+use dumpster::sync::Gc;
+pub fn init(builtins: &Gc<RwLock<Realm>>) -> Option<Module> {
     let mut bind = builtins.write().unwrap();
 
     bind.values_mut().insert(String::from("typename"), Value::Native(typename));

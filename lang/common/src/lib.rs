@@ -1,16 +1,17 @@
 use core::ops::Range;
-use std::sync::Arc;
 
 use core::fmt::Debug;
+
+use dumpster::{Trace, sync::Gc};
 
 pub mod source;
 pub mod spanned;
 pub mod visibility;
 
 /// An address in source file referencing a token.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Trace)]
 pub struct Address {
-    pub source: Arc<source::Source>,
+    pub source: Gc<source::Source>,
     pub span: Range<usize>,
 }
 

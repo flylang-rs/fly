@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex, RwLock};
 
 use crate::{
-    Interpreter, InterpreterResult, SharedRealm, control_flow::ControlFlow, object::{Value, module::Module}, realm::Realm, types
+    Interpreter, InterpreterResult, control_flow::ControlFlow, object::{Value, module::Module}, realm::{Realm, SharedRealm}, types
 };
 
 pub fn array_push(
@@ -43,7 +43,7 @@ fn render_value(
     }
 
     if let Value::String(str) = &val {
-        return format!("'{str}'");
+        return format!("'{:?}'", str);
     }
 
     let ty = types::value_to_internal_type(val).unwrap();
@@ -59,7 +59,7 @@ fn render_value(
             .unwrap();
 
     interpreter
-        .call_func(Arc::clone(realm), None, &method, &[val.clone()])
+        .call_func(Gc::clone(realm), None, &method, &[val.clone()])
         .unwrap_or_else(|e| panic!("Unhandled interpreter error. ({e:?})"))
         .as_value()
         .and_then(|x| x.as_arc_string())
@@ -70,10 +70,10 @@ fn render_value(
 fn render_array(
     interpreter: &mut Interpreter,
     realm: &SharedRealm,
-    array: &Arc<Mutex<Vec<Value>>>,
+    array: &Gc<Mutex<Vec<Value>>>,
     seen: &mut Vec<*const Mutex<Vec<Value>>>,
 ) -> String {
-    let ptr = Arc::as_ptr(array);
+    let ptr = Gc::as_ptr(array);
 
     if seen.contains(&ptr) {
         return "[...]".to_string();
@@ -121,10 +121,11 @@ fn array_to_displayable(
     array_to_string(interpreter, realm, args)
 }
 
-pub fn init(builtins: &Arc<RwLock<Realm>>) -> Option<Module> {
+use dumpster::sync::Gc;
+pub fn init(builtins: &Gc<RwLock<Realm>>) -> Option<Module> {
     let mo = Module {
         name: String::from("array"),
-        realm: Arc::new(RwLock::new(Realm::dive(Arc::clone(builtins)))),
+        realm: Gc::new(RwLock::new(Realm::dive(Gc::clone(builtins)))),
     };
 
     let mut bind = mo.realm.write().unwrap();

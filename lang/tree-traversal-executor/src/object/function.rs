@@ -1,19 +1,20 @@
 use std::sync::{Arc, RwLock};
 
+use dumpster::{Trace, sync::Gc};
 use flylang_common::spanned::Spanned;
 use flylang_parser::ast::Statement;
 
 use crate::realm::Realm;
 
-#[derive(Clone)]
+#[derive(Clone, Trace)]
 pub struct Function {
     pub normal_name: FunctionNameKind,
     pub params: Vec<String>,
     pub body: Statement,
-    pub closure_realm: Arc<RwLock<Realm>>, // captured at definition time
+    pub closure_realm: Gc<RwLock<Realm>>, // captured at definition time
 }
 
-#[derive(Clone)]
+#[derive(Clone, Trace)]
 pub enum FunctionNameKind {
     Normal(Spanned<String>),
     Anonymous,

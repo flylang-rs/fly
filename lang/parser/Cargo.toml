@@ -10,5 +10,7 @@ flylang-lexer = { path = "../lexer" }
 flylang-common = { path = "../common" }
 flylang-diagnostics = { path = "../diagnostics" }
 
+dumpster = "2.1.0"
+
 [dev-dependencies]
 insta = "1.46.3"

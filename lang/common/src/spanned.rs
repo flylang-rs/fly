@@ -1,19 +1,20 @@
 use crate::Address;
 
 use core::fmt::Debug;
+use dumpster::Trace;
 
-#[derive(Clone)]
-pub struct Spanned<T> {
+#[derive(Clone, Trace)]
+pub struct Spanned<T: Trace> {
     pub value: T,
     pub address: Address,
 }
 
-impl<T> Spanned<T> {
+impl<T: Trace> Spanned<T> {
     pub fn new(value: T, address: Address) -> Self {
         Self { value, address }
     }
 
-    pub fn map<R>(self, f: impl FnOnce(T) -> R) -> Spanned<R> {
+    pub fn map<R: Trace>(self, f: impl FnOnce(T) -> R) -> Spanned<R> {
         Spanned {
             value: f(self.value),
             address: self.address.clone(),
@@ -21,7 +22,7 @@ impl<T> Spanned<T> {
     }
 }
 
-impl<T: Debug> Debug for Spanned<T> {
+impl<T: Debug + Trace> Debug for Spanned<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_tuple("Spanned")
             .field(&self.value)

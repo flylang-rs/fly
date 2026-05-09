@@ -3,6 +3,7 @@ use std::sync::{Arc, RwLock};
 use crate::{
     InterpreterResult, SharedRealm, common_operation_binary, common_operation_unary, control_flow::ControlFlow, object::{Value, module::Module}, realm::Realm
 };
+use dumpster::sync::Gc;
 
 common_operation_binary!(reals_add, Real, Real, Real, |x: &f64, y: &f64| x + y);
 common_operation_binary!(
@@ -99,10 +100,10 @@ fn real_to_displayable(
     real_to_string(interpreter, realm, args)
 }
 
-pub fn init(builtins: &Arc<RwLock<Realm>>) -> Option<Module> {
+pub fn init(builtins: &Gc<RwLock<Realm>>) -> Option<Module> {
     let mo = Module {
         name: String::from("real"),
-        realm: Arc::new(RwLock::new(Realm::dive(Arc::clone(builtins)))),
+        realm: Gc::new(RwLock::new(Realm::dive(Gc::clone(builtins)))),
     };
 
     let mut bind = mo.realm.write().unwrap();

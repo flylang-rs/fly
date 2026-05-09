@@ -9,6 +9,8 @@ use crate::{
     state::ParserState,
 };
 
+use dumpster::sync::Gc;
+
 // Import tests when necessary
 #[cfg(test)]
 mod tests;
@@ -27,12 +29,12 @@ pub struct Parser {
 }
 
 impl Parser {
-    pub fn new(tokens: Vec<Token>, source: &Arc<Source>) -> Self {
+    pub fn new(tokens: Vec<Token>, source: &Gc<Source>) -> Self {
         let eof_addr = tokens
             .last()
             .map(|x| x.address.clone())
             .unwrap_or_else(|| Address {
-                source: Arc::clone(source),
+                source: Gc::clone(source),
                 span: 0..0,
             });
 

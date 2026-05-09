@@ -19,8 +19,10 @@ use crate::{
         module::Module,
         record::{Record, RecordField, RecordInstance, RecordInstanceField},
     },
-    realm::Realm,
+    realm::{Realm, SharedRealm},
 };
+
+use dumpster::sync::Gc;
 
 #[cfg(test)]
 pub mod tests;
@@ -33,7 +35,6 @@ pub mod realm;
 pub mod runtime;
 pub mod types;
 
-pub type SharedRealm = Arc<RwLock<Realm>>;
 pub type InterpreterResult<T> = Result<T, InterpreterError>;
 
 enum ModuleState {
@@ -61,7 +62,7 @@ pub struct Interpreter {
 
 impl Interpreter {
     pub fn new() -> Self {
-        let builtins = Arc::new(RwLock::new(Realm::new()));
+        let builtins = Gc::new(RwLock::new(Realm::new()));
         
         // Import native functions from modules.
         // Chain 'em all!
@@ -97,7 +98,7 @@ impl Interpreter {
                 .insert(mo.name.clone(), Value::Module(mo.into()));
         }
 
-        let world = Arc::new(RwLock::new(Realm::dive(Arc::clone(&builtins))));
+        let world = Gc::new(RwLock::new(Realm::dive(Gc::clone(&builtins))));
 
         Self {
             builtins,
@@ -118,12 +119,12 @@ impl Interpreter {
     /// Entry point of the interpreter, it accepts a list of statements given by the parser.
     /// Since it accepts any kind of statement including expressions, it will return a value.
     pub fn execute(&mut self, ast: Vec<Statement>) -> InterpreterResult<ControlFlow> {
-        self.exec_inner(Arc::clone(&self.world), &ast, true)
+        self.exec_inner(Gc::clone(&self.world), &ast, true)
     }
 
     /// Script version of `Interpreter::execute`. Doesn't break when value is returned.
     pub fn execute_script(&mut self, ast: Vec<Statement>) -> InterpreterResult<ControlFlow> {
-        self.exec_inner(Arc::clone(&self.world), &ast, false)
+        self.exec_inner(Gc::clone(&self.world), &ast, false)
     }
 
     /// Trampoline for executor: operate with given realm and the parsed code
@@ -134,7 +135,7 @@ impl Interpreter {
         return_on_value: bool,
     ) -> InterpreterResult<ControlFlow> {
         for i in ast {
-            let stmt = self.exec_single_statement(Arc::clone(&realm), i)?;
+            let stmt = self.exec_single_statement(Gc::clone(&realm), i)?;
 
             debug!("Got: {i:?} => {stmt:?}");
 
@@ -200,11 +201,11 @@ impl Interpreter {
         };
 
         let ast =
-            flylang_lexparse_glue::parse_source(Arc::new(Source::new(filename, code))).unwrap();
+            flylang_lexparse_glue::parse_source(Gc::new(Source::new(filename, code))).unwrap();
 
-        let module_realm = Arc::new(RwLock::new(Realm::dive(Arc::clone(&self.builtins))));
+        let module_realm = Gc::new(RwLock::new(Realm::dive(Gc::clone(&self.builtins))));
 
-        self.exec_inner(Arc::clone(&module_realm), &ast, false)?;
+        self.exec_inner(Gc::clone(&module_realm), &ast, false)?;
 
         // let exports = module_realm.read().unwrap().values().clone();
 
@@ -217,7 +218,7 @@ impl Interpreter {
 
         realm.write().unwrap().values_mut().insert(
             module_name.clone(),
-            Value::Module(Arc::new(Module {
+            Value::Module(Gc::new(Module {
                 name: module_name,
                 realm: module_realm,
             })),
@@ -263,11 +264,11 @@ impl Interpreter {
                     params.insert(0, "self".to_string());
                 }
 
-                let value = Value::Function(Arc::new(Function {
+                let value = Value::Function(Gc::new(Function {
                     normal_name: FunctionNameKind::Normal(real_name.clone()),
                     params,
                     body: *function.body.clone(),
-                    closure_realm: Arc::clone(&realm),
+                    closure_realm: Gc::clone(&realm),
                 }));
 
                 debug!("Record name: {:?}", record_path);
@@ -301,7 +302,7 @@ impl Interpreter {
                 // if x < n { ...
                 //       ^^^^^
                 // Values are accessed outside the `if` body's scope, so passing `realm` is OK.
-                let cond = self.evaluate_expression(Arc::clone(&realm), &stmt.condition, false)?;
+                let cond = self.evaluate_expression(Gc::clone(&realm), &stmt.condition, false)?;
 
                 // Condition must be a value.
                 let ControlFlow::Value(cond) = cond else {
@@ -322,7 +323,7 @@ impl Interpreter {
                     };
 
                     if let ExprKind::Block(bk) = &block_value.value {
-                        self.exec_inner(Arc::clone(&realm), &bk, false)
+                        self.exec_inner(Gc::clone(&realm), &bk, false)
                     } else {
                         panic!("Expected a block!")
                     }
@@ -373,7 +374,7 @@ impl Interpreter {
                     // while x < n { ...
                     //       ^^^^^
                     // Values are accessed outside the while body's scope, so passing `realm` is OK.
-                    let cond = self.evaluate_expression(Arc::clone(&realm), condition, false)?;
+                    let cond = self.evaluate_expression(Gc::clone(&realm), condition, false)?;
 
                     // Condition must be a value.
                     let ControlFlow::Value(cond) = cond else {
@@ -400,7 +401,7 @@ impl Interpreter {
                     };
 
                     if let ExprKind::Block(bk) = &block_value.value {
-                        let block_result = self.exec_inner(Arc::clone(&realm), bk, false)?;
+                        let block_result = self.exec_inner(Gc::clone(&realm), bk, false)?;
 
                         match block_result {
                             ControlFlow::Return(_) => return Ok(block_result),
@@ -419,7 +420,7 @@ impl Interpreter {
             Statement::Break => Ok(ControlFlow::Break),
             Statement::VariableDefinition(var) => {
                 let lhs = self.resolve_lvalue(
-                    Arc::clone(&realm),
+                    Gc::clone(&realm),
                     &var.name.clone().map(ExprKind::Identifier),
                 )?;
 
@@ -430,7 +431,7 @@ impl Interpreter {
                 };
 
                 let rhs = self.evaluate_expression(
-                    Arc::clone(&realm),
+                    Gc::clone(&realm),
                     var.value.as_ref().unwrap(),
                     false,
                 )?;
@@ -439,7 +440,7 @@ impl Interpreter {
                     panic!("Expected RHS as value, got: {rhs:?}");
                 };
 
-                self.assign(Arc::clone(&realm), target, rhs.clone());
+                self.assign(Gc::clone(&realm), target, rhs.clone());
 
                 Ok(ControlFlow::Nothing)
             }
@@ -468,8 +469,8 @@ impl Interpreter {
                 let value = Record {
                     name: name.clone(),
                     fields,
-                    methods: Arc::new(RwLock::new(HashMap::new())),
-                    definition_realm: Arc::clone(&realm),
+                    methods: Gc::new(RwLock::new(HashMap::new())),
+                    definition_realm: Gc::clone(&realm),
                 };
 
                 realm
@@ -597,9 +598,9 @@ impl Interpreter {
 
                 ControlFlow::Value(val)
             }
-            ExprKind::String(st) => ControlFlow::Value(Value::String(Arc::new(st.clone()))),
+            ExprKind::String(st) => ControlFlow::Value(Value::String(Gc::new(st.clone()))),
             ExprKind::Block(ast) => {
-                let inner_realm = Arc::new(RwLock::new(Realm::dive(Arc::clone(&realm))));
+                let inner_realm = Gc::new(RwLock::new(Realm::dive(Gc::clone(&realm))));
                 let block_result = self.exec_inner(inner_realm, ast, false)?;
 
                 match block_result {
@@ -611,7 +612,7 @@ impl Interpreter {
             }
             ExprKind::Array(exprs) => {
                 let values_iter = exprs.iter().map(|x| {
-                    let expr = self.evaluate_expression(Arc::clone(&realm), x, false)?;
+                    let expr = self.evaluate_expression(Gc::clone(&realm), x, false)?;
 
                     let ControlFlow::Value(value) = expr else {
                         panic!("Expected value, got: {expr:?}");
@@ -626,12 +627,12 @@ impl Interpreter {
                     values.push(i?);
                 }
 
-                ControlFlow::Value(Value::Array(Arc::new(Mutex::new(values))))
+                ControlFlow::Value(Value::Array(Gc::new(Mutex::new(values))))
             }
             ExprKind::Call { callee, parameters } => {
                 // Special case - method call by using property access.
                 if let ExprKind::PropertyAccess { origin, property } = &callee.value {
-                    let obj = self.evaluate_expression(Arc::clone(&realm), origin, true)?;
+                    let obj = self.evaluate_expression(Gc::clone(&realm), origin, true)?;
                     let ControlFlow::Value(obj) = obj else {
                         panic!()
                     };
@@ -682,7 +683,7 @@ impl Interpreter {
 
                     for p in parameters {
                         let ControlFlow::Value(v) =
-                            self.evaluate_expression(Arc::clone(&realm), p, true)?
+                            self.evaluate_expression(Gc::clone(&realm), p, true)?
                         else {
                             panic!()
                         };
@@ -700,14 +701,14 @@ impl Interpreter {
                     return value;
                 }
 
-                let func = self.evaluate_expression(Arc::clone(&realm), callee, true)?;
+                let func = self.evaluate_expression(Gc::clone(&realm), callee, true)?;
 
                 let ControlFlow::Value(func) = func else {
                     panic!("Expected a function as value, got: {func:?}");
                 };
 
                 let args_iter = parameters.iter().map(|x| {
-                    let expr = self.evaluate_expression(Arc::clone(&realm), x, true)?;
+                    let expr = self.evaluate_expression(Gc::clone(&realm), x, true)?;
 
                     if let ControlFlow::Value(va) = expr {
                         Ok(va)
@@ -733,14 +734,14 @@ impl Interpreter {
                 value
             }
             ExprKind::Assignment { name, value } => {
-                let target = self.resolve_lvalue(Arc::clone(&realm), name)?;
-                let rhs = self.evaluate_expression(Arc::clone(&realm), value, true)?;
+                let target = self.resolve_lvalue(Gc::clone(&realm), name)?;
+                let rhs = self.evaluate_expression(Gc::clone(&realm), value, true)?;
 
                 let ControlFlow::Value(rhs) = rhs else {
                     panic!("Expected RHS as value, got: {rhs:?}");
                 };
 
-                self.assign(Arc::clone(&realm), target, rhs.clone());
+                self.assign(Gc::clone(&realm), target, rhs.clone());
 
                 if is_subexpression {
                     ControlFlow::Value(rhs)
@@ -749,20 +750,15 @@ impl Interpreter {
                 }
             }
             ExprKind::PropertyAccess { .. } => {
-                // let obj = self.evaluate_expression(Arc::clone(&realm), origin, true)?;
-                // let ControlFlow::Value(obj) = obj else {
-                //     panic!("Expected value")
-                // };
-
-                let lhs = self.resolve_lvalue(Arc::clone(&realm), expr)?;
+                let lhs = self.resolve_lvalue(Gc::clone(&realm), expr)?;
 
                 let value = self.read_lvalue(realm, &lhs);
 
                 return Ok(ControlFlow::Value(value));
             }
             ExprKind::IndexedAccess { origin, index } => {
-                let container = self.evaluate_expression(Arc::clone(&realm), origin, true)?;
-                let index = self.evaluate_expression(Arc::clone(&realm), index, true)?;
+                let container = self.evaluate_expression(Gc::clone(&realm), origin, true)?;
+                let index = self.evaluate_expression(Gc::clone(&realm), index, true)?;
 
                 let ControlFlow::Value(container) = container else {
                     panic!("Expected value")
@@ -788,7 +784,7 @@ impl Interpreter {
                     (Value::String(s), Value::Integer(i)) => {
                         // character access
                         match s.chars().nth(i as usize) {
-                            Some(c) => ControlFlow::Value(Value::String(Arc::new(c.to_string()))),
+                            Some(c) => ControlFlow::Value(Value::String(Gc::new(c.to_string()))),
                             None => panic!("String index {i} out of bounds"),
                         }
                     }
@@ -880,14 +876,14 @@ impl Interpreter {
             ExprKind::True => ControlFlow::Value(Value::Bool(true)),
             ExprKind::False => ControlFlow::Value(Value::Bool(false)),
             ExprKind::AnonymousFunction { arguments, body } => {
-                let value = Value::Function(Arc::new(Function {
+                let value = Value::Function(Gc::new(Function {
                     normal_name: FunctionNameKind::Anonymous,
                     params: arguments
                         .iter()
                         .map(|x| x.value.as_id().unwrap().to_owned())
                         .collect(),
                     body: Statement::Expr(*body.clone()),
-                    closure_realm: Arc::clone(&realm),
+                    closure_realm: Gc::clone(&realm),
                 }));
 
                 ControlFlow::Value(value)
@@ -900,9 +896,9 @@ impl Interpreter {
                     obj => panic!("Creating new object from `{obj:?}` is not supported (yet)!"),
                 };
 
-                let lvalue = self.resolve_lvalue(Arc::clone(&realm), &new_decl.name)?;
+                let lvalue = self.resolve_lvalue(Gc::clone(&realm), &new_decl.name)?;
 
-                let record_def = self.read_lvalue(Arc::clone(&realm), &lvalue);
+                let record_def = self.read_lvalue(Gc::clone(&realm), &lvalue);
 
                 let record_def = match record_def {
                     Value::Record(record) => record,
@@ -936,7 +932,7 @@ impl Interpreter {
                 for (name, value) in new_decl.fields.iter() {
                     let real_name = name.value.to_owned();
                     let real_value = self.exec_single_statement(
-                        Arc::clone(&realm),
+                        Gc::clone(&realm),
                         &Statement::Expr(value.clone()),
                     )?;
 
@@ -951,7 +947,7 @@ impl Interpreter {
                     });
                 }
 
-                ControlFlow::Value(Value::RecordInstance(Arc::new(RwLock::new(
+                ControlFlow::Value(Value::RecordInstance(Gc::new(RwLock::new(
                     RecordInstance {
                         record: record_def,
                         fields,
@@ -1052,11 +1048,11 @@ impl Interpreter {
         if let Value::Native(native) = func {
             let new_realm = Realm::dive(realm);
 
-            return native(self, Arc::new(RwLock::new(new_realm)), args);
+            return native(self, Gc::new(RwLock::new(new_realm)), args);
         }
 
         if let Value::Function(func) = func {
-            let mut new_realm = Realm::dive(Arc::clone(&func.closure_realm));
+            let mut new_realm = Realm::dive(Gc::clone(&func.closure_realm));
 
             let parameters = &func.params;
 
@@ -1077,7 +1073,7 @@ impl Interpreter {
             }
 
             let result =
-                self.exec_single_statement(Arc::new(RwLock::new(new_realm)), &func.body)?;
+                self.exec_single_statement(Gc::new(RwLock::new(new_realm)), &func.body)?;
 
             debug!(
                 "Executing func with params {:?} returned {:?}",
@@ -1104,13 +1100,13 @@ impl Interpreter {
         };
 
         if let Value::Native(native) = method {
-            let new_realm = Realm::dive(Arc::clone(&self.world));
+            let new_realm = Realm::dive(Gc::clone(&self.world));
 
-            return Ok(Some(native(self, Arc::new(RwLock::new(new_realm)), args)?));
+            return Ok(Some(native(self, Gc::new(RwLock::new(new_realm)), args)?));
         }
 
         if let Value::Function(func) = method {
-            let mut new_realm = Realm::dive(Arc::clone(&func.closure_realm));
+            let mut new_realm = Realm::dive(Gc::clone(&func.closure_realm));
 
             let parameters = &func.params;
 
@@ -1125,7 +1121,7 @@ impl Interpreter {
             }
 
             let result =
-                self.exec_single_statement(Arc::new(RwLock::new(new_realm)), &func.body)?;
+                self.exec_single_statement(Gc::new(RwLock::new(new_realm)), &func.body)?;
 
             return Ok(Some(match result {
                 ControlFlow::Return(v) => ControlFlow::Value(v),
@@ -1143,8 +1139,8 @@ impl Interpreter {
         lhs: &Expression,
         rhs: &Expression,
     ) -> InterpreterResult<Option<Value>> {
-        let lhs_val = self.evaluate_expression(Arc::clone(&realm), lhs, true)?;
-        let rhs_val = self.evaluate_expression(Arc::clone(&realm), rhs, true)?;
+        let lhs_val = self.evaluate_expression(Gc::clone(&realm), lhs, true)?;
+        let rhs_val = self.evaluate_expression(Gc::clone(&realm), rhs, true)?;
 
         let ControlFlow::Value(lhs_val) = lhs_val else {
             panic!("A value should be returned by LHS, got: {lhs_val:?}");
@@ -1205,7 +1201,7 @@ impl Interpreter {
         op: &str,
         expr: &Expression,
     ) -> InterpreterResult<Option<Value>> {
-        let expr_val = self.evaluate_expression(Arc::clone(&realm), expr, true)?;
+        let expr_val = self.evaluate_expression(Gc::clone(&realm), expr, true)?;
 
         let ControlFlow::Value(expr_val) = expr_val else {
             panic!("A value should be returned, got: {expr_val:?}");
@@ -1245,8 +1241,8 @@ impl Interpreter {
             ExprKind::Identifier(name) => Ok(LValue::Identifier(name.clone())),
 
             ExprKind::IndexedAccess { origin, index } => {
-                let container = self.evaluate_expression(Arc::clone(&realm), origin, true)?;
-                let index = self.evaluate_expression(Arc::clone(&realm), index, true)?;
+                let container = self.evaluate_expression(Gc::clone(&realm), origin, true)?;
+                let index = self.evaluate_expression(Gc::clone(&realm), index, true)?;
 
                 let ControlFlow::Value(container) = container else {
                     panic!("Expected value as container, got: {container:?}");
@@ -1260,7 +1256,7 @@ impl Interpreter {
             }
 
             ExprKind::PropertyAccess { origin, property } => {
-                let object = self.evaluate_expression(Arc::clone(&realm), origin, true);
+                let object = self.evaluate_expression(Gc::clone(&realm), origin, true);
                 let name = property.value.as_id().unwrap().to_owned();
 
                 let Ok(ControlFlow::Value(object)) = object else {
@@ -1385,11 +1381,11 @@ impl Interpreter {
         value: &Expression,
         is_subexpression: bool,
     ) -> InterpreterResult<ControlFlow> {
-        let target = self.resolve_lvalue(Arc::clone(&realm), name)?;
+        let target = self.resolve_lvalue(Gc::clone(&realm), name)?;
 
         // Read current value — identifier needs a lookup, indexed needs evaluation
-        let current = self.read_lvalue(Arc::clone(&realm), &target);
-        let rhs = self.evaluate_expression(Arc::clone(&realm), value, true)?;
+        let current = self.read_lvalue(Gc::clone(&realm), &target);
+        let rhs = self.evaluate_expression(Gc::clone(&realm), value, true)?;
 
         let ControlFlow::Value(rhs) = rhs else {
             panic!("Expected RHS as value, got: {rhs:?}");
@@ -1397,14 +1393,14 @@ impl Interpreter {
 
         let result = self
             .binary_op_helper_values(
-                Arc::clone(&realm),
+                Gc::clone(&realm),
                 op,
                 Spanned::new(current, name.address.clone()),
                 Spanned::new(rhs, value.address.clone()),
             )?
             .unwrap();
 
-        self.assign(Arc::clone(&realm), target, result.clone());
+        self.assign(Gc::clone(&realm), target, result.clone());
 
         Ok(if is_subexpression {
             ControlFlow::Value(result)
@@ -1437,8 +1433,8 @@ impl Interpreter {
     /// TODO: It's planned for multithreading. May be changed, or completely removed.
     pub fn fork(&self) -> Self {
         Self {
-            world: Arc::clone(&self.world),
-            builtins: Arc::clone(&self.builtins),
+            world: Gc::clone(&self.world),
+            builtins: Gc::clone(&self.builtins),
             module_registry: Arc::clone(&self.module_registry),
             call_trace: LinkedList::new(),
         }
