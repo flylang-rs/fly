@@ -1179,11 +1179,11 @@ impl Interpreter {
             .and_then(|x| x.realm.read().unwrap().lookup(&method_name))
             .ok_or_else(|| {
             InterpreterError::IncompatibleTypesForBinaryOperation {
-                op: op.to_string(),
+                op: op.into(),
                 lhs_addr: lhs.address.clone(),
                 rhs_addr: rhs.address.clone(),
-                lhs_type: l_type.to_string(),
-                rhs_type: r_type.to_string(),
+                lhs_type: l_type.into(),
+                rhs_type: r_type.into(),
             }
         })?;
 

@@ -9,11 +9,11 @@ pub enum InterpreterError {
         address: Address
     },
     IncompatibleTypesForBinaryOperation {
-        op: String,
+        op: Box<str>,
         lhs_addr: Address,
         rhs_addr: Address,
-        lhs_type: String,
-        rhs_type: String,
+        lhs_type: Box<str>,
+        rhs_type: Box<str>,
     },
     IncompatibleTypesForUnaryOperation {
         op: String,
