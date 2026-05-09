@@ -6,10 +6,7 @@ Err(
     UnexpectedToken {
         token: Token {
             value: Private,
-            address: Address {
-                source: Gc(UCell(UnsafeCell { .. }), 36),
-                span: 48..55,
-            },
+            address: <Address `<test>`: 48..55>,
         },
         expected: None,
     },

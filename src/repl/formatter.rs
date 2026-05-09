@@ -1,4 +1,4 @@
-use flylang_common::{Address, source::Source};
+use flylang_common::{address::Address, source::Source};
 use flylang_lexer::token::{Token, TokenValue};
 use flylang_lexparse_glue::LoadingResult;
 

@@ -4,7 +4,7 @@ use std::{
     sync::{Arc, Mutex, RwLock},
 };
 
-use flylang_common::{Address, source::Source, spanned::Spanned};
+use flylang_common::{address::Address, source::Source, spanned::Spanned};
 use flylang_parser::ast::{DivisionKind, ExprKind, Expression, Statement, While};
 use log::debug;
 

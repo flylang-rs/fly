@@ -1,6 +1,4 @@
-use flylang_common::spanned::Spanned;
-
-use flylang_common::Address;
+use flylang_common::{address::Address, spanned::Spanned};
 
 use crate::kw_lookup_table;
 

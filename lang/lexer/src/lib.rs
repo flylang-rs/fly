@@ -10,7 +10,7 @@ pub mod test_utils;
 
 use core::{iter::Peekable, ops::Range};
 
-use flylang_common::{Address, source::Source};
+use flylang_common::{address::Address, source::Source};
 
 use dumpster::sync::Gc;
 

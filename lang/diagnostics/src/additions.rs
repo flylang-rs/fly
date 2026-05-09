@@ -1,6 +1,6 @@
 use core::ops::Range;
 
-use flylang_common::Address;
+use flylang_common::address::Address;
 
 pub struct Note<'a> {
     pub(crate) position: Option<Address>,

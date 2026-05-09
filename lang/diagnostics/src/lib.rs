@@ -1,7 +1,6 @@
 use std::fmt::Write;
 
-use flylang_common::Address;
-
+use flylang_common::address::Address;
 use owo_colors::{OwoColorize, Stream};
 
 use crate::{

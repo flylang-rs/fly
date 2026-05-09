@@ -4,9 +4,6 @@ expression: code
 ---
 Err(
     UnexpectedEOF(
-        Address {
-            source: Gc(UCell(UnsafeCell { .. }), 24),
-            span: 10..11,
-        },
+        <Address `<test>`: 10..11>,
     ),
 )

@@ -1,7 +1,7 @@
-use crate::Address;
-
 use core::fmt::Debug;
 use dumpster::Trace;
+
+use crate::address::Address;
 
 #[derive(Clone, Trace)]
 pub struct Spanned<T: Trace> {

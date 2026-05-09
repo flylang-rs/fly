@@ -4,9 +4,6 @@ expression: code
 ---
 Err(
     StaticNotAllowedHere {
-        static_keyword_addr: Address {
-            source: Gc(UCell(UnsafeCell { .. }), 29),
-            span: 9..15,
-        },
+        static_keyword_addr: <Address `<test>`: 9..15>,
     },
 )

@@ -4,10 +4,7 @@ expression: code
 ---
 Err(
     ReservedKeywordUsage {
-        address: Address {
-            source: Gc(UCell(UnsafeCell { .. }), 57),
-            span: 6..9,
-        },
+        address: <Address `<test>`: 6..9>,
         keyword: "new",
     },
 )

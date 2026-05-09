@@ -1,4 +1,4 @@
-use flylang_common::Address;
+use flylang_common::address::Address;
 use flylang_diagnostics::{Diagnostics, additions::Note, error::DiagnosticsReport};
 
 #[derive(Debug, Clone)]
