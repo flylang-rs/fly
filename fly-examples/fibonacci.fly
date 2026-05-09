@@ -8,7 +8,7 @@ func fib(n) {
 
 x = 0
 
-while x < 10 {
+while x < 23 {
     print("fib(" + x.to_string() + ") =", fib(x))
 
     x += 1
