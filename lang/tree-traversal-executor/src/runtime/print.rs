@@ -1,7 +1,7 @@
 use std::sync::{Arc, RwLock};
 
 use crate::{
-    Interpreter, InterpreterResult, control_flow::ControlFlow, object::{Value, module::Module}, realm::{Realm, SharedRealm}, types
+    Interpreter, InterpreterResult, control_flow::ControlFlow, object::{Value, module::Module}, realm::{Realm, SharedRealm}, runtime::RustInteropFn, types
 };
 
 use dumpster::sync::Gc;
@@ -33,7 +33,7 @@ fn inner_print(
                     panic!("Failed `{}` to string conversion!", ty);
                 };
 
-                print!("{display_value:?}");
+                print!("{}", display_value.as_str());
 
                 if n < len - 1 {
                     print!(" ");
@@ -64,7 +64,7 @@ fn inner_print(
             panic!("Failed `{}` to string conversion!", ty);
         };
 
-        print!("{:?}", display_value);
+        print!("{}", display_value.as_str());
 
         if n < len - 1 {
             print!(" ");
@@ -79,7 +79,7 @@ fn inner_print(
 pub fn init(builtins: &Gc<RwLock<Realm>>) -> Option<Module> {
     let mut bind = builtins.write().unwrap();
 
-    bind.values_mut().insert(String::from("print"), Value::Native(inner_print));
+    bind.values_mut().insert(String::from("print"), Value::Native(RustInteropFn::new(inner_print)));
 
     drop(bind);
 

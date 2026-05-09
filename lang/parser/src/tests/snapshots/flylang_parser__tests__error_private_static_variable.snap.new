@@ -1,12 +1,13 @@
 ---
 source: lang/parser/src/tests/mod.rs
+assertion_line: 321
 expression: code
 ---
 Err(
     StaticNotAllowedHere {
         static_keyword_addr: Address {
             source: Gc(UCell(UnsafeCell { .. }), 32),
-            span: 1..7,
+            span: 9..15,
         },
     },
 )

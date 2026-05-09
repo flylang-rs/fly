@@ -1,11 +1,12 @@
 ---
 source: lang/parser/src/tests/functions.rs
+assertion_line: 73
 expression: code
 ---
 Err(
     ReservedKeywordUsage {
         address: Address {
-            source: Gc(UCell(UnsafeCell { .. }), 57),
+            source: Gc(UCell(UnsafeCell { .. }), 64),
             span: 6..9,
         },
         keyword: "new",

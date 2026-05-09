@@ -3,6 +3,7 @@ use std::sync::{Arc, RwLock};
 use crate::control_flow::ControlFlow;
 use crate::object::module::Module;
 use crate::realm::Realm;
+use crate::runtime::RustInteropFn;
 use crate::{SharedRealm, Value};
 
 use crate::{InterpreterResult, common_operation_binary, common_operation_unary};
@@ -169,37 +170,37 @@ pub fn init(builtins: &Gc<RwLock<Realm>>) -> Option<Module> {
     let mut bind = mo.realm.write().unwrap();
 
     // To string
-    bind.values_mut().insert(String::from("to_string"), Value::Native(integer_to_string));
-    bind.values_mut().insert(String::from("to_displayable"), Value::Native(integer_to_string));
+    bind.values_mut().insert(String::from("to_string"), Value::Native(RustInteropFn::new(integer_to_string)));
+    bind.values_mut().insert(String::from("to_displayable"), Value::Native(RustInteropFn::new(integer_to_string)));
 
     // Basic operations
-    bind.values_mut().insert(String::from("operator+integer"), Value::Native(integers_add));
-    bind.values_mut().insert(String::from("operator+float"), Value::Native(integer_add_float));
-    bind.values_mut().insert(String::from("operator-integer"), Value::Native(integers_sub));
-    bind.values_mut().insert(String::from("operator-float"), Value::Native(integer_sub_float));
-    bind.values_mut().insert(String::from("operator*integer"), Value::Native(integers_mul));
-    bind.values_mut().insert(String::from("operator*float"), Value::Native(integer_mul_float));
-    bind.values_mut().insert(String::from("operator/integer"), Value::Native(integers_div));
-    bind.values_mut().insert(String::from("operator/-integer"), Value::Native(integers_div_rdown));
-    bind.values_mut().insert(String::from("operator/+integer"), Value::Native(integers_div_rup));
-    bind.values_mut().insert(String::from("operator%integer"), Value::Native(integers_mod));
+    bind.values_mut().insert(String::from("operator+integer"), Value::Native(RustInteropFn::new(integers_add)));
+    bind.values_mut().insert(String::from("operator+float"), Value::Native(RustInteropFn::new(integer_add_float)));
+    bind.values_mut().insert(String::from("operator-integer"), Value::Native(RustInteropFn::new(integers_sub)));
+    bind.values_mut().insert(String::from("operator-float"), Value::Native(RustInteropFn::new(integer_sub_float)));
+    bind.values_mut().insert(String::from("operator*integer"), Value::Native(RustInteropFn::new(integers_mul)));
+    bind.values_mut().insert(String::from("operator*float"), Value::Native(RustInteropFn::new(integer_mul_float)));
+    bind.values_mut().insert(String::from("operator/integer"), Value::Native(RustInteropFn::new(integers_div)));
+    bind.values_mut().insert(String::from("operator/-integer"), Value::Native(RustInteropFn::new(integers_div_rdown)));
+    bind.values_mut().insert(String::from("operator/+integer"), Value::Native(RustInteropFn::new(integers_div_rup)));
+    bind.values_mut().insert(String::from("operator%integer"), Value::Native(RustInteropFn::new(integers_mod)));
 
     // Binary operations
-    bind.values_mut().insert(String::from("operator&integer"), Value::Native(integers_bit_and));
-    bind.values_mut().insert(String::from("operator|integer"), Value::Native(integers_bit_or));
-    bind.values_mut().insert(String::from("operator<<integer"), Value::Native(integers_bit_shift_left));
-    bind.values_mut().insert(String::from("operator>>integer"), Value::Native(integers_bit_shift_right));
+    bind.values_mut().insert(String::from("operator&integer"), Value::Native(RustInteropFn::new(integers_bit_and)));
+    bind.values_mut().insert(String::from("operator|integer"), Value::Native(RustInteropFn::new(integers_bit_or)));
+    bind.values_mut().insert(String::from("operator<<integer"), Value::Native(RustInteropFn::new(integers_bit_shift_left)));
+    bind.values_mut().insert(String::from("operator>>integer"), Value::Native(RustInteropFn::new(integers_bit_shift_right)));
 
     // Comparison
-    bind.values_mut().insert(String::from("operator==integer"), Value::Native(integers_eq));
-    bind.values_mut().insert(String::from("operator!=integer"), Value::Native(integers_neq));
-    bind.values_mut().insert(String::from("operator>integer"), Value::Native(integers_gt));
-    bind.values_mut().insert(String::from("operator<integer"), Value::Native(integers_lt));
-    bind.values_mut().insert(String::from("operator>=integer"), Value::Native(integers_gte));
-    bind.values_mut().insert(String::from("operator<=integer"), Value::Native(integers_lte));
+    bind.values_mut().insert(String::from("operator==integer"), Value::Native(RustInteropFn::new(integers_eq)));
+    bind.values_mut().insert(String::from("operator!=integer"), Value::Native(RustInteropFn::new(integers_neq)));
+    bind.values_mut().insert(String::from("operator>integer"), Value::Native(RustInteropFn::new(integers_gt)));
+    bind.values_mut().insert(String::from("operator<integer"), Value::Native(RustInteropFn::new(integers_lt)));
+    bind.values_mut().insert(String::from("operator>=integer"), Value::Native(RustInteropFn::new(integers_gte)));
+    bind.values_mut().insert(String::from("operator<=integer"), Value::Native(RustInteropFn::new(integers_lte)));
 
     // Unary operations
-    bind.values_mut().insert(String::from("operator-"), Value::Native(integer_neg));
+    bind.values_mut().insert(String::from("operator-"), Value::Native(RustInteropFn::new(integer_neg)));
 
     drop(bind);
 

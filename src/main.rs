@@ -1,3 +1,4 @@
+use flylang_parser::ast::Gc;
 use log::info;
 
 use std::sync::Arc;

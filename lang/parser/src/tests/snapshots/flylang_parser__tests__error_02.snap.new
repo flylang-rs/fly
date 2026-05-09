@@ -1,11 +1,12 @@
 ---
 source: lang/parser/src/tests/mod.rs
+assertion_line: 288
 expression: code
 ---
 Err(
     UnexpectedEOF(
         Address {
-            source: Gc(UCell(UnsafeCell { .. }), 24),
+            source: Gc(UCell(UnsafeCell { .. }), 26),
             span: 10..11,
         },
     ),

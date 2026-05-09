@@ -1,7 +1,7 @@
 use std::sync::{Arc, RwLock};
 
 use crate::{
-    InterpreterResult, Value, common_operation_binary, common_operation_unary, control_flow::ControlFlow, object::module::Module, realm::{Realm, SharedRealm}
+    InterpreterResult, Value, common_operation_binary, common_operation_unary, control_flow::ControlFlow, object::module::Module, realm::{Realm, SharedRealm}, runtime::RustInteropFn
 };
 
 common_operation_unary!(bool_not, Bool, Bool, |x: &bool| !x);
@@ -34,17 +34,17 @@ pub fn init(builtins: &Gc<RwLock<Realm>>) -> Option<Module> {
     let mut bind = mo.realm.write().unwrap();
 
     // To string
-    bind.values_mut().insert(String::from("to_string"), Value::Native(bool_to_string));
-    bind.values_mut().insert(String::from("to_displayable"), Value::Native(bool_to_string));
+    bind.values_mut().insert(String::from("to_string"), Value::Native(RustInteropFn::new(bool_to_string)));
+    bind.values_mut().insert(String::from("to_displayable"), Value::Native(RustInteropFn::new(bool_to_string)));
 
     // Basic operations
-    bind.values_mut().insert(String::from("operator!"), Value::Native(bool_not));
-    bind.values_mut().insert(String::from("operator&&bool"), Value::Native(bool_and));
-    bind.values_mut().insert(String::from("operator||bool"), Value::Native(bool_or));
+    bind.values_mut().insert(String::from("operator!"), Value::Native(RustInteropFn::new(bool_not)));
+    bind.values_mut().insert(String::from("operator&&bool"), Value::Native(RustInteropFn::new(bool_and)));
+    bind.values_mut().insert(String::from("operator||bool"), Value::Native(RustInteropFn::new(bool_or)));
     
     // Comparison
-    bind.values_mut().insert(String::from("operator==bool"), Value::Native(bool_eq));
-    bind.values_mut().insert(String::from("operator!=bool"), Value::Native(bool_neq));
+    bind.values_mut().insert(String::from("operator==bool"), Value::Native(RustInteropFn::new(bool_eq)));
+    bind.values_mut().insert(String::from("operator!=bool"), Value::Native(RustInteropFn::new(bool_neq)));
 
     drop(bind);
 

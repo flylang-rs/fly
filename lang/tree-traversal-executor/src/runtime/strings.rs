@@ -1,7 +1,7 @@
 use std::sync::{Arc, RwLock};
 
 use crate::{
-    InterpreterResult, SharedRealm, common_operation_binary, control_flow::ControlFlow, object::{Value, module::Module}, realm::Realm
+    InterpreterResult, SharedRealm, common_operation_binary, control_flow::ControlFlow, object::{Value, module::Module}, realm::Realm, runtime::RustInteropFn
 };
 
 common_operation_binary!(
@@ -83,7 +83,7 @@ fn string_to_displayable(
         panic!("It's not a string, it's {:?}", args[0]);
     };
 
-    let disp = format!("\"{:?}\"", i);
+    let disp = format!("\"{}\"", i.as_str());
 
     Ok(ControlFlow::Value(Value::String(disp.into())))
 }
@@ -98,20 +98,20 @@ pub fn init(builtins: &Gc<RwLock<Realm>>) -> Option<Module> {
     let mut bind = mo.realm.write().unwrap();
 
     // To string
-    bind.values_mut().insert(String::from("to_string"), Value::Native(string_to_string));
-    bind.values_mut().insert(String::from("to_displayable"), Value::Native(string_to_displayable));
+    bind.values_mut().insert(String::from("to_string"), Value::Native(RustInteropFn::new(string_to_string)));
+    bind.values_mut().insert(String::from("to_displayable"), Value::Native(RustInteropFn::new(string_to_displayable)));
 
     // Basic operations
-    bind.values_mut().insert(String::from("operator+string"), Value::Native(string_add_string));
-    bind.values_mut().insert(String::from("operator*integer"), Value::Native(string_mul_integer));
+    bind.values_mut().insert(String::from("operator+string"), Value::Native(RustInteropFn::new(string_add_string)));
+    bind.values_mut().insert(String::from("operator*integer"), Value::Native(RustInteropFn::new(string_mul_integer)));
 
     // Comparison
-    bind.values_mut().insert(String::from("operator==string"), Value::Native(strings_eq));
-    bind.values_mut().insert(String::from("operator!=string"), Value::Native(strings_neq));
-    bind.values_mut().insert(String::from("operator>string"), Value::Native(strings_gt));
-    bind.values_mut().insert(String::from("operator<string"), Value::Native(strings_lt));
-    bind.values_mut().insert(String::from("operator>=string"), Value::Native(strings_gte));
-    bind.values_mut().insert(String::from("operator<=string"), Value::Native(strings_lte));
+    bind.values_mut().insert(String::from("operator==string"), Value::Native(RustInteropFn::new(strings_eq)));
+    bind.values_mut().insert(String::from("operator!=string"), Value::Native(RustInteropFn::new(strings_neq)));
+    bind.values_mut().insert(String::from("operator>string"), Value::Native(RustInteropFn::new(strings_gt)));
+    bind.values_mut().insert(String::from("operator<string"), Value::Native(RustInteropFn::new(strings_lt)));
+    bind.values_mut().insert(String::from("operator>=string"), Value::Native(RustInteropFn::new(strings_gte)));
+    bind.values_mut().insert(String::from("operator<=string"), Value::Native(RustInteropFn::new(strings_lte)));
 
     drop(bind);
 

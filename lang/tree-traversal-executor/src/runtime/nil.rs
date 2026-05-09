@@ -1,7 +1,7 @@
 use std::sync::{Arc, RwLock};
 
 use crate::{
-    InterpreterResult, control_flow::ControlFlow, object::{Value, module::Module}, realm::Realm
+    InterpreterResult, control_flow::ControlFlow, object::{Value, module::Module}, realm::Realm, runtime::RustInteropFn
 };
 
 use crate::SharedRealm;
@@ -24,8 +24,8 @@ pub fn init(builtins: &Gc<RwLock<Realm>>) -> Option<Module> {
 
     let mut bind = mo.realm.write().unwrap();
 
-    bind.values_mut().insert(String::from("to_string"), Value::Native(nil_to_string));
-    bind.values_mut().insert(String::from("to_displayable"), Value::Native(nil_to_string));
+    bind.values_mut().insert(String::from("to_string"), Value::Native(RustInteropFn::new(nil_to_string)));
+    bind.values_mut().insert(String::from("to_displayable"), Value::Native(RustInteropFn::new(nil_to_string)));
 
     drop(bind);
 

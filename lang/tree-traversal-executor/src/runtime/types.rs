@@ -1,6 +1,6 @@
 use std::sync::{Arc, RwLock};
 
-use crate::{Interpreter, InterpreterResult, SharedRealm, control_flow::ControlFlow, object::{Value, module::Module}, realm::Realm};
+use crate::{Interpreter, InterpreterResult, SharedRealm, control_flow::ControlFlow, object::{Value, module::Module}, realm::Realm, runtime::RustInteropFn};
 
 fn typename(
     _interpreter: &mut Interpreter,
@@ -22,7 +22,7 @@ use dumpster::sync::Gc;
 pub fn init(builtins: &Gc<RwLock<Realm>>) -> Option<Module> {
     let mut bind = builtins.write().unwrap();
 
-    bind.values_mut().insert(String::from("typename"), Value::Native(typename));
+    bind.values_mut().insert(String::from("typename"), Value::Native(RustInteropFn::new(typename)));
 
     drop(bind);
 

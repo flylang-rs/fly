@@ -1,5 +1,5 @@
 ---
-source: parser/src/tests/mod.rs
+source: lang/parser/src/tests/mod.rs
 expression: code
 ---
 Err(
@@ -7,15 +7,7 @@ Err(
         token: Token {
             value: Assign,
             address: Address {
-                source: Source {
-                    filepath: "<test>",
-                    code: "\n= [4, 3]\n    ",
-                    line_starts: [
-                        0,
-                        1,
-                        10,
-                    ],
-                },
+                source: Gc(UCell(UnsafeCell { .. }), 27),
                 span: 1..2,
             },
         },

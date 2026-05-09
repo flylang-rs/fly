@@ -1,5 +1,5 @@
 use crate::{
-    Interpreter, InterpreterResult, control_flow::ControlFlow, object::{Value, module::Module}, realm::{Realm, SharedRealm}
+    Interpreter, InterpreterResult, control_flow::ControlFlow, object::{Value, module::Module}, realm::{Realm, SharedRealm}, runtime::RustInteropFn
 };
 
 fn inner_exit(
@@ -22,11 +22,10 @@ fn inner_exit(
     }
 }
 
-use dumpster::sync::Gc;
 pub fn init(builtins: &SharedRealm) -> Option<Module> {
     let mut bind = builtins.write().unwrap();
 
-    bind.values_mut().insert(String::from("exit"), Value::Native(inner_exit));
+    bind.values_mut().insert(String::from("exit"), Value::Native(RustInteropFn::new(inner_exit)));
 
     drop(bind);
 

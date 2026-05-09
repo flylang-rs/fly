@@ -1,7 +1,7 @@
 use std::sync::{Arc, RwLock};
 
 use crate::{
-    InterpreterResult, SharedRealm, common_operation_binary, common_operation_unary, control_flow::ControlFlow, object::{Value, module::Module}, realm::Realm
+    InterpreterResult, SharedRealm, common_operation_binary, common_operation_unary, control_flow::ControlFlow, object::{Value, module::Module}, realm::Realm, runtime::RustInteropFn
 };
 use dumpster::sync::Gc;
 
@@ -109,30 +109,30 @@ pub fn init(builtins: &Gc<RwLock<Realm>>) -> Option<Module> {
     let mut bind = mo.realm.write().unwrap();
 
     // Basic operations
-    bind.values_mut().insert(String::from("operator+real"), Value::Native(reals_add));
-    bind.values_mut().insert(String::from("operator+integer"), Value::Native(real_add_integer));
-    bind.values_mut().insert(String::from("operator-real"), Value::Native(reals_sub));
-    bind.values_mut().insert(String::from("operator-integer"), Value::Native(real_sub_integer));
-    bind.values_mut().insert(String::from("operator*real"), Value::Native(reals_mul));
-    bind.values_mut().insert(String::from("operator*integer"), Value::Native(real_mul_integer));
-    bind.values_mut().insert(String::from("operator/real"), Value::Native(reals_div));
-    bind.values_mut().insert(String::from("operator/integer"), Value::Native(real_div_integer));
-    bind.values_mut().insert(String::from("operator/-real"), Value::Native(reals_div_rdown));
-    bind.values_mut().insert(String::from("operator/-integer"), Value::Native(real_div_integer_rdown));
-    bind.values_mut().insert(String::from("operator/+real"), Value::Native(reals_div_rup));
-    bind.values_mut().insert(String::from("operator/+integer"), Value::Native(real_div_integer_rup));
+    bind.values_mut().insert(String::from("operator+real"), Value::Native(RustInteropFn::new(reals_add)));
+    bind.values_mut().insert(String::from("operator+integer"), Value::Native(RustInteropFn::new(real_add_integer)));
+    bind.values_mut().insert(String::from("operator-real"), Value::Native(RustInteropFn::new(reals_sub)));
+    bind.values_mut().insert(String::from("operator-integer"), Value::Native(RustInteropFn::new(real_sub_integer)));
+    bind.values_mut().insert(String::from("operator*real"), Value::Native(RustInteropFn::new(reals_mul)));
+    bind.values_mut().insert(String::from("operator*integer"), Value::Native(RustInteropFn::new(real_mul_integer)));
+    bind.values_mut().insert(String::from("operator/real"), Value::Native(RustInteropFn::new(reals_div)));
+    bind.values_mut().insert(String::from("operator/integer"), Value::Native(RustInteropFn::new(real_div_integer)));
+    bind.values_mut().insert(String::from("operator/-real"), Value::Native(RustInteropFn::new(reals_div_rdown)));
+    bind.values_mut().insert(String::from("operator/-integer"), Value::Native(RustInteropFn::new(real_div_integer_rdown)));
+    bind.values_mut().insert(String::from("operator/+real"), Value::Native(RustInteropFn::new(reals_div_rup)));
+    bind.values_mut().insert(String::from("operator/+integer"), Value::Native(RustInteropFn::new(real_div_integer_rup)));
 
     // Comparison
-    bind.values_mut().insert(String::from("operator==real"), Value::Native(reals_eq));
-    bind.values_mut().insert(String::from("operator!=real"), Value::Native(reals_neq));
-    bind.values_mut().insert(String::from("operator>real"), Value::Native(reals_gt));
-    bind.values_mut().insert(String::from("operator<real"), Value::Native(reals_lt));
-    bind.values_mut().insert(String::from("operator>=real"), Value::Native(reals_gte));
-    bind.values_mut().insert(String::from("operator<=real"), Value::Native(reals_lte));
+    bind.values_mut().insert(String::from("operator==real"), Value::Native(RustInteropFn::new(reals_eq)));
+    bind.values_mut().insert(String::from("operator!=real"), Value::Native(RustInteropFn::new(reals_neq)));
+    bind.values_mut().insert(String::from("operator>real"), Value::Native(RustInteropFn::new(reals_gt)));
+    bind.values_mut().insert(String::from("operator<real"), Value::Native(RustInteropFn::new(reals_lt)));
+    bind.values_mut().insert(String::from("operator>=real"), Value::Native(RustInteropFn::new(reals_gte)));
+    bind.values_mut().insert(String::from("operator<=real"), Value::Native(RustInteropFn::new(reals_lte)));
 
     // To string
-    bind.values_mut().insert(String::from("to_string"), Value::Native(real_to_string));
-    bind.values_mut().insert(String::from("to_displayable"), Value::Native(real_to_displayable));
+    bind.values_mut().insert(String::from("to_string"), Value::Native(RustInteropFn::new(real_to_string)));
+    bind.values_mut().insert(String::from("to_displayable"), Value::Native(RustInteropFn::new(real_to_displayable)));
 
     drop(bind);
 

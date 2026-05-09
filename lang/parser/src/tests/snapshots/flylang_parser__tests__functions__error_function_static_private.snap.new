@@ -1,5 +1,6 @@
 ---
 source: lang/parser/src/tests/functions.rs
+assertion_line: 113
 expression: code
 ---
 Err(
@@ -7,7 +8,7 @@ Err(
         token: Token {
             value: Private,
             address: Address {
-                source: Gc(UCell(UnsafeCell { .. }), 36),
+                source: Gc(UCell(UnsafeCell { .. }), 44),
                 span: 48..55,
             },
         },

@@ -9,17 +9,13 @@ use flylang_parser::ast::{DivisionKind, ExprKind, Expression, Statement, While};
 use log::debug;
 
 use crate::{
-    calltrace::{CallFrame, CallSegment},
-    control_flow::ControlFlow,
-    error::{CallError, InterpreterError},
-    object::{
+    calltrace::{CallFrame, CallSegment}, control_flow::ControlFlow, error::{CallError, InterpreterError}, gc_harness::DumpsterGCDropTrigger, object::{
         Value,
         function::{Function, FunctionNameKind},
         lvalue::LValue,
         module::Module,
         record::{Record, RecordField, RecordInstance, RecordInstanceField},
-    },
-    realm::{Realm, SharedRealm},
+    }, realm::{Realm, SharedRealm}
 };
 
 use dumpster::sync::Gc;
@@ -30,6 +26,7 @@ pub mod tests;
 pub mod calltrace;
 pub mod control_flow;
 pub mod error;
+pub mod gc_harness;
 pub mod object;
 pub mod realm;
 pub mod runtime;
@@ -58,6 +55,9 @@ pub struct Interpreter {
 
     // Contains call trace to output it when an error happens.
     call_trace: LinkedList<CallFrame>,
+
+    // Will be used when `Interpreter::drop` happens, cleaning up garbage.
+    _gc_drop_trigger: DumpsterGCDropTrigger
 }
 
 impl Interpreter {
@@ -105,6 +105,7 @@ impl Interpreter {
             world,
             module_registry: Arc::new(RwLock::new(HashMap::new())),
             call_trace: LinkedList::new(),
+            _gc_drop_trigger: DumpsterGCDropTrigger,
         }
     }
 
@@ -1437,6 +1438,7 @@ impl Interpreter {
             builtins: Gc::clone(&self.builtins),
             module_registry: Arc::clone(&self.module_registry),
             call_trace: LinkedList::new(),
+            _gc_drop_trigger: DumpsterGCDropTrigger,
         }
     }
 }

@@ -6,6 +6,7 @@ use crossterm::{
 };
 use flylang_common::source::Source;
 use flylang_diagnostics::{error::DiagnosticsReport};
+use flylang_parser::ast::Gc;
 use flylang_tte::{Interpreter, control_flow::ControlFlow, object::Value};
 
 use crate::repl::{

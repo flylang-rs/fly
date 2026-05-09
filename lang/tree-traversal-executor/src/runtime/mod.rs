@@ -1,3 +1,7 @@
+use std::{borrow::Borrow, ops::Deref};
+
+use dumpster::Visitor;
+
 use crate::{
     Interpreter, InterpreterResult, SharedRealm, control_flow::ControlFlow, object::Value,
 };
@@ -13,11 +17,36 @@ pub mod reals;
 pub mod strings;
 pub mod types;
 
-pub type RustInteropFn = fn(
+pub type RustInteropFnInner = fn(
     interpreter: &mut Interpreter,
     realm: SharedRealm,
     args: &[Value],
 ) -> InterpreterResult<ControlFlow>;
+
+#[derive(Debug, Clone)]
+pub struct RustInteropFn {
+    _fn: RustInteropFnInner
+}
+
+unsafe impl<V: Visitor> dumpster::TraceWith<V> for RustInteropFn {
+    fn accept(&self, _visitor: &mut V) -> Result<(), ()> {
+        Ok(())
+    }
+}
+
+impl Deref for RustInteropFn {
+    type Target = RustInteropFnInner;
+
+    fn deref(&self) -> &Self::Target {
+        &self._fn
+    }
+}
+
+impl RustInteropFn {
+    pub fn new(f: RustInteropFnInner) -> Self {
+        Self { _fn: f }
+    }
+}
 
 #[macro_export]
 macro_rules! common_operation_binary {

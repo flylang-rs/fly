@@ -1,5 +1,6 @@
 ---
 source: lang/parser/src/tests/records.rs
+assertion_line: 126
 expression: code
 ---
 Err(
@@ -7,12 +8,12 @@ Err(
         token: Token {
             value: OpenBrace,
             address: Address {
-                source: Gc(UCell(UnsafeCell { .. }), 102),
+                source: Gc(UCell(UnsafeCell { .. }), 108),
                 span: 39..40,
             },
         },
         name_address: Address {
-            source: Gc(UCell(UnsafeCell { .. }), 102),
+            source: Gc(UCell(UnsafeCell { .. }), 108),
             span: 37..38,
         },
     },

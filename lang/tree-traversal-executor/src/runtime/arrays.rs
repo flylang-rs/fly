@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex, RwLock};
 
 use crate::{
-    Interpreter, InterpreterResult, control_flow::ControlFlow, object::{Value, module::Module}, realm::{Realm, SharedRealm}, types
+    Interpreter, InterpreterResult, control_flow::ControlFlow, object::{Value, module::Module}, realm::{Realm, SharedRealm}, runtime::RustInteropFn, types
 };
 
 pub fn array_push(
@@ -131,12 +131,12 @@ pub fn init(builtins: &Gc<RwLock<Realm>>) -> Option<Module> {
     let mut bind = mo.realm.write().unwrap();
 
     // To string
-    bind.values_mut().insert(String::from("to_string"), Value::Native(array_to_string));
-    bind.values_mut().insert(String::from("to_displayable"), Value::Native(array_to_displayable));
+    bind.values_mut().insert(String::from("to_string"), Value::Native(RustInteropFn::new(array_to_string)));
+    bind.values_mut().insert(String::from("to_displayable"), Value::Native(RustInteropFn::new(array_to_displayable)));
 
     // Basic operations
-    bind.values_mut().insert(String::from("push"), Value::Native(array_push));
-    bind.values_mut().insert(String::from("len"), Value::Native(array_len));
+    bind.values_mut().insert(String::from("push"), Value::Native(RustInteropFn::new(array_push)));
+    bind.values_mut().insert(String::from("len"), Value::Native(RustInteropFn::new(array_len)));
 
     drop(bind);
 
