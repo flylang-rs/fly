@@ -1,8 +1,6 @@
 use flylang_parser::ast::Gc;
 use log::info;
 
-use std::sync::Arc;
-
 use flylang_common::source::Source;
 use flylang_diagnostics::error::DiagnosticsReport;
 use flylang_lexparse_glue::LoadingError;

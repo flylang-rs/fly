@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::{Mutex, RwLock};
 
 use dumpster::{Trace, sync::Gc};
 

@@ -1,7 +1,7 @@
 use flylang_common::{address::Address, source::Source, spanned::Spanned, visibility::Visibility};
 use flylang_lexer::token::{Token, TokenValue};
 use log::debug;
-use std::{iter::Peekable, sync::Arc};
+use std::{iter::Peekable};
 
 use crate::{
     ast::{ExprKind, KeyValueMapWithDuplicates, RecordDefinition, VariableDefinition},

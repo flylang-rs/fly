@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use flylang_common::source::Source;
 use flylang_diagnostics::error::DiagnosticsReport;
 use flylang_lexer::{error::LexerError, token::Token};

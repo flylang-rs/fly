@@ -1,4 +1,4 @@
-use std::sync::{Arc, RwLock};
+use std::sync::{RwLock};
 
 use dumpster::{Trace, sync::Gc};
 use flylang_common::spanned::Spanned;

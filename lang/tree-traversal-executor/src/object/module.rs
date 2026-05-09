@@ -1,7 +1,6 @@
-use std::sync::{RwLock};
-use dumpster::{Trace, sync::Gc};
+use dumpster::{Trace};
 
-use crate::{object::Value, realm::{Realm, SharedRealm}};
+use crate::{object::Value, realm::{SharedRealm}};
 
 #[derive(Clone, Trace)]
 pub struct Module {

@@ -1,6 +1,6 @@
 use std::{
     collections::HashMap,
-    sync::{Arc, RwLock},
+    sync::{RwLock},
 };
 
 use flylang_common::visibility::Visibility;

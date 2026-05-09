@@ -1,4 +1,4 @@
-use std::{io::Write, sync::Arc};
+use std::{io::Write};
 
 use crossterm::{
     event::{self, Event, KeyCode, KeyModifiers},
