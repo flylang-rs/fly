@@ -1,4 +1,4 @@
-use std::sync::{Arc, RwLock};
+use std::sync::RwLock;
 
 use crate::{
     InterpreterResult, control_flow::ControlFlow, object::{Value, module::Module}, realm::Realm, runtime::RustInteropFn

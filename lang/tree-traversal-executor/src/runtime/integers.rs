@@ -1,4 +1,4 @@
-use std::sync::{Arc, RwLock};
+use std::sync::RwLock;
 
 use crate::control_flow::ControlFlow;
 use crate::object::module::Module;

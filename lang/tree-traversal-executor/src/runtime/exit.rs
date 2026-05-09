@@ -1,5 +1,5 @@
 use crate::{
-    Interpreter, InterpreterResult, control_flow::ControlFlow, object::{Value, module::Module}, realm::{Realm, SharedRealm}, runtime::RustInteropFn
+    Interpreter, InterpreterResult, control_flow::ControlFlow, object::{Value, module::Module}, realm::SharedRealm, runtime::RustInteropFn
 };
 
 fn inner_exit(
