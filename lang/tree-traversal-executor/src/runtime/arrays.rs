@@ -52,8 +52,7 @@ fn render_value(
             .read()
             .unwrap()
             .lookup(&ty)
-            .and_then(|x| x.as_module())
-            .map(|x| x.realm.read().unwrap().lookup("to_displayable"))
+            .map(|x| x.as_module()?.method_lookup("to_displayable"))
             .flatten()
             .ok_or_else(|| panic!("Method `to_displayable` is not implemented for type: {ty}"))
             .unwrap();

@@ -53,8 +53,7 @@ fn inner_print(
             .read()
             .unwrap()
             .lookup(&ty)
-            .and_then(|x| x.as_module())
-            .and_then(|x| x.method_lookup("to_string"))
+            .and_then(|x| x.as_module()?.method_lookup("to_string"))
             .ok_or_else(|| panic!("Method `to_string` is not implemented for type: {ty}"))?;
 
         let string_value =

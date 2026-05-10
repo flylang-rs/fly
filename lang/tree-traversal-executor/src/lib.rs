@@ -274,9 +274,11 @@ impl Interpreter {
 
                 // If it's a record method, add function to its fields instead.
                 if let Some(stems) = &record_path {
-                    let record = realm
+                    let bind = realm
                         .read()
-                        .unwrap()
+                        .unwrap();
+
+                    let record = bind
                         .values()
                         .get(&stems[0])
                         .and_then(|x| x.as_record())
@@ -667,8 +669,7 @@ impl Interpreter {
                                     .read()
                                     .unwrap()
                                     .lookup(&type_name)
-                                    .and_then(|x| x.as_module())
-                                    .and_then(|x| x.method_lookup(&prop))
+                                    .and_then(|x| x.as_module()?.method_lookup(&prop))
                                     .ok_or_else(|| InterpreterError::NoPropertyForType {
                                         typename: type_name.to_string(),
                                         property: prop.to_string(),
@@ -1168,13 +1169,12 @@ impl Interpreter {
             .read()
             .unwrap()
             .lookup(&l_type)
-            .and_then(|x| x.as_module())
             .and_then(|x| {
                 // TODO: Optimize method dispatching. Remove `r_type` and dispatch types in natives
                 // themselves.
                 let method_name = format!("operator{op}{r_type}");
 
-                x.realm.read().unwrap().lookup(&method_name)
+                x.as_module()?.method_lookup(&method_name)
             })
             .ok_or_else(|| {
             InterpreterError::IncompatibleTypesForBinaryOperation {
@@ -1215,8 +1215,7 @@ impl Interpreter {
             .read()
             .unwrap()
             .lookup(&ty)
-            .and_then(|x| x.as_module())
-            .and_then(|x| x.method_lookup(&method_name))
+            .and_then(|x| x.as_module()?.method_lookup(&method_name))
             .ok_or_else(|| {
             InterpreterError::IncompatibleTypesForUnaryOperation {
                 op: op.to_string(),

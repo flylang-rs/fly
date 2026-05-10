@@ -53,25 +53,25 @@ impl Value {
         }
     }
 
-    pub fn as_record_instance(&self) -> Option<Gc<RwLock<record::RecordInstance>>> {
+    pub fn as_record_instance(&self) -> Option<&Gc<RwLock<record::RecordInstance>>> {
         if let Value::RecordInstance(r) = self {
-            Some(Gc::clone(r))
+            Some(r)
         } else {
             None
         }
     }
 
-    pub fn as_record(&self) -> Option<Gc<record::Record>> {
+    pub fn as_record(&self) -> Option<&Gc<record::Record>> {
         if let Value::Record(r) = self {
-            Some(Gc::clone(r))
+            Some(r)
         } else {
             None
         }
     }
 
-    pub fn as_module(&self) -> Option<Gc<module::Module>> {
+    pub fn as_module(&self) -> Option<&Gc<module::Module>> {
         if let Value::Module(mo) = self {
-            Some(Gc::clone(mo))
+            Some(mo)
         } else {
             None
         }
