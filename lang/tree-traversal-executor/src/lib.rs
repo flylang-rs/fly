@@ -441,7 +441,7 @@ impl Interpreter {
                     panic!("Expected RHS as value, got: {rhs:?}");
                 };
 
-                self.assign(Gc::clone(&realm), target, rhs.clone());
+                self.assign(realm, target, rhs.clone());
 
                 Ok(ControlFlow::Nothing)
             }
@@ -742,7 +742,7 @@ impl Interpreter {
                     panic!("Expected RHS as value, got: {rhs:?}");
                 };
 
-                self.assign(Gc::clone(&realm), target, rhs.clone());
+                self.assign(realm, target, rhs.clone());
 
                 if is_subexpression {
                     ControlFlow::Value(rhs)
@@ -759,7 +759,7 @@ impl Interpreter {
             }
             ExprKind::IndexedAccess { origin, index } => {
                 let container = self.evaluate_expression(Gc::clone(&realm), origin, true)?;
-                let index = self.evaluate_expression(Gc::clone(&realm), index, true)?;
+                let index = self.evaluate_expression(realm, index, true)?;
 
                 let ControlFlow::Value(container) = container else {
                     panic!("Expected value")
@@ -1053,8 +1053,6 @@ impl Interpreter {
         }
 
         if let Value::Function(func) = func {
-            let mut new_realm = Realm::dive(Gc::clone(&func.closure_realm));
-
             let parameters = &func.params;
 
             if parameters.len() != args.len() {
@@ -1066,6 +1064,8 @@ impl Interpreter {
                     },
                 ));
             }
+
+            let mut new_realm = Realm::dive(Gc::clone(&func.closure_realm));
 
             // Arguments are just temporary variables
 
@@ -1101,9 +1101,10 @@ impl Interpreter {
         };
 
         if let Value::Native(native) = method {
-            let new_realm = Realm::dive(Gc::clone(&self.world));
+            // let new_realm = Realm::dive(Gc::clone(&self.world));
 
-            return Ok(Some(native(self, Gc::new(RwLock::new(new_realm)), args)?));
+            // return Ok(Some(native(self, Gc::new(RwLock::new(new_realm)), args)?));
+            return Ok(Some(native(self, Gc::clone(&self.world), args)?));
         }
 
         if let Value::Function(func) = method {
