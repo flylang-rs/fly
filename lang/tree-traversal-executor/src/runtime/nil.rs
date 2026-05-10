@@ -8,7 +8,7 @@ use crate::SharedRealm;
 
 fn nil_to_string(
     _interpreter: &mut crate::Interpreter,
-    _realm: SharedRealm,
+    _realm: std::borrow::Cow<'_, SharedRealm>,
     _args: &[Value],
 ) -> InterpreterResult<ControlFlow> {
     Ok(ControlFlow::Value(Value::String("nil".to_owned().into())))

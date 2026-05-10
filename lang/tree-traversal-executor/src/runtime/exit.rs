@@ -1,10 +1,12 @@
+use std::borrow::Cow;
+
 use crate::{
     Interpreter, InterpreterResult, control_flow::ControlFlow, object::{Value, module::Module}, realm::SharedRealm, runtime::RustInteropFn
 };
 
 fn inner_exit(
     _interpreter: &mut Interpreter,
-    _realm: SharedRealm,
+    _realm: Cow<'_, SharedRealm>,
     args: &[Value],
 ) -> InterpreterResult<ControlFlow> {
     let code = args.first();

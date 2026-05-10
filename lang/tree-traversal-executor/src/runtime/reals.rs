@@ -82,7 +82,7 @@ common_operation_unary!(real_neg, Real, Real, |x: &f64| -x);
 
 fn real_to_string(
     _interpreter: &mut crate::Interpreter,
-    _realm: SharedRealm,
+    _realm: std::borrow::Cow<'_, SharedRealm>,
     args: &[Value],
 ) -> InterpreterResult<ControlFlow> {
     let Value::Real(i) = args[0] else {
@@ -94,7 +94,7 @@ fn real_to_string(
 
 fn real_to_displayable(
     interpreter: &mut crate::Interpreter,
-    realm: SharedRealm,
+    realm: std::borrow::Cow<'_, SharedRealm>,
     args: &[Value],
 ) -> InterpreterResult<ControlFlow> {
     real_to_string(interpreter, realm, args)

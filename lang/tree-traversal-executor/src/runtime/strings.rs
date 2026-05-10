@@ -64,7 +64,7 @@ common_operation_binary!(
 
 fn string_to_string(
     _interpreter: &mut crate::Interpreter,
-    _realm: SharedRealm,
+    _realm: std::borrow::Cow<'_, SharedRealm>,
     args: &[Value],
 ) -> InterpreterResult<ControlFlow> {
     let Value::String(ref i) = args[0] else {
@@ -76,7 +76,7 @@ fn string_to_string(
 
 fn string_to_displayable(
     _interpreter: &mut crate::Interpreter,
-    _realm: SharedRealm,
+    _realm: std::borrow::Cow<'_, SharedRealm>,
     args: &[Value],
 ) -> InterpreterResult<ControlFlow> {
     let Value::String(ref i) = args[0] else {

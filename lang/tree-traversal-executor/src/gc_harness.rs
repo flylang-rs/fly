@@ -2,7 +2,7 @@ use dumpster::sync::CollectInfo;
 
 pub fn gc_collect_condition(info: &CollectInfo) -> bool {
     let dropped = info.n_gcs_dropped_since_last_collect();
-    let yeah = (dropped % 2048) == 0;
+    let yeah = (dropped % 1024) == 0;
 
     if yeah {
         println!("Collect dafuq! {dropped}");

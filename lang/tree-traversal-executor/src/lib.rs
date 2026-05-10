@@ -1,7 +1,5 @@
 use std::{
-    collections::{HashMap, LinkedList},
-    path::PathBuf,
-    sync::{Arc, Mutex, RwLock},
+    borrow::Cow, collections::{HashMap, LinkedList}, path::PathBuf, sync::{Arc, Mutex, RwLock}
 };
 
 use flylang_common::{address::Address, source::Source, spanned::Spanned};
@@ -695,7 +693,7 @@ impl Interpreter {
 
                     self.push_call_frame_for_methodcall(method_key.clone(), callee);
 
-                    let value = self.call_func(realm.clone(), Some(&callee.address), &method, &args);
+                    let value = self.call_func(realm, Some(&callee.address), &method, &args);
 
                     self.call_trace.pop();
 
@@ -728,7 +726,7 @@ impl Interpreter {
 
                 self.push_call_frame(callee, &func);
 
-                let value = self.call_func(realm.clone(), Some(&callee.address), &func, &args)?;
+                let value = self.call_func(realm, Some(&callee.address), &func, &args)?;
 
                 self.call_trace.pop();
 
@@ -753,7 +751,7 @@ impl Interpreter {
             ExprKind::PropertyAccess { .. } => {
                 let lhs = self.resolve_lvalue(realm, expr)?;
 
-                let value = self.read_lvalue(realm.clone(), &lhs);
+                let value = self.read_lvalue(realm, &lhs);
 
                 return Ok(ControlFlow::Value(value));
             }
@@ -899,7 +897,7 @@ impl Interpreter {
 
                 let lvalue = self.resolve_lvalue(realm, &new_decl.name)?;
 
-                let record_def = self.read_lvalue(Gc::clone(&realm), &lvalue);
+                let record_def = self.read_lvalue(realm, &lvalue);
 
                 let record_def = match record_def {
                     Value::Record(record) => record,
@@ -1037,7 +1035,7 @@ impl Interpreter {
     // Supported both native and regular functions.
     pub fn call_func(
         &mut self,
-        realm: SharedRealm,
+        realm: &SharedRealm,
         callee_addr: Option<&Address>,
         func: &Value,
         args: &[Value],
@@ -1045,11 +1043,7 @@ impl Interpreter {
         debug!("Call function with parameters {args:?}");
 
         if let Value::Native(native) = func {
-            // let new_realm = Realm::dive(realm);
-
-            // return native(self, Gc::new(RwLock::new(new_realm)), args);
-
-            return native(self, realm, args);
+            return native(self, Cow::Borrowed(realm), args);
         }
 
         if let Value::Function(func) = func {
@@ -1104,7 +1098,7 @@ impl Interpreter {
             // let new_realm = Realm::dive(Gc::clone(&self.world));
 
             // return Ok(Some(native(self, Gc::new(RwLock::new(new_realm)), args)?));
-            return Ok(Some(native(self, Gc::clone(&self.world), args)?));
+            return Ok(Some(native(self, Cow::Owned(Gc::clone(&self.world)), args)?));
         }
 
         if let Value::Function(func) = method {
@@ -1193,7 +1187,7 @@ impl Interpreter {
         })?;
 
         if let ControlFlow::Value(va) =
-            self.call_func(realm.clone(), None, &method, &[lhs.value, rhs.value])?
+            self.call_func(realm, None, &method, &[lhs.value, rhs.value])?
         {
             Ok(Some(va))
         } else {
@@ -1231,7 +1225,7 @@ impl Interpreter {
             }
         })?;
 
-        if let ControlFlow::Value(va) = self.call_func(realm.clone(), None, &method, &[expr_val])? {
+        if let ControlFlow::Value(va) = self.call_func(realm, None, &method, &[expr_val])? {
             Ok(Some(va))
         } else {
             panic!("Failed to get a return value from function call.");
@@ -1300,7 +1294,7 @@ impl Interpreter {
         }
     }
 
-    fn read_lvalue(&mut self, realm: SharedRealm, target: &LValue) -> Value {
+    fn read_lvalue(&mut self, realm: &SharedRealm, target: &LValue) -> Value {
         match target {
             LValue::Identifier(name) => realm.read().unwrap().lookup(name.as_str()).unwrap(),
             LValue::PrivateIdentifier(name) => realm.read().unwrap().lookup(name.as_str()).unwrap(),
@@ -1390,7 +1384,7 @@ impl Interpreter {
         let target = self.resolve_lvalue(realm, name)?;
 
         // Read current value — identifier needs a lookup, indexed needs evaluation
-        let current = self.read_lvalue(Gc::clone(&realm), &target);
+        let current = self.read_lvalue(realm, &target);
         let rhs = self.evaluate_expression(realm, value, true)?;
 
         let ControlFlow::Value(rhs) = rhs else {

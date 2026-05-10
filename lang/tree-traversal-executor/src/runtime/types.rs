@@ -4,7 +4,7 @@ use crate::{Interpreter, InterpreterResult, SharedRealm, control_flow::ControlFl
 
 fn typename(
     _interpreter: &mut Interpreter,
-    _realm: SharedRealm,
+    _realm: std::borrow::Cow<'_, SharedRealm>,
     args: &[Value],
 ) -> InterpreterResult<ControlFlow> {
     if args.is_empty() {

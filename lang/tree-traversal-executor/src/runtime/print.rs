@@ -8,7 +8,7 @@ use dumpster::sync::Gc;
 
 fn inner_print(
     interpreter: &mut Interpreter,
-    realm: SharedRealm,
+    realm: std::borrow::Cow<'_, SharedRealm>,
     args: &[Value],
 ) -> InterpreterResult<ControlFlow> {
     let len = args.len();
@@ -27,7 +27,7 @@ fn inner_print(
                 .get("to_string")
             {
                 let value =
-                    interpreter.call_func(Gc::clone(&realm), None, method, &[i.clone()])?;
+                    interpreter.call_func(&realm, None, method, &[i.clone()])?;
 
                 let ControlFlow::Value(Value::String(display_value)) = value else {
                     panic!("Failed `{}` to string conversion!", ty);
@@ -58,7 +58,7 @@ fn inner_print(
             .ok_or_else(|| panic!("Method `to_string` is not implemented for type: {ty}"))?;
 
         let string_value =
-            interpreter.call_func(Gc::clone(&realm), None, &method, &[i.clone()])?;
+            interpreter.call_func(&realm, None, &method, &[i.clone()])?;
 
         let ControlFlow::Value(Value::String(display_value)) = string_value else {
             panic!("Failed `{}` to string conversion!", ty);

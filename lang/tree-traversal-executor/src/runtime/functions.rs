@@ -1,11 +1,11 @@
-use std::sync::RwLock;
+use std::{borrow::Cow, sync::RwLock};
 
 use crate::{Interpreter, InterpreterResult, control_flow::ControlFlow, object::{Value, module::Module}, 
 realm::{Realm, SharedRealm}, runtime::RustInteropFn};
 
 fn func_to_displayable(
     _interpreter: &mut Interpreter,
-    _realm: SharedRealm,
+    _realm: Cow<'_, SharedRealm>,
     args: &[Value],
 ) -> InterpreterResult<ControlFlow> {
     let value = args.first().unwrap();

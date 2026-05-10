@@ -1,4 +1,4 @@
-use std::sync::RwLock;
+use std::{borrow::Cow, sync::RwLock};
 
 use crate::{
     InterpreterResult, Value, common_operation_binary, common_operation_unary, control_flow::ControlFlow, object::module::Module, realm::{Realm, SharedRealm}, runtime::RustInteropFn
@@ -14,7 +14,7 @@ common_operation_binary!(bool_neq, Bool, Bool, Bool, |x: &bool, y: &bool| *x != 
 
 fn bool_to_string(
     _interpreter: &mut crate::Interpreter,
-    _realm: SharedRealm,
+    _realm: Cow<'_, SharedRealm>,
     args: &[Value],
 ) -> InterpreterResult<ControlFlow> {
     let Value::Bool(i) = args[0] else {

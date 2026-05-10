@@ -1,4 +1,4 @@
-use std::sync::{Mutex, RwLock};
+use std::{borrow::Cow, sync::{Mutex, RwLock}};
 
 use crate::{
     Interpreter, InterpreterResult, control_flow::ControlFlow, object::{Value, module::Module}, realm::{Realm, SharedRealm}, runtime::RustInteropFn, types
@@ -6,7 +6,7 @@ use crate::{
 
 pub fn array_push(
     _interp: &mut Interpreter,
-    _realm: SharedRealm,
+    _realm: Cow<'_, SharedRealm>,
     args: &[Value],
 ) -> InterpreterResult<ControlFlow> {
     let Value::Array(arr) = &args[0] else {
@@ -21,7 +21,7 @@ pub fn array_push(
 
 pub fn array_len(
     _interp: &mut Interpreter,
-    _realm: SharedRealm,
+    _realm: Cow<'_, SharedRealm>,
     args: &[Value],
 ) -> InterpreterResult<ControlFlow> {
     let Value::Array(arr) = &args[0] else {
@@ -59,7 +59,7 @@ fn render_value(
             .unwrap();
 
     interpreter
-        .call_func(Gc::clone(realm), None, &method, &[val.clone()])
+        .call_func(realm, None, &method, &[val.clone()])
         .unwrap_or_else(|e| panic!("Unhandled interpreter error. ({e:?})"))
         .as_value()
         .and_then(|x| x.as_string())
@@ -98,7 +98,7 @@ fn render_array(
 
 fn array_to_string(
     interpreter: &mut Interpreter,
-    realm: SharedRealm,
+    realm: Cow<'_, SharedRealm>,
     args: &[Value],
 ) -> InterpreterResult<ControlFlow> {
     let Value::Array(array) = &args[0] else {
@@ -115,7 +115,7 @@ fn array_to_string(
 
 fn array_to_displayable(
     interpreter: &mut Interpreter,
-    realm: SharedRealm,
+    realm: Cow<'_, SharedRealm>,
     args: &[Value],
 ) -> InterpreterResult<ControlFlow> {
     array_to_string(interpreter, realm, args)

@@ -149,7 +149,7 @@ common_operation_unary!(integer_neg, Integer, Integer, |x: &i128| -x);
 
 fn integer_to_string(
     _interpreter: &mut crate::Interpreter,
-    _realm: SharedRealm,
+    _realm: std::borrow::Cow<'_, SharedRealm>,
     args: &[Value],
 ) -> InterpreterResult<ControlFlow> {
     let Value::Integer(i) = args[0] else {

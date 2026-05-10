@@ -1,4 +1,4 @@
-use std::ops::Deref;
+use std::{borrow::Cow, ops::Deref};
 
 use dumpster::Visitor;
 
@@ -19,7 +19,7 @@ pub mod types;
 
 pub type RustInteropFnInner = fn(
     interpreter: &mut Interpreter,
-    realm: SharedRealm,
+    realm: Cow<'_, SharedRealm>,
     args: &[Value],
 ) -> InterpreterResult<ControlFlow>;
 
@@ -53,7 +53,7 @@ macro_rules! common_operation_binary {
     ($name:ident, $ty1:ident, $ty2:ident, $res_ty:ident, $conv:expr) => {
         pub fn $name(
             _interpreter: &mut $crate::Interpreter,
-            _realm: $crate::SharedRealm,
+            _realm: std::borrow::Cow<'_, $crate::SharedRealm>,
             args: &[$crate::object::Value],
         ) -> $crate::InterpreterResult<$crate::control_flow::ControlFlow> {
             let lhs = &args[0];
@@ -77,7 +77,7 @@ macro_rules! common_operation_unary {
     ($name:ident, $ty:ident, $res_ty:ident, $conv:expr) => {
         pub fn $name(
             _interpreter: &mut $crate::Interpreter,
-            _realm: $crate::SharedRealm,
+            _realm: std::borrow::Cow<'_, $crate::SharedRealm>,
             args: &[$crate::object::Value],
         ) -> $crate::InterpreterResult<$crate::control_flow::ControlFlow> {
             let val = &args[0];
