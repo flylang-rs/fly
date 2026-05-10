@@ -28,7 +28,7 @@ pub fn value_to_internal_type(val: &Value) -> Option<Cow<'_, str>> {
             Some(Owned(lt))
         }
         Value::Module(m) => {
-            Some(Owned(format!("(module \"{}\"", m.name)))
+            Some(Owned(format!("(module \"{}\")", m.name)))
         }
         // unk => panic!("Cannot convert {unk:?} to internal type."),
     }

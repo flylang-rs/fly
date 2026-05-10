@@ -29,6 +29,14 @@ pub enum Value {
 }
 
 impl Value {
+    pub fn as_array(&self) -> Option<&Gc<Mutex<Vec<Value>>>> {
+        if let Value::Array(ar) = self {
+            Some(ar)
+        } else {
+            None
+        }
+    }
+
     pub fn as_string(&self) -> Option<FlyString> {
         if let Value::String(s) = self {
             Some(s.clone())
@@ -72,6 +80,14 @@ impl Value {
     pub fn as_module(&self) -> Option<&Gc<module::Module>> {
         if let Value::Module(mo) = self {
             Some(mo)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_native(&self) -> Option<&RustInteropFn> {
+        if let Value::Native(na) = self {
+            Some(na)
         } else {
             None
         }

@@ -206,13 +206,9 @@ impl Interpreter {
 
         self.exec_inner(&module_realm, &ast, false)?;
 
-        // let exports = module_realm.read().unwrap().values().clone();
-
         self.module_registry.write().unwrap().insert(
             path.clone(),
-            ModuleState::Loaded, /* (LoadedModule {
-                                     exports: exports.clone(),
-                                 }) */
+            ModuleState::Loaded,
         );
 
         realm.write().unwrap().values_mut().insert(
@@ -441,7 +437,7 @@ impl Interpreter {
                     panic!("Expected RHS as value, got: {rhs:?}");
                 };
 
-                self.assign(realm.clone(), target, rhs.clone());
+                self.assign(realm, target, rhs.clone());
 
                 Ok(ControlFlow::Nothing)
             }
@@ -640,7 +636,7 @@ impl Interpreter {
 
                     let prop = property.value.as_id().unwrap();
 
-                    let type_name = types::value_to_internal_type(&obj).unwrap().to_string();
+                    let type_name = types::value_to_internal_type(&obj).unwrap();
 
                     let method: Value = {
                         // If callee is a part of a record method call, get its method.
@@ -663,7 +659,7 @@ impl Interpreter {
                             let oldstyle_value = realm.read().unwrap().lookup(&method_key);
                             
                             if oldstyle_value.is_some() {
-                                todo!("call: Oldstyle mode is no longer actual!");
+                                unreachable!("call: Oldstyle mode is no longer actual!");
                             } else {
                                 realm
                                     .read()
@@ -679,6 +675,8 @@ impl Interpreter {
                         }
                     };
 
+                    let method_key = format!("{type_name}::{prop}");
+
                     let mut args = vec![obj]; // receiver (self) is first argument
 
                     for p in parameters {
@@ -687,12 +685,11 @@ impl Interpreter {
                         else {
                             panic!()
                         };
+
                         args.push(v);
                     }
 
-                    let method_key = format!("{type_name}::{prop}");
-
-                    self.push_call_frame_for_methodcall(method_key.clone(), callee);
+                    self.push_call_frame_for_methodcall(method_key, callee);
 
                     let value = self.call_func(realm, Some(&callee.address), &method, &args);
 
@@ -741,7 +738,7 @@ impl Interpreter {
                     panic!("Expected RHS as value, got: {rhs:?}");
                 };
 
-                self.assign(realm.clone(), target, rhs.clone());
+                self.assign(realm, target, rhs.clone());
 
                 if is_subexpression {
                     ControlFlow::Value(rhs)
@@ -999,7 +996,7 @@ impl Interpreter {
 
         self.call_trace.push(CallFrame {
             function_name: name.value, // the function being called
-            from: last.to_string().into(),
+            from: last.into(),
             call_site: CallSegment {
                 address_filename: callee.address.source.filepath.clone(),
                 address_line_col: callee
@@ -1019,7 +1016,7 @@ impl Interpreter {
             .unwrap_or_else(|| "<main>".to_string());
 
         self.call_trace.push(CallFrame {
-            function_name: method_key.clone(),
+            function_name: method_key,
             from: last.to_string().into(),
             call_site: CallSegment {
                 address_filename: callee.address.source.filepath.clone(),
@@ -1172,7 +1169,11 @@ impl Interpreter {
             .and_then(|x| {
                 // TODO: Optimize method dispatching. Remove `r_type` and dispatch types in natives
                 // themselves.
-                let method_name = format!("operator{op}{r_type}");
+                let mut method_name = String::with_capacity(8 + op.len() + r_type.len());
+                
+                method_name += "operator";
+                method_name += op;
+                method_name += &r_type;
 
                 x.as_module()?.method_lookup(&method_name)
             })
@@ -1323,7 +1324,7 @@ impl Interpreter {
     }
 
     // I separated it into a function to make it compatible with OpAssignments (+=, -=, ...)
-    fn assign(&mut self, realm: SharedRealm, target: LValue, value: Value) {
+    fn assign(&mut self, realm: &SharedRealm, target: LValue, value: Value) {
         debug!("!!! Assignment: {target:?}");
 
         match target {
@@ -1399,7 +1400,7 @@ impl Interpreter {
             )?
             .unwrap();
 
-        self.assign(Gc::clone(&realm), target, result.clone());
+        self.assign(realm, target, result.clone());
 
         Ok(if is_subexpression {
             ControlFlow::Value(result)
