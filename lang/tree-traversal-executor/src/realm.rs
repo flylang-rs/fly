@@ -58,7 +58,7 @@ impl Realm {
         }
 
         // If not found, try searching in parent Realm.
-        self.parent.as_ref()?.try_read().unwrap().lookup(term)
+        self.parent.as_ref()?.read().unwrap().lookup(term)
     }
 
     /// Walks up the realm chain and it rewrites the value of variable

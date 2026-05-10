@@ -9,7 +9,7 @@ use crate::realm::Realm;
 #[derive(Clone, Trace)]
 pub struct Function {
     pub normal_name: FunctionNameKind,
-    pub params: Vec<String>,
+    pub params: Box<[String]>,
     pub body: Statement,
     pub closure_realm: Gc<RwLock<Realm>>, // captured at definition time
 }

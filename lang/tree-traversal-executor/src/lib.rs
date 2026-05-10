@@ -265,7 +265,7 @@ impl Interpreter {
 
                 let value = Value::Function(Gc::new(Function {
                     normal_name: FunctionNameKind::Normal(real_name.clone()),
-                    params,
+                    params: params.into_boxed_slice(),
                     body: *function.body.clone(),
                     closure_realm: Gc::clone(&realm),
                 }));
