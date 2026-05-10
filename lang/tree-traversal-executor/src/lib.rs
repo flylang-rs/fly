@@ -136,7 +136,7 @@ impl Interpreter {
         return_on_value: bool,
     ) -> InterpreterResult<ControlFlow> {
         for i in ast {
-            let stmt = self.exec_single_statement(Gc::clone(&realm), i)?;
+            let stmt = self.exec_single_statement(&realm, i)?;
 
             debug!("Got: {i:?} => {stmt:?}");
 
@@ -159,7 +159,7 @@ impl Interpreter {
 
     fn import_module(
         &mut self,
-        realm: SharedRealm,
+        realm: &SharedRealm,
         importer: &str,
         path_segments: Vec<String>,
     ) -> InterpreterResult<()> {
@@ -231,7 +231,7 @@ impl Interpreter {
     /// Execute the single statement.
     fn exec_single_statement(
         &mut self,
-        realm: SharedRealm,
+        realm: &SharedRealm,
         statement: &Statement,
     ) -> InterpreterResult<ControlFlow> {
         match statement {
@@ -303,7 +303,7 @@ impl Interpreter {
                 // if x < n { ...
                 //       ^^^^^
                 // Values are accessed outside the `if` body's scope, so passing `realm` is OK.
-                let cond = self.evaluate_expression(Gc::clone(&realm), &stmt.condition, false)?;
+                let cond = self.evaluate_expression(realm, &stmt.condition, false)?;
 
                 // Condition must be a value.
                 let ControlFlow::Value(cond) = cond else {
@@ -375,7 +375,7 @@ impl Interpreter {
                     // while x < n { ...
                     //       ^^^^^
                     // Values are accessed outside the while body's scope, so passing `realm` is OK.
-                    let cond = self.evaluate_expression(Gc::clone(&realm), condition, false)?;
+                    let cond = self.evaluate_expression(realm, condition, false)?;
 
                     // Condition must be a value.
                     let ControlFlow::Value(cond) = cond else {
@@ -421,7 +421,7 @@ impl Interpreter {
             Statement::Break => Ok(ControlFlow::Break),
             Statement::VariableDefinition(var) => {
                 let lhs = self.resolve_lvalue(
-                    Gc::clone(&realm),
+                    realm,
                     &var.name.clone().map(ExprKind::Identifier),
                 )?;
 
@@ -432,7 +432,7 @@ impl Interpreter {
                 };
 
                 let rhs = self.evaluate_expression(
-                    Gc::clone(&realm),
+                    realm,
                     var.value.as_ref().unwrap(),
                     false,
                 )?;
@@ -441,7 +441,7 @@ impl Interpreter {
                     panic!("Expected RHS as value, got: {rhs:?}");
                 };
 
-                self.assign(realm, target, rhs.clone());
+                self.assign(realm.clone(), target, rhs.clone());
 
                 Ok(ControlFlow::Nothing)
             }
@@ -498,7 +498,7 @@ impl Interpreter {
     // = 9
     fn evaluate_expression(
         &mut self,
-        realm: SharedRealm,
+        realm: &SharedRealm,
         expr: &Expression,
         is_subexpression: bool,
     ) -> InterpreterResult<ControlFlow> {
@@ -613,7 +613,7 @@ impl Interpreter {
             }
             ExprKind::Array(exprs) => {
                 let values_iter = exprs.iter().map(|x| {
-                    let expr = self.evaluate_expression(Gc::clone(&realm), x, false)?;
+                    let expr = self.evaluate_expression(realm, x, false)?;
 
                     let ControlFlow::Value(value) = expr else {
                         panic!("Expected value, got: {expr:?}");
@@ -633,7 +633,7 @@ impl Interpreter {
             ExprKind::Call { callee, parameters } => {
                 // Special case - method call by using property access.
                 if let ExprKind::PropertyAccess { origin, property } = &callee.value {
-                    let obj = self.evaluate_expression(Gc::clone(&realm), origin, true)?;
+                    let obj = self.evaluate_expression(realm, origin, true)?;
                     let ControlFlow::Value(obj) = obj else {
                         panic!()
                     };
@@ -684,7 +684,7 @@ impl Interpreter {
 
                     for p in parameters {
                         let ControlFlow::Value(v) =
-                            self.evaluate_expression(Gc::clone(&realm), p, true)?
+                            self.evaluate_expression(realm, p, true)?
                         else {
                             panic!()
                         };
@@ -695,21 +695,21 @@ impl Interpreter {
 
                     self.push_call_frame_for_methodcall(method_key.clone(), callee);
 
-                    let value = self.call_func(realm, Some(&callee.address), &method, &args);
+                    let value = self.call_func(realm.clone(), Some(&callee.address), &method, &args);
 
                     self.call_trace.pop();
 
                     return value;
                 }
 
-                let func = self.evaluate_expression(Gc::clone(&realm), callee, true)?;
+                let func = self.evaluate_expression(realm, callee, true)?;
 
                 let ControlFlow::Value(func) = func else {
                     panic!("Expected a function as value, got: {func:?}");
                 };
 
                 let args_iter = parameters.iter().map(|x| {
-                    let expr = self.evaluate_expression(Gc::clone(&realm), x, true)?;
+                    let expr = self.evaluate_expression(realm, x, true)?;
 
                     if let ControlFlow::Value(va) = expr {
                         Ok(va)
@@ -728,21 +728,21 @@ impl Interpreter {
 
                 self.push_call_frame(callee, &func);
 
-                let value = self.call_func(realm, Some(&callee.address), &func, &args)?;
+                let value = self.call_func(realm.clone(), Some(&callee.address), &func, &args)?;
 
                 self.call_trace.pop();
 
                 value
             }
             ExprKind::Assignment { name, value } => {
-                let target = self.resolve_lvalue(Gc::clone(&realm), name)?;
-                let rhs = self.evaluate_expression(Gc::clone(&realm), value, true)?;
+                let target = self.resolve_lvalue(realm, name)?;
+                let rhs = self.evaluate_expression(realm, value, true)?;
 
                 let ControlFlow::Value(rhs) = rhs else {
                     panic!("Expected RHS as value, got: {rhs:?}");
                 };
 
-                self.assign(realm, target, rhs.clone());
+                self.assign(realm.clone(), target, rhs.clone());
 
                 if is_subexpression {
                     ControlFlow::Value(rhs)
@@ -751,14 +751,14 @@ impl Interpreter {
                 }
             }
             ExprKind::PropertyAccess { .. } => {
-                let lhs = self.resolve_lvalue(Gc::clone(&realm), expr)?;
+                let lhs = self.resolve_lvalue(realm, expr)?;
 
-                let value = self.read_lvalue(realm, &lhs);
+                let value = self.read_lvalue(realm.clone(), &lhs);
 
                 return Ok(ControlFlow::Value(value));
             }
             ExprKind::IndexedAccess { origin, index } => {
-                let container = self.evaluate_expression(Gc::clone(&realm), origin, true)?;
+                let container = self.evaluate_expression(realm, origin, true)?;
                 let index = self.evaluate_expression(realm, index, true)?;
 
                 let ControlFlow::Value(container) = container else {
@@ -897,7 +897,7 @@ impl Interpreter {
                     obj => panic!("Creating new object from `{obj:?}` is not supported (yet)!"),
                 };
 
-                let lvalue = self.resolve_lvalue(Gc::clone(&realm), &new_decl.name)?;
+                let lvalue = self.resolve_lvalue(realm, &new_decl.name)?;
 
                 let record_def = self.read_lvalue(Gc::clone(&realm), &lvalue);
 
@@ -933,7 +933,7 @@ impl Interpreter {
                 for (name, value) in new_decl.fields.iter() {
                     let real_name = name.value.to_owned();
                     let real_value = self.exec_single_statement(
-                        Gc::clone(&realm),
+                        &realm,
                         &Statement::Expr(value.clone()),
                     )?;
 
@@ -1074,7 +1074,7 @@ impl Interpreter {
             }
 
             let result =
-                self.exec_single_statement(Gc::new(RwLock::new(new_realm)), &func.body)?;
+                self.exec_single_statement(&Gc::new(RwLock::new(new_realm)), &func.body)?;
 
             debug!(
                 "Executing func with params {:?} returned {:?}",
@@ -1123,7 +1123,7 @@ impl Interpreter {
             }
 
             let result =
-                self.exec_single_statement(Gc::new(RwLock::new(new_realm)), &func.body)?;
+                self.exec_single_statement(&Gc::new(RwLock::new(new_realm)), &func.body)?;
 
             return Ok(Some(match result {
                 ControlFlow::Return(v) => ControlFlow::Value(v),
@@ -1136,13 +1136,13 @@ impl Interpreter {
 
     fn binary_op_helper(
         &mut self,
-        realm: SharedRealm,
+        realm: &SharedRealm,
         op: &str,
         lhs: &Expression,
         rhs: &Expression,
     ) -> InterpreterResult<Option<Value>> {
-        let lhs_val = self.evaluate_expression(Gc::clone(&realm), lhs, true)?;
-        let rhs_val = self.evaluate_expression(Gc::clone(&realm), rhs, true)?;
+        let lhs_val = self.evaluate_expression(realm, lhs, true)?;
+        let rhs_val = self.evaluate_expression(realm, rhs, true)?;
 
         let ControlFlow::Value(lhs_val) = lhs_val else {
             panic!("A value should be returned by LHS, got: {lhs_val:?}");
@@ -1162,7 +1162,7 @@ impl Interpreter {
 
     fn binary_op_helper_values(
         &mut self,
-        realm: SharedRealm,
+        realm: &SharedRealm,
         op: &str,
         lhs: Spanned<Value>,
         rhs: Spanned<Value>,
@@ -1193,7 +1193,7 @@ impl Interpreter {
         })?;
 
         if let ControlFlow::Value(va) =
-            self.call_func(realm, None, &method, &[lhs.value, rhs.value])?
+            self.call_func(realm.clone(), None, &method, &[lhs.value, rhs.value])?
         {
             Ok(Some(va))
         } else {
@@ -1203,11 +1203,11 @@ impl Interpreter {
 
     fn unary_op_helper(
         &mut self,
-        realm: SharedRealm,
+        realm: &SharedRealm,
         op: &str,
         expr: &Expression,
     ) -> InterpreterResult<Option<Value>> {
-        let expr_val = self.evaluate_expression(Gc::clone(&realm), expr, true)?;
+        let expr_val = self.evaluate_expression(realm, expr, true)?;
 
         let ControlFlow::Value(expr_val) = expr_val else {
             panic!("A value should be returned, got: {expr_val:?}");
@@ -1231,7 +1231,7 @@ impl Interpreter {
             }
         })?;
 
-        if let ControlFlow::Value(va) = self.call_func(realm, None, &method, &[expr_val])? {
+        if let ControlFlow::Value(va) = self.call_func(realm.clone(), None, &method, &[expr_val])? {
             Ok(Some(va))
         } else {
             panic!("Failed to get a return value from function call.");
@@ -1240,15 +1240,15 @@ impl Interpreter {
 
     fn resolve_lvalue(
         &mut self,
-        realm: SharedRealm,
+        realm: &SharedRealm,
         expr: &Expression,
     ) -> InterpreterResult<LValue> {
         match &expr.value {
             ExprKind::Identifier(name) => Ok(LValue::Identifier(name.clone())),
 
             ExprKind::IndexedAccess { origin, index } => {
-                let container = self.evaluate_expression(Gc::clone(&realm), origin, true)?;
-                let index = self.evaluate_expression(Gc::clone(&realm), index, true)?;
+                let container = self.evaluate_expression(realm, origin, true)?;
+                let index = self.evaluate_expression(realm, index, true)?;
 
                 let ControlFlow::Value(container) = container else {
                     panic!("Expected value as container, got: {container:?}");
@@ -1262,7 +1262,7 @@ impl Interpreter {
             }
 
             ExprKind::PropertyAccess { origin, property } => {
-                let object = self.evaluate_expression(Gc::clone(&realm), origin, true);
+                let object = self.evaluate_expression(realm, origin, true);
                 let name = property.value.as_id().unwrap().to_owned();
 
                 let Ok(ControlFlow::Value(object)) = object else {
@@ -1381,17 +1381,17 @@ impl Interpreter {
 
     fn compound_assignment_helper(
         &mut self,
-        realm: SharedRealm,
+        realm: &SharedRealm,
         op: &str,
         name: &Expression,
         value: &Expression,
         is_subexpression: bool,
     ) -> InterpreterResult<ControlFlow> {
-        let target = self.resolve_lvalue(Gc::clone(&realm), name)?;
+        let target = self.resolve_lvalue(realm, name)?;
 
         // Read current value — identifier needs a lookup, indexed needs evaluation
         let current = self.read_lvalue(Gc::clone(&realm), &target);
-        let rhs = self.evaluate_expression(Gc::clone(&realm), value, true)?;
+        let rhs = self.evaluate_expression(realm, value, true)?;
 
         let ControlFlow::Value(rhs) = rhs else {
             panic!("Expected RHS as value, got: {rhs:?}");
@@ -1399,7 +1399,7 @@ impl Interpreter {
 
         let result = self
             .binary_op_helper_values(
-                Gc::clone(&realm),
+                realm,
                 op,
                 Spanned::new(current, name.address.clone()),
                 Spanned::new(rhs, value.address.clone()),
