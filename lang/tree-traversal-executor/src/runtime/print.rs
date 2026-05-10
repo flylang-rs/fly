@@ -14,7 +14,7 @@ fn inner_print(
     let len = args.len();
 
     for (n, i) in args.iter().enumerate() {
-        let ty = types::value_to_internal_type(&i).unwrap();
+        let ty = types::value_to_internal_type(i).unwrap();
 
         if let Value::RecordInstance(ri) = i {
             if let Some(method) = ri
@@ -27,7 +27,7 @@ fn inner_print(
                 .get("to_string")
             {
                 let value =
-                    interpreter.call_func(&realm, None, method, &[i.clone()])?;
+                    interpreter.call_func(&realm, None, method, std::slice::from_ref(i))?;
 
                 let ControlFlow::Value(Value::String(display_value)) = value else {
                     panic!("Failed `{}` to string conversion!", ty);
@@ -57,7 +57,7 @@ fn inner_print(
             .ok_or_else(|| panic!("Method `to_string` is not implemented for type: {ty}"))?;
 
         let string_value =
-            interpreter.call_func(&realm, None, &method, &[i.clone()])?;
+            interpreter.call_func(&realm, None, &method, std::slice::from_ref(i))?;
 
         let ControlFlow::Value(Value::String(display_value)) = string_value else {
             panic!("Failed `{}` to string conversion!", ty);

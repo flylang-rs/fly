@@ -58,6 +58,12 @@ pub struct Interpreter {
     _gc_drop_trigger: DumpsterGCHandle
 }
 
+impl Default for Interpreter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Interpreter {
     pub fn new() -> Self {
         let builtins = Gc::new(RwLock::new(Realm::new()));
@@ -134,7 +140,7 @@ impl Interpreter {
         return_on_value: bool,
     ) -> InterpreterResult<ControlFlow> {
         for i in ast {
-            let stmt = self.exec_single_statement(&realm, i)?;
+            let stmt = self.exec_single_statement(realm, i)?;
 
             debug!("Got: {i:?} => {stmt:?}");
 
@@ -263,7 +269,7 @@ impl Interpreter {
                     normal_name: FunctionNameKind::Normal(real_name.clone()),
                     params: params.into_boxed_slice(),
                     body: *function.body.clone(),
-                    closure_realm: Gc::clone(&realm),
+                    closure_realm: Gc::clone(realm),
                 }));
 
                 debug!("Record name: {:?}", record_path);
@@ -320,7 +326,7 @@ impl Interpreter {
                     };
 
                     if let ExprKind::Block(bk) = &block_value.value {
-                        self.exec_inner(realm, &bk, false)
+                        self.exec_inner(realm, bk, false)
                     } else {
                         panic!("Expected a block!")
                     }
@@ -467,7 +473,7 @@ impl Interpreter {
                     name: name.clone(),
                     fields,
                     methods: Gc::new(RwLock::new(HashMap::new())),
-                    definition_realm: Gc::clone(&realm),
+                    definition_realm: Gc::clone(realm),
                 };
 
                 realm
@@ -597,7 +603,7 @@ impl Interpreter {
             }
             ExprKind::String(st) => ControlFlow::Value(Value::String(FlyString::new(st.clone()))),
             ExprKind::Block(ast) => {
-                let inner_realm = Gc::new(RwLock::new(Realm::dive(Gc::clone(&realm))));
+                let inner_realm = Gc::new(RwLock::new(Realm::dive(Gc::clone(realm))));
                 let block_result = self.exec_inner(&inner_realm, ast, false)?;
 
                 match block_result {
@@ -665,7 +671,7 @@ impl Interpreter {
                                     .read()
                                     .unwrap()
                                     .lookup(&type_name)
-                                    .and_then(|x| x.as_module()?.method_lookup(&prop))
+                                    .and_then(|x| x.as_module()?.method_lookup(prop))
                                     .ok_or_else(|| InterpreterError::NoPropertyForType {
                                         typename: type_name.to_string(),
                                         property: prop.to_string(),
@@ -830,8 +836,8 @@ impl Interpreter {
 
                 for (idx, stem) in stems.iter().enumerate() {
                     let result_c = || {
-                        if let Some(Value::Record(re)) = &node {
-                            if let Some((_, value)) = re
+                        if let Some(Value::Record(re)) = &node
+                            && let Some((_, value)) = re
                                 .methods
                                 .read()
                                 .unwrap()
@@ -840,15 +846,14 @@ impl Interpreter {
                             {
                                 return Some(value.clone());
                             }
-                        }
 
                         let rd_realm = if let Some(Value::Module(mo)) = &node {
                             &mo.realm
                         } else {
-                            &realm
+                            realm
                         };
 
-                        rd_realm.read().unwrap().lookup(&stem)
+                        rd_realm.read().unwrap().lookup(stem)
                     };
 
                     let result = result_c();
@@ -880,7 +885,7 @@ impl Interpreter {
                         .map(|x| x.value.as_id().unwrap().to_owned())
                         .collect(),
                     body: Statement::Expr(*body.clone()),
-                    closure_realm: Gc::clone(&realm),
+                    closure_realm: Gc::clone(realm),
                 }));
 
                 ControlFlow::Value(value)
@@ -929,7 +934,7 @@ impl Interpreter {
                 for (name, value) in new_decl.fields.iter() {
                     let real_name = name.value.to_owned();
                     let real_value = self.exec_single_statement(
-                        &realm,
+                        realm,
                         &Statement::Expr(value.clone()),
                     )?;
 

@@ -2,7 +2,7 @@ use dumpster::sync::CollectInfo;
 
 pub fn gc_collect_condition(info: &CollectInfo) -> bool {
     let dropped = info.n_gcs_dropped_since_last_collect();
-    let yeah = (dropped % 4096) == 0;
+    let yeah = dropped.is_multiple_of(4096);
 
     // if yeah {
     //     eprintln!("GC: Collect!");
@@ -15,6 +15,12 @@ pub fn gc_collect_condition(info: &CollectInfo) -> bool {
 /// trigger it and then Dumpster GC collection will be triggered.
 #[derive(Clone)]
 pub struct DumpsterGCHandle {}
+
+impl Default for DumpsterGCHandle {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl DumpsterGCHandle {
     pub fn new() -> Self {

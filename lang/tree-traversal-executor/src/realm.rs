@@ -17,6 +17,12 @@ pub struct Realm {
     pub parent: Option<SharedRealm>,
 }
 
+impl Default for Realm {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Realm {
     pub fn new() -> Self {
         Self {

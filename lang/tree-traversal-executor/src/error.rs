@@ -68,7 +68,7 @@ impl DiagnosticsReport for InterpreterError {
                 flylang_diagnostics::Diagnostics {}.error_ext(
                     &mut result,
                     &format!("Name `{name}` is not defined."),
-                    &address,
+                    address,
                     &[Note::new(address.clone(), "here")],
                     &[],
                 )
@@ -82,7 +82,7 @@ impl DiagnosticsReport for InterpreterError {
             } => flylang_diagnostics::Diagnostics {}.error_ext(
                 &mut result,
                 &format!("Incompatible types for binary operation `{op}`: `{lhs_type}` and `{rhs_type}`"),
-                &lhs_addr,
+                lhs_addr,
                 &[
                     // Swap them to make RHS point upper than LHS that shows lower.
                     // "string" + 49
@@ -100,7 +100,7 @@ impl DiagnosticsReport for InterpreterError {
             } => flylang_diagnostics::Diagnostics {}.error_ext(
                 &mut result,
                 &format!("Incompatible types for unary operation `{op}`: `{ty}`"),
-                &addr,
+                addr,
                 &[
                     Note::new(addr.clone(), &format!("Has type: `{ty}`")),
                 ],
@@ -114,7 +114,7 @@ impl DiagnosticsReport for InterpreterError {
                             &format!(
                                 "Insufficent argument for a function call ({expected_count} expected, {given_count} given)"
                             ),
-                            &callee_address,
+                            callee_address,
                             &[
                                 Note::new(callee_address.clone(), "here"),
                             ],
@@ -127,7 +127,7 @@ impl DiagnosticsReport for InterpreterError {
                 flylang_diagnostics::Diagnostics {}.error_ext(
                     &mut result,
                     &format!("Property `{property}` is not defined for type `{typename}`"),
-                    &callee_address,
+                    callee_address,
                     &[
                         Note::new(callee_address.clone(), "here"),
                     ],

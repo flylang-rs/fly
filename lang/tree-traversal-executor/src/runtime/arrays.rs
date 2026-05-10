@@ -52,13 +52,12 @@ fn render_value(
             .read()
             .unwrap()
             .lookup(&ty)
-            .map(|x| x.as_module()?.method_lookup("to_displayable"))
-            .flatten()
+            .and_then(|x| x.as_module()?.method_lookup("to_displayable"))
             .ok_or_else(|| panic!("Method `to_displayable` is not implemented for type: {ty}"))
             .unwrap();
 
     interpreter
-        .call_func(realm, None, &method, &[val.clone()])
+        .call_func(realm, None, &method, std::slice::from_ref(val))
         .unwrap_or_else(|e| panic!("Unhandled interpreter error. ({e:?})"))
         .as_value()
         .and_then(|x| x.as_string())
