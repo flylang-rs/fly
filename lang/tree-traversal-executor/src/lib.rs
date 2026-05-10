@@ -118,18 +118,18 @@ impl Interpreter {
     /// Entry point of the interpreter, it accepts a list of statements given by the parser.
     /// Since it accepts any kind of statement including expressions, it will return a value.
     pub fn execute(&mut self, ast: Vec<Statement>) -> InterpreterResult<ControlFlow> {
-        self.exec_inner(Gc::clone(&self.world), &ast, true)
+        self.exec_inner(&Gc::clone(&self.world), &ast, true)
     }
 
     /// Script version of `Interpreter::execute`. Doesn't break when value is returned.
     pub fn execute_script(&mut self, ast: Vec<Statement>) -> InterpreterResult<ControlFlow> {
-        self.exec_inner(Gc::clone(&self.world), &ast, false)
+        self.exec_inner(&Gc::clone(&self.world), &ast, false)
     }
 
     /// Trampoline for executor: operate with given realm and the parsed code
     fn exec_inner(
         &mut self,
-        realm: SharedRealm,
+        realm: &SharedRealm,
         ast: &[Statement],
         return_on_value: bool,
     ) -> InterpreterResult<ControlFlow> {
@@ -204,7 +204,7 @@ impl Interpreter {
 
         let module_realm = Gc::new(RwLock::new(Realm::dive(Gc::clone(&self.builtins))));
 
-        self.exec_inner(Gc::clone(&module_realm), &ast, false)?;
+        self.exec_inner(&module_realm, &ast, false)?;
 
         // let exports = module_realm.read().unwrap().values().clone();
 
@@ -322,7 +322,7 @@ impl Interpreter {
                     };
 
                     if let ExprKind::Block(bk) = &block_value.value {
-                        self.exec_inner(Gc::clone(&realm), &bk, false)
+                        self.exec_inner(realm, &bk, false)
                     } else {
                         panic!("Expected a block!")
                     }
@@ -400,7 +400,7 @@ impl Interpreter {
                     };
 
                     if let ExprKind::Block(bk) = &block_value.value {
-                        let block_result = self.exec_inner(Gc::clone(&realm), bk, false)?;
+                        let block_result = self.exec_inner(realm, bk, false)?;
 
                         match block_result {
                             ControlFlow::Return(_) => return Ok(block_result),
@@ -600,7 +600,7 @@ impl Interpreter {
             ExprKind::String(st) => ControlFlow::Value(Value::String(FlyString::new(st.clone()))),
             ExprKind::Block(ast) => {
                 let inner_realm = Gc::new(RwLock::new(Realm::dive(Gc::clone(&realm))));
-                let block_result = self.exec_inner(inner_realm, ast, false)?;
+                let block_result = self.exec_inner(&inner_realm, ast, false)?;
 
                 match block_result {
                     ControlFlow::Return(_) => block_result,

@@ -26,6 +26,12 @@ pub struct REPL {
     cursor_position: usize, // Relative to text, not the whole prompt
 }
 
+impl Default for REPL {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub enum ReadlineResult {
     Ignore,
     Break,

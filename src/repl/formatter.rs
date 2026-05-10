@@ -24,7 +24,7 @@ impl REPLFormatter {
             .map(|Token { value, address }| REPLToken {
                 kind: value,
                 raw_value: &code[address.span.clone()],
-                address: address,
+                address,
             });
 
         let mut finale = code.to_string();
