@@ -13,8 +13,6 @@ use std::sync::Arc;
 
 use flylang_common::{address::Address, source::Source};
 
-use dumpster::sync::Gc;
-
 use crate::{
     error::LexerError,
     token::{Token, TokenValue},

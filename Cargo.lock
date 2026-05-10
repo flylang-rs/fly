@@ -305,7 +305,6 @@ dependencies = [
 name = "flylang-lexer"
 version = "0.1.2"
 dependencies = [
- "dumpster",
  "flylang-common",
  "flylang-diagnostics",
  "insta",

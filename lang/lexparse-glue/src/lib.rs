@@ -7,8 +7,6 @@ use flylang_parser::{Parser, ast::Statement, error::ParserError, state::ParserSt
 
 pub type LoadingResult<T> = Result<T, LoadingError>;
 
-use dumpster::sync::Gc;
-
 #[derive(Debug, Clone)]
 pub enum LoadingError {
     LexerError(LexerError),

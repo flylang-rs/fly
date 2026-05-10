@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use flylang_parser::ast::Gc;
 use log::info;
 
 use flylang_common::source::Source;

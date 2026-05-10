@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use dumpster::sync::Gc;
 use flylang_common::source::Source;
 
 use crate::{ParserResult, ast::Statement};

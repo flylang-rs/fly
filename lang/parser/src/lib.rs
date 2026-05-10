@@ -9,8 +9,6 @@ use crate::{
     state::ParserState,
 };
 
-use dumpster::sync::Gc;
-
 // Import tests when necessary
 #[cfg(test)]
 mod tests;

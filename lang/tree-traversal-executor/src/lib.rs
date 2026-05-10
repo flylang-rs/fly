@@ -1,5 +1,5 @@
 use std::{
-    borrow::Cow, collections::{HashMap, LinkedList}, path::PathBuf, sync::{Arc, Mutex, RwLock}
+    borrow::Cow, collections::HashMap, path::PathBuf, sync::{Arc, Mutex, RwLock}
 };
 
 use flylang_common::{address::Address, source::Source, spanned::Spanned};
