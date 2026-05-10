@@ -1,13 +1,21 @@
 use core::ops::Range;
 use core::fmt::Debug;
+use std::sync::Arc;
 
-use dumpster::{Trace, sync::Gc};
+use dumpster::{TraceWith, Visitor};
 
 /// An address in source file referencing a token.
-#[derive(Clone, Trace)]
+#[derive(Clone)]
 pub struct Address {
-    pub source: Gc<crate::source::Source>,
+    pub source: Arc<crate::source::Source>,
     pub span: Range<usize>,
+}
+
+// SAFETY: `Address::source` can't make reference cycles, so `Arc` is acceptable here.
+unsafe impl<V: Visitor> TraceWith<V> for Address {
+    fn accept(&self, _visitor: &mut V) -> Result<(), ()> {
+        Ok(())
+    }
 }
 
 impl Address {

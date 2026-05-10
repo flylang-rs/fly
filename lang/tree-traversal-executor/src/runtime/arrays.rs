@@ -62,7 +62,7 @@ fn render_value(
         .call_func(Gc::clone(realm), None, &method, &[val.clone()])
         .unwrap_or_else(|e| panic!("Unhandled interpreter error. ({e:?})"))
         .as_value()
-        .and_then(|x| x.as_arc_string())
+        .and_then(|x| x.as_string())
         .map(|s| s.to_string())
         .unwrap_or_else(|| panic!("Failed getting displayable for `{}`", ty))
 }

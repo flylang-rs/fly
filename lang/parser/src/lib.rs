@@ -1,7 +1,7 @@
 use flylang_common::{address::Address, source::Source, spanned::Spanned, visibility::Visibility};
 use flylang_lexer::token::{Token, TokenValue};
 use log::debug;
-use std::{iter::Peekable};
+use std::{iter::Peekable, sync::Arc};
 
 use crate::{
     ast::{ExprKind, KeyValueMapWithDuplicates, RecordDefinition, VariableDefinition},
@@ -29,12 +29,12 @@ pub struct Parser {
 }
 
 impl Parser {
-    pub fn new(tokens: Vec<Token>, source: &Gc<Source>) -> Self {
+    pub fn new(tokens: Vec<Token>, source: &Arc<Source>) -> Self {
         let eof_addr = tokens
             .last()
             .map(|x| x.address.clone())
             .unwrap_or_else(|| Address {
-                source: Gc::clone(source),
+                source: Arc::clone(source),
                 span: 0..0,
             });
 

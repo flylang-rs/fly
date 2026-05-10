@@ -9,12 +9,12 @@ use flylang_parser::ast::{DivisionKind, ExprKind, Expression, Statement, While};
 use log::debug;
 
 use crate::{
-    calltrace::{CallFrame, CallSegment}, control_flow::ControlFlow, error::{CallError, InterpreterError}, gc_harness::DumpsterGCDropTrigger, object::{
+    calltrace::{CallFrame, CallSegment}, control_flow::ControlFlow, error::{CallError, InterpreterError}, gc_harness::DumpsterGCHandle, object::{
         Value,
         function::{Function, FunctionNameKind},
         lvalue::LValue,
         module::Module,
-        record::{Record, RecordField, RecordInstance, RecordInstanceField},
+        record::{Record, RecordField, RecordInstance, RecordInstanceField}, string::FlyString,
     }, realm::{Realm, SharedRealm}
 };
 
@@ -54,10 +54,10 @@ pub struct Interpreter {
     module_registry: Arc<RwLock<HashMap<PathBuf, ModuleState>>>,
 
     // Contains call trace to output it when an error happens.
-    call_trace: LinkedList<CallFrame>,
+    call_trace: Vec<CallFrame>,
 
     // Will be used when `Interpreter::drop` happens, cleaning up garbage.
-    _gc_drop_trigger: DumpsterGCDropTrigger
+    _gc_drop_trigger: DumpsterGCHandle
 }
 
 impl Interpreter {
@@ -104,8 +104,8 @@ impl Interpreter {
             builtins,
             world,
             module_registry: Arc::new(RwLock::new(HashMap::new())),
-            call_trace: LinkedList::new(),
-            _gc_drop_trigger: DumpsterGCDropTrigger,
+            call_trace: Vec::new(),
+            _gc_drop_trigger: DumpsterGCHandle::new(),
         }
     }
 
@@ -113,7 +113,7 @@ impl Interpreter {
         &self.world
     }
 
-    pub fn calltrace(&self) -> &LinkedList<CallFrame> {
+    pub fn calltrace(&self) -> &[CallFrame] {
         &self.call_trace
     }
 
@@ -202,7 +202,7 @@ impl Interpreter {
         };
 
         let ast =
-            flylang_lexparse_glue::parse_source(Gc::new(Source::new(filename, code))).unwrap();
+            flylang_lexparse_glue::parse_source(Arc::new(Source::new(filename, code))).unwrap();
 
         let module_realm = Gc::new(RwLock::new(Realm::dive(Gc::clone(&self.builtins))));
 
@@ -599,7 +599,7 @@ impl Interpreter {
 
                 ControlFlow::Value(val)
             }
-            ExprKind::String(st) => ControlFlow::Value(Value::String(Gc::new(st.clone()))),
+            ExprKind::String(st) => ControlFlow::Value(Value::String(FlyString::new(st.clone()))),
             ExprKind::Block(ast) => {
                 let inner_realm = Gc::new(RwLock::new(Realm::dive(Gc::clone(&realm))));
                 let block_result = self.exec_inner(inner_realm, ast, false)?;
@@ -697,7 +697,7 @@ impl Interpreter {
 
                     let value = self.call_func(realm, Some(&callee.address), &method, &args);
 
-                    self.call_trace.pop_back();
+                    self.call_trace.pop();
 
                     return value;
                 }
@@ -730,7 +730,7 @@ impl Interpreter {
 
                 let value = self.call_func(realm, Some(&callee.address), &func, &args)?;
 
-                self.call_trace.pop_back();
+                self.call_trace.pop();
 
                 value
             }
@@ -785,7 +785,7 @@ impl Interpreter {
                     (Value::String(s), Value::Integer(i)) => {
                         // character access
                         match s.chars().nth(i as usize) {
-                            Some(c) => ControlFlow::Value(Value::String(Gc::new(c.to_string()))),
+                            Some(c) => ControlFlow::Value(Value::String(FlyString::new(c.to_string()))),
                             None => panic!("String index {i} out of bounds"),
                         }
                     }
@@ -994,12 +994,11 @@ impl Interpreter {
 
         let last = self
             .call_trace
-            .iter()
             .last()
             .map(|x| x.function_name.clone())
             .unwrap_or_else(|| "<main>".to_string());
 
-        self.call_trace.push_back(CallFrame {
+        self.call_trace.push(CallFrame {
             function_name: name.value, // the function being called
             from: last.to_string().into(),
             call_site: CallSegment {
@@ -1016,12 +1015,11 @@ impl Interpreter {
     fn push_call_frame_for_methodcall(&mut self, method_key: String, callee: &Expression) {
         let last = self
             .call_trace
-            .iter()
             .last()
             .map(|x| x.function_name.clone())
             .unwrap_or_else(|| "<main>".to_string());
 
-        self.call_trace.push_back(CallFrame {
+        self.call_trace.push(CallFrame {
             function_name: method_key.clone(),
             from: last.to_string().into(),
             call_site: CallSegment {
@@ -1047,9 +1045,11 @@ impl Interpreter {
         debug!("Call function with parameters {args:?}");
 
         if let Value::Native(native) = func {
-            let new_realm = Realm::dive(realm);
+            // let new_realm = Realm::dive(realm);
 
-            return native(self, Gc::new(RwLock::new(new_realm)), args);
+            // return native(self, Gc::new(RwLock::new(new_realm)), args);
+
+            return native(self, realm, args);
         }
 
         if let Value::Function(func) = func {
@@ -1169,14 +1169,18 @@ impl Interpreter {
         let l_type = types::value_to_internal_type(&lhs.value).unwrap();
         let r_type = types::value_to_internal_type(&rhs.value).unwrap();
 
-        let method_name = format!("operator{op}{r_type}");
-
         let method = realm
             .read()
             .unwrap()
             .lookup(&l_type)
             .and_then(|x| x.as_module())
-            .and_then(|x| x.realm.read().unwrap().lookup(&method_name))
+            .and_then(|x| {
+                // TODO: Optimize method dispatching. Remove `r_type` and dispatch types in natives
+                // themselves.
+                let method_name = format!("operator{op}{r_type}");
+
+                x.realm.read().unwrap().lookup(&method_name)
+            })
             .ok_or_else(|| {
             InterpreterError::IncompatibleTypesForBinaryOperation {
                 op: op.into(),
@@ -1437,8 +1441,8 @@ impl Interpreter {
             world: Gc::clone(&self.world),
             builtins: Gc::clone(&self.builtins),
             module_registry: Arc::clone(&self.module_registry),
-            call_trace: LinkedList::new(),
-            _gc_drop_trigger: DumpsterGCDropTrigger,
+            call_trace: Vec::new(),
+            _gc_drop_trigger: self._gc_drop_trigger.clone(),
         }
     }
 }

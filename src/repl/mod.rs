@@ -1,4 +1,4 @@
-use std::{io::Write};
+use std::{io::Write, sync::Arc};
 
 use crossterm::{
     event::{self, Event, KeyCode, KeyModifiers},
@@ -215,7 +215,7 @@ impl REPL {
     }
 
     pub fn execute(&mut self, line: String) -> REPLResult<ControlFlow> {
-        let ast = flylang_lexparse_glue::parse_source(Gc::new(Source::new(
+        let ast = flylang_lexparse_glue::parse_source(Arc::new(Source::new(
             String::from("<REPL>"),
             line,
         )))

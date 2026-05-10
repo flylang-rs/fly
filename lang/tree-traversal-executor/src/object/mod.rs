@@ -2,12 +2,13 @@ use std::sync::{Mutex, RwLock};
 
 use dumpster::{Trace, sync::Gc};
 
-use crate::runtime::RustInteropFn;
+use crate::{object::string::FlyString, runtime::RustInteropFn};
 
 pub mod function;
 pub mod lvalue;
 pub mod module;
 pub mod record;
+pub mod string;
 
 #[derive(Debug, Clone, Trace)]
 pub enum Value {
@@ -15,7 +16,7 @@ pub enum Value {
     Bool(bool),
     Integer(i128),
     Real(f64),
-    String(Gc<String>),
+    String(FlyString),
     Array(Gc<Mutex<Vec<Value>>>),
     Function(Gc<function::Function>),
     Native(RustInteropFn),
@@ -28,9 +29,9 @@ pub enum Value {
 }
 
 impl Value {
-    pub fn as_arc_string(&self) -> Option<Gc<String>> {
+    pub fn as_string(&self) -> Option<FlyString> {
         if let Value::String(s) = self {
-            Some(Gc::clone(s))
+            Some(s.clone())
         } else {
             None
         }

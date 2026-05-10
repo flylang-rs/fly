@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use flylang_parser::ast::Gc;
 use log::info;
 
@@ -11,10 +13,10 @@ pub mod arguments;
 pub mod repl;
 
 fn run_file(options: &CommandLineArguments, source: Source) {
-    let source = Gc::new(source);
+    let source = Arc::new(source);
 
     if options.show_lexems {
-        let tokens = flylang_lexparse_glue::lex_source(Gc::clone(&source), true).map(|x| {
+        let tokens = flylang_lexparse_glue::lex_source(Arc::clone(&source), true).map(|x| {
             x.iter()
                 .map(|y| (y.value.clone(), y.address.span.clone()))
                 .collect::<Vec<_>>()
@@ -23,7 +25,7 @@ fn run_file(options: &CommandLineArguments, source: Source) {
         println!("{:?}", tokens);
     }
 
-    let ast = match flylang_lexparse_glue::parse_source(Gc::clone(&source)) {
+    let ast = match flylang_lexparse_glue::parse_source(Arc::clone(&source)) {
         Ok(st) => st,
         Err(LoadingError::AnalyzeFailed) => {
             std::process::exit(1);

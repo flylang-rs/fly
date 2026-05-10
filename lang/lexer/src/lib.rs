@@ -9,6 +9,7 @@ pub mod tests;
 pub mod test_utils;
 
 use core::{iter::Peekable, ops::Range};
+use std::sync::Arc;
 
 use flylang_common::{address::Address, source::Source};
 
@@ -26,13 +27,13 @@ pub type LexerResult = Result<Token, error::LexerError>;
 
 /// The lexer.
 pub struct Lexer {
-    source: Gc<Source>,
+    source: Arc<Source>,
     input: Peekable<std::vec::IntoIter<(usize, char)>>,
     current_offset: usize,
 }
 
 impl Lexer {
-    pub fn new(source: Gc<Source>) -> Self {
+    pub fn new(source: Arc<Source>) -> Self {
         let input = source
             .code
             .char_indices()
@@ -80,7 +81,7 @@ impl Lexer {
         Token {
             value,
             address: Address {
-                source: Gc::clone(&self.source),
+                source: Arc::clone(&self.source),
                 span,
             },
         }

@@ -1,1 +1,4 @@
 /target
+/perf.*
+/callgrind.out.*
+/flamegraph.svg

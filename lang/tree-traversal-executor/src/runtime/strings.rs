@@ -1,7 +1,7 @@
 use std::sync::{ RwLock};
 
 use crate::{
-    InterpreterResult, SharedRealm, common_operation_binary, control_flow::ControlFlow, object::{Value, module::Module}, realm::Realm, runtime::RustInteropFn
+    InterpreterResult, SharedRealm, common_operation_binary, control_flow::ControlFlow, object::{Value, module::Module, string::FlyString}, realm::Realm, runtime::RustInteropFn
 };
 
 common_operation_binary!(
@@ -9,14 +9,14 @@ common_operation_binary!(
     String,
     String,
     String,
-    |x: &String, y: &String| Gc::new(x.clone() + y)
+    |x: &FlyString, y: &FlyString| x.clone() + y.clone()
 );
 common_operation_binary!(
     string_mul_integer,
     String,
     Integer,
     String,
-    |x: &String, y: &i128| Gc::new(x.repeat(*y as _))
+    |x: &FlyString, y: &i128| FlyString::new(x.repeat(*y as _))
 );
 
 common_operation_binary!(
@@ -24,42 +24,42 @@ common_operation_binary!(
     String,
     String,
     Bool,
-    |x: &String, y: &String| x == y
+    |x: &FlyString, y: &FlyString| x == y
 );
 common_operation_binary!(
     strings_neq,
     String,
     String,
     Bool,
-    |x: &String, y: &String| x != y
+    |x: &FlyString, y: &FlyString| x != y
 );
 common_operation_binary!(
     strings_gt,
     String,
     String,
     Bool,
-    |x: &String, y: &String| x > y
+    |x: &FlyString, y: &FlyString| x > y
 );
 common_operation_binary!(
     strings_lt,
     String,
     String,
     Bool,
-    |x: &String, y: &String| x < y
+    |x: &FlyString, y: &FlyString| x < y
 );
 common_operation_binary!(
     strings_gte,
     String,
     String,
     Bool,
-    |x: &String, y: &String| x >= y
+    |x: &FlyString, y: &FlyString| x >= y
 );
 common_operation_binary!(
     strings_lte,
     String,
     String,
     Bool,
-    |x: &String, y: &String| x <= y
+    |x: &FlyString, y: &FlyString| x <= y
 );
 
 fn string_to_string(
@@ -71,7 +71,7 @@ fn string_to_string(
         panic!("It's not a string, it's {:?}", args[0]);
     };
 
-    Ok(ControlFlow::Value(Value::String(Gc::clone(i))))
+    Ok(ControlFlow::Value(Value::String(i.clone())))
 }
 
 fn string_to_displayable(

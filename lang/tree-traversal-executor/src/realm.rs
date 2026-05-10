@@ -33,13 +33,6 @@ impl Realm {
             values: HashMap::new(),
             parent: Some(shared_realm),
         }
-
-        // let parent = shared_realm.read().unwrap();
-        // Self {
-        //     values: HashMap::new(),
-        //     parent: Some(Arc::clone(&shared_realm)),
-        //     module: parent.module.clone(),
-        // }
     }
 
     pub fn is_root(&self) -> bool {

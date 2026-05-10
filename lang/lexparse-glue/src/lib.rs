@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use flylang_common::source::Source;
 use flylang_diagnostics::error::DiagnosticsReport;
 use flylang_lexer::{error::LexerError, token::Token};
@@ -24,8 +26,8 @@ impl DiagnosticsReport for LoadingError {
     }
 }
 
-pub fn lex_source(source: Gc<Source>, make_error: bool) -> LoadingResult<Vec<Token>> {
-    let mut lexer = flylang_lexer::Lexer::new(Gc::clone(&source));
+pub fn lex_source(source: Arc<Source>, make_error: bool) -> LoadingResult<Vec<Token>> {
+    let mut lexer = flylang_lexer::Lexer::new(Arc::clone(&source));
     let mut tokens: Vec<Token> = vec![];
 
     loop {
@@ -51,8 +53,8 @@ pub fn lex_source(source: Gc<Source>, make_error: bool) -> LoadingResult<Vec<Tok
     Ok(tokens)
 }
 
-pub fn parse_source(source: Gc<Source>) -> LoadingResult<Vec<Statement>> {
-    let tokens = lex_source(Gc::clone(&source), true)?;
+pub fn parse_source(source: Arc<Source>) -> LoadingResult<Vec<Statement>> {
+    let tokens = lex_source(Arc::clone(&source), true)?;
 
     // Parse here...
 

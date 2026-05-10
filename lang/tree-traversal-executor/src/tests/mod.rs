@@ -13,7 +13,7 @@ fn simple_arithmetics() {
 fn string_concat() {
     let result = execute("'Hi, ' + 'Flylang!'").unwrap();
 
-    assert_eq!(result.as_value().unwrap().as_arc_string().unwrap().as_str(), "Hi, Flylang!");
+    assert_eq!(result.as_value().unwrap().as_string().unwrap().as_str(), "Hi, Flylang!");
 }
 
 #[test]
@@ -28,7 +28,7 @@ c.to_string()
 "#).unwrap();
 
 	let bind = result.as_value().unwrap();
-	let bind2 = bind.as_arc_string().unwrap();
+	let bind2 = bind.as_string().unwrap();
 	let val = bind2.as_str();
 
     assert_eq!(val, "[false, true, false, true]");
@@ -46,7 +46,7 @@ c.to_string()
 "#).unwrap();
 
 	let bind = result.as_value().unwrap();
-	let bind2 = bind.as_arc_string().unwrap();
+	let bind2 = bind.as_string().unwrap();
 	let val = bind2.as_str();
 
     assert_eq!(val, "[false, true, true, false]");
@@ -105,17 +105,17 @@ fn arrays_and_ref_cycles() {
     let mut tester = Tester::new();
 
     let result = tester.exec("[1, 2, 3, 4].to_string()");
-    let string_repr = result.unwrap().as_value().unwrap().as_arc_string().unwrap();
+    let string_repr = result.unwrap().as_value().unwrap().as_string().unwrap();
 
     assert_eq!(&*string_repr, "[1, 2, 3, 4]");
 
     let result = tester.exec("[1, 2, [3, 4]].to_string()");
-    let string_repr = result.unwrap().as_value().unwrap().as_arc_string().unwrap();
+    let string_repr = result.unwrap().as_value().unwrap().as_string().unwrap();
 
     assert_eq!(&*string_repr, "[1, 2, [3, 4]]");
 
     let result = tester.exec("[1, 2, [3, 4, [5, 6]]].to_string()");
-    let string_repr = result.unwrap().as_value().unwrap().as_arc_string().unwrap();
+    let string_repr = result.unwrap().as_value().unwrap().as_string().unwrap();
 
     assert_eq!(&*string_repr, "[1, 2, [3, 4, [5, 6]]]");
 
@@ -132,12 +132,12 @@ a.push(5)
         .unwrap();
 
     let result = tester.exec("a.to_string()");
-    let string_repr = result.unwrap().as_value().unwrap().as_arc_string().unwrap();
+    let string_repr = result.unwrap().as_value().unwrap().as_string().unwrap();
 
     assert_eq!(&*string_repr, "[1, 2, [3, 4, [...]], 5]");
 
     let result = tester.exec("b.to_string()");
-    let string_repr = result.unwrap().as_value().unwrap().as_arc_string().unwrap();
+    let string_repr = result.unwrap().as_value().unwrap().as_string().unwrap();
 
     assert_eq!(&*string_repr, "[3, 4, [1, 2, [...], 5]]");
 }
