@@ -34,12 +34,8 @@ pub type InterpreterResult<T> = Result<T, InterpreterError>;
 
 enum ModuleState {
     Loading,
-    Loaded, /* (LoadedModule) */
+    Loaded,
 }
-
-// struct LoadedModule {
-//     exports: HashMap<String, Value>,
-// }
 
 pub struct Interpreter {
     // "Root" Realm of the interpreter
