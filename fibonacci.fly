@@ -1,8 +1,4 @@
-called = 0
-
 func fib(n) {
-    called += 1;
-    
     if n < 2 {
         return n
     }
@@ -10,5 +6,4 @@ func fib(n) {
     return fib(n - 1) + fib(n - 2)
 }
 
-print("fib(20) =", fib(20))
-print("Called", called, "times")
+print("fib(18) =", fib(18))

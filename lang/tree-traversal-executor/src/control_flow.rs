@@ -10,10 +10,17 @@ pub enum ControlFlow {
 }
 
 impl ControlFlow {
-    // Complex values are backed by Arc, making clones actually cheap
-    pub fn as_value(&self) -> Option<Value> {
+    pub fn as_value(&self) -> Option<&Value> {
         if let ControlFlow::Value(val) = self {
-            Some(val.clone())
+            Some(val)
+        } else {
+            None
+        }
+    }
+
+    pub fn into_value(self) -> Option<Value> {
+        if let ControlFlow::Value(val) = self {
+            Some(val)
         } else {
             None
         }

@@ -1,5 +1,8 @@
 use std::{
-    borrow::Cow, collections::HashMap, path::PathBuf, sync::{Arc, Mutex, RwLock}
+    borrow::Cow,
+    collections::HashMap,
+    path::PathBuf,
+    sync::{Arc, Mutex, RwLock},
 };
 
 use flylang_common::{address::Address, source::Source, spanned::Spanned};
@@ -7,13 +10,19 @@ use flylang_parser::ast::{DivisionKind, ExprKind, Expression, Statement, While};
 use log::debug;
 
 use crate::{
-    calltrace::{CallFrame, CallSegment}, control_flow::ControlFlow, error::{CallError, InterpreterError}, gc_harness::DumpsterGCHandle, object::{
+    calltrace::{CallFrame, CallSegment},
+    control_flow::ControlFlow,
+    error::{CallError, InterpreterError},
+    gc_harness::DumpsterGCHandle,
+    object::{
         Value,
         function::{Function, FunctionNameKind},
         lvalue::LValue,
         module::Module,
-        record::{Record, RecordField, RecordInstance, RecordInstanceField}, string::FlyString,
-    }, realm::{Realm, SharedRealm}
+        record::{Record, RecordField, RecordInstance, RecordInstanceField},
+        string::FlyString,
+    },
+    realm::{Realm, SharedRealm},
 };
 
 use dumpster::sync::Gc;
@@ -51,7 +60,7 @@ pub struct Interpreter {
     call_trace: Vec<CallFrame>,
 
     // Will be used when `Interpreter::drop` happens, cleaning up garbage.
-    _gc_drop_trigger: DumpsterGCHandle
+    _gc_drop_trigger: DumpsterGCHandle,
 }
 
 impl Default for Interpreter {
@@ -63,7 +72,7 @@ impl Default for Interpreter {
 impl Interpreter {
     pub fn new() -> Self {
         let builtins = Gc::new(RwLock::new(Realm::new()));
-        
+
         // Import native functions from modules.
         // Chain 'em all!
         let modules = [
@@ -76,13 +85,13 @@ impl Interpreter {
             runtime::print::init,
             runtime::reals::init,
             runtime::strings::init,
-            runtime::types::init
+            runtime::types::init,
         ];
 
         for i in modules {
             let mo = match i(&builtins) {
                 Some(x) => x,
-                None => continue
+                None => continue,
             };
 
             debug!(
@@ -208,10 +217,10 @@ impl Interpreter {
 
         self.exec_inner(&module_realm, &ast, false)?;
 
-        self.module_registry.write().unwrap().insert(
-            path.clone(),
-            ModuleState::Loaded,
-        );
+        self.module_registry
+            .write()
+            .unwrap()
+            .insert(path.clone(), ModuleState::Loaded);
 
         realm.write().unwrap().values_mut().insert(
             module_name.clone(),
@@ -272,9 +281,7 @@ impl Interpreter {
 
                 // If it's a record method, add function to its fields instead.
                 if let Some(stems) = &record_path {
-                    let bind = realm
-                        .read()
-                        .unwrap();
+                    let bind = realm.read().unwrap();
 
                     let record = bind
                         .values()
@@ -418,10 +425,8 @@ impl Interpreter {
             Statement::Continue => Ok(ControlFlow::Continue),
             Statement::Break => Ok(ControlFlow::Break),
             Statement::VariableDefinition(var) => {
-                let lhs = self.resolve_lvalue(
-                    realm,
-                    &var.name.clone().map(ExprKind::Identifier),
-                )?;
+                let lhs =
+                    self.resolve_lvalue(realm, &var.name.clone().map(ExprKind::Identifier))?;
 
                 let target = match lhs {
                     LValue::Identifier(id) => LValue::PrivateIdentifier(id),
@@ -429,11 +434,7 @@ impl Interpreter {
                     _ => unreachable!("Cannot do private indexed or property assignments."),
                 };
 
-                let rhs = self.evaluate_expression(
-                    realm,
-                    var.value.as_ref().unwrap(),
-                    false,
-                )?;
+                let rhs = self.evaluate_expression(realm, var.value.as_ref().unwrap(), false)?;
 
                 let ControlFlow::Value(rhs) = rhs else {
                     panic!("Expected RHS as value, got: {rhs:?}");
@@ -655,17 +656,16 @@ impl Interpreter {
                         } else {
                             // If not, use oldstyle mode, format strings into a path.
                             // But it's no longer actual since everything is moved into modules.
-                            
+
                             let method_key = format!("{type_name}::{prop}");
 
                             let bind = realm.read().unwrap();
                             let oldstyle_value = bind.lookup_ref(&method_key);
-                            
+
                             if oldstyle_value.is_some() {
                                 unreachable!("call: Oldstyle mode is no longer actual!");
                             } else {
-                                bind
-                                    .lookup_ref(&type_name)
+                                bind.lookup_ref(&type_name)
                                     .and_then(|x| x.as_module()?.method_lookup(prop))
                                     .ok_or_else(|| InterpreterError::NoPropertyForType {
                                         typename: type_name.to_string(),
@@ -681,8 +681,7 @@ impl Interpreter {
                     let mut args = vec![obj]; // receiver (self) is first argument
 
                     for p in parameters {
-                        let ControlFlow::Value(v) =
-                            self.evaluate_expression(realm, p, true)?
+                        let ControlFlow::Value(v) = self.evaluate_expression(realm, p, true)?
                         else {
                             panic!()
                         };
@@ -699,9 +698,9 @@ impl Interpreter {
                     return value;
                 }
 
-                let func = self.evaluate_expression(realm, callee, true)?;
+                let func = self.evaluate_expression(realm, callee, true)?.into_value();
 
-                let ControlFlow::Value(func) = func else {
+                let Some(func) = func else {
                     panic!("Expected a function as value, got: {func:?}");
                 };
 
@@ -782,7 +781,9 @@ impl Interpreter {
                     (Value::String(s), Value::Integer(i)) => {
                         // character access
                         match s.chars().nth(i as usize) {
-                            Some(c) => ControlFlow::Value(Value::String(FlyString::new(c.to_string()))),
+                            Some(c) => {
+                                ControlFlow::Value(Value::String(FlyString::new(c.to_string())))
+                            }
                             None => panic!("String index {i} out of bounds"),
                         }
                     }
@@ -838,9 +839,9 @@ impl Interpreter {
                                 .unwrap()
                                 .iter()
                                 .find(|(name, _)| *name == stem)
-                            {
-                                return Some(value.clone());
-                            }
+                        {
+                            return Some(value.clone());
+                        }
 
                         let rd_realm = if let Some(Value::Module(mo)) = &node {
                             &mo.realm
@@ -927,10 +928,8 @@ impl Interpreter {
                 let mut fields: Vec<RecordInstanceField> = Vec::new();
 
                 for (name, value) in new_decl.fields.iter() {
-                    let real_value = self.exec_single_statement(
-                        realm,
-                        &Statement::Expr(value.clone()),
-                    )?;
+                    let real_value =
+                        self.exec_single_statement(realm, &Statement::Expr(value.clone()))?;
 
                     let real_value = match real_value {
                         ControlFlow::Value(v) => v,
@@ -1096,7 +1095,11 @@ impl Interpreter {
             // let new_realm = Realm::dive(Gc::clone(&self.world));
 
             // return Ok(Some(native(self, Gc::new(RwLock::new(new_realm)), args)?));
-            return Ok(Some(native(self, Cow::Owned(Gc::clone(&self.world)), args)?));
+            return Ok(Some(native(
+                self,
+                Cow::Owned(Gc::clone(&self.world)),
+                args,
+            )?));
         }
 
         if let Value::Function(func) = method {
@@ -1133,14 +1136,14 @@ impl Interpreter {
         lhs: &Expression,
         rhs: &Expression,
     ) -> InterpreterResult<Option<Value>> {
-        let lhs_val = self.evaluate_expression(realm, lhs, true)?;
-        let rhs_val = self.evaluate_expression(realm, rhs, true)?;
+        let lhs_val = self.evaluate_expression(realm, lhs, true)?.into_value();
+        let rhs_val = self.evaluate_expression(realm, rhs, true)?.into_value();
 
-        let ControlFlow::Value(lhs_val) = lhs_val else {
+        let Some(lhs_val) = lhs_val else {
             panic!("A value should be returned by LHS, got: {lhs_val:?}");
         };
 
-        let ControlFlow::Value(rhs_val) = rhs_val else {
+        let Some(rhs_val) = rhs_val else {
             panic!("A value should be returned by RHS, got: {rhs_val:?}");
         };
 
@@ -1170,25 +1173,24 @@ impl Interpreter {
                 // TODO: Optimize method dispatching. Remove `r_type` and dispatch types in natives
                 // themselves.
                 let mut method_name = String::with_capacity(8 + op.len() + r_type.len());
-                
+
                 method_name += "operator";
                 method_name += op;
                 method_name += &r_type;
 
                 x.as_module()?.method_lookup(&method_name)
             })
-            .ok_or_else(|| {
-            InterpreterError::IncompatibleTypesForBinaryOperation {
+            .ok_or_else(|| InterpreterError::IncompatibleTypesForBinaryOperation {
                 op: op.into(),
                 lhs_addr: lhs.address.clone(),
                 rhs_addr: rhs.address.clone(),
                 lhs_type: l_type.into(),
                 rhs_type: r_type.into(),
-            }
-        })?;
+            })?;
 
-        if let ControlFlow::Value(va) =
-            self.call_func(realm, None, &method, &[lhs.value, rhs.value])?
+        if let Some(va) = self
+            .call_func(realm, None, &method, &[lhs.value, rhs.value])?
+            .into_value()
         {
             Ok(Some(va))
         } else {
@@ -1217,13 +1219,11 @@ impl Interpreter {
             .unwrap()
             .lookup_ref(&ty)
             .and_then(|x| x.as_module()?.method_lookup(&method_name))
-            .ok_or_else(|| {
-            InterpreterError::IncompatibleTypesForUnaryOperation {
+            .ok_or_else(|| InterpreterError::IncompatibleTypesForUnaryOperation {
                 op: op.to_string(),
                 addr: expr.address.clone(),
                 ty: ty.to_string(),
-            }
-        })?;
+            })?;
 
         if let ControlFlow::Value(va) = self.call_func(realm, None, &method, &[expr_val])? {
             Ok(Some(va))
