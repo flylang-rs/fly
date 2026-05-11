@@ -14,7 +14,7 @@ fn inner_print(
     let len = args.len();
 
     for (n, i) in args.iter().enumerate() {
-        let ty = types::value_to_internal_type(i).unwrap();
+        let ty = types::value_to_internal_type(i);
 
         if let Value::RecordInstance(ri) = i {
             if let Some(method) = ri
@@ -45,14 +45,14 @@ fn inner_print(
             }
         }
 
-        let ty = types::value_to_internal_type(i).unwrap();
+        let ty = types::value_to_internal_type(i);
 
         // eprintln!("{method_name:?}");
 
         let method = realm
             .read()
             .unwrap()
-            .lookup(&ty)
+            .lookup_ref(&ty)
             .and_then(|x| x.as_module()?.method_lookup("to_string"))
             .ok_or_else(|| panic!("Method `to_string` is not implemented for type: {ty}"))?;
 

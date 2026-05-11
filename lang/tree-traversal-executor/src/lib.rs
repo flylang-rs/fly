@@ -638,7 +638,7 @@ impl Interpreter {
 
                     let prop = property.value.as_id().unwrap();
 
-                    let type_name = types::value_to_internal_type(&obj).unwrap();
+                    let type_name = types::value_to_internal_type(&obj);
 
                     let method: Value = {
                         // If callee is a part of a record method call, get its method.
@@ -658,15 +658,14 @@ impl Interpreter {
                             
                             let method_key = format!("{type_name}::{prop}");
 
-                            let oldstyle_value = realm.read().unwrap().lookup(&method_key);
+                            let bind = realm.read().unwrap();
+                            let oldstyle_value = bind.lookup_ref(&method_key);
                             
                             if oldstyle_value.is_some() {
                                 unreachable!("call: Oldstyle mode is no longer actual!");
                             } else {
-                                realm
-                                    .read()
-                                    .unwrap()
-                                    .lookup(&type_name)
+                                bind
+                                    .lookup_ref(&type_name)
                                     .and_then(|x| x.as_module()?.method_lookup(prop))
                                     .ok_or_else(|| InterpreterError::NoPropertyForType {
                                         typename: type_name.to_string(),
@@ -928,7 +927,6 @@ impl Interpreter {
                 let mut fields: Vec<RecordInstanceField> = Vec::new();
 
                 for (name, value) in new_decl.fields.iter() {
-                    let real_name = name.value.to_owned();
                     let real_value = self.exec_single_statement(
                         realm,
                         &Statement::Expr(value.clone()),
@@ -938,6 +936,8 @@ impl Interpreter {
                         ControlFlow::Value(v) => v,
                         er => panic!("Invalid expression result: {er:?}"),
                     };
+
+                    let real_name = name.value.to_owned();
 
                     fields.push(RecordInstanceField {
                         name: real_name,
@@ -1061,7 +1061,6 @@ impl Interpreter {
             let mut new_realm = Realm::dive(Gc::clone(&func.closure_realm));
 
             // Arguments are just temporary variables
-
             for (par, arg) in parameters.iter().zip(args) {
                 new_realm.values_mut().insert(par.clone(), arg.clone());
             }
@@ -1160,13 +1159,13 @@ impl Interpreter {
         lhs: Spanned<Value>,
         rhs: Spanned<Value>,
     ) -> InterpreterResult<Option<Value>> {
-        let l_type = types::value_to_internal_type(&lhs.value).unwrap();
-        let r_type = types::value_to_internal_type(&rhs.value).unwrap();
+        let l_type = types::value_to_internal_type(&lhs.value);
+        let r_type = types::value_to_internal_type(&rhs.value);
 
         let method = realm
             .read()
             .unwrap()
-            .lookup(&l_type)
+            .lookup_ref(&l_type)
             .and_then(|x| {
                 // TODO: Optimize method dispatching. Remove `r_type` and dispatch types in natives
                 // themselves.
@@ -1209,14 +1208,14 @@ impl Interpreter {
             panic!("A value should be returned, got: {expr_val:?}");
         };
 
-        let ty = types::value_to_internal_type(&expr_val).unwrap();
+        let ty = types::value_to_internal_type(&expr_val);
 
         let method_name = format!("operator{op}");
 
         let method = realm
             .read()
             .unwrap()
-            .lookup(&ty)
+            .lookup_ref(&ty)
             .and_then(|x| x.as_module()?.method_lookup(&method_name))
             .ok_or_else(|| {
             InterpreterError::IncompatibleTypesForUnaryOperation {
@@ -1316,7 +1315,7 @@ impl Interpreter {
                 }
 
                 if let Value::Module(mo) = object {
-                    return mo.realm.read().unwrap().lookup(name).unwrap().clone();
+                    return mo.realm.read().unwrap().lookup(name).unwrap();
                 }
 
                 panic!("Unexpected property object type: {object:?}")

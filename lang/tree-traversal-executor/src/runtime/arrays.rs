@@ -46,12 +46,12 @@ fn render_value(
         return format!("'{:?}'", str);
     }
 
-    let ty = types::value_to_internal_type(val).unwrap();
+    let ty = types::value_to_internal_type(val);
 
     let method = realm
             .read()
             .unwrap()
-            .lookup(&ty)
+            .lookup_ref(&ty)
             .and_then(|x| x.as_module()?.method_lookup("to_displayable"))
             .ok_or_else(|| panic!("Method `to_displayable` is not implemented for type: {ty}"))
             .unwrap();

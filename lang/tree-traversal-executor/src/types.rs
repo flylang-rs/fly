@@ -11,25 +11,24 @@ pub const TYPE_NATIVE: &str = "native";
 pub const TYPE_NIL: &str = "nil";
 pub const TYPE_STRING: &str = "string";
 
-pub fn value_to_internal_type(val: &Value) -> Option<Cow<'_, str>> {
+pub fn value_to_internal_type(val: &Value) -> Cow<'_, str> {
     match val {
-        Value::Array(_) => Some(Borrowed(TYPE_ARRAY)),
-        Value::Bool(_) => Some(Borrowed(TYPE_BOOL)),
-        Value::Real(_) => Some(Borrowed(TYPE_REAL)),
-        Value::Function(_) => Some(Borrowed(TYPE_FUNCTION)),
-        Value::Integer(_) => Some(Borrowed(TYPE_INTEGER)),
-        Value::Native(_) => Some(Borrowed(TYPE_NATIVE)),
-        Value::Nil => Some(Borrowed(TYPE_NIL)),
-        Value::String(_) => Some(Borrowed(TYPE_STRING)),
-        Value::Record(rec) => Some(Owned(format!("(record \"{}\")", rec.name))),
+        Value::Array(_) => Borrowed(TYPE_ARRAY),
+        Value::Bool(_) => Borrowed(TYPE_BOOL),
+        Value::Real(_) => Borrowed(TYPE_REAL),
+        Value::Function(_) => Borrowed(TYPE_FUNCTION),
+        Value::Integer(_) => Borrowed(TYPE_INTEGER),
+        Value::Native(_) => Borrowed(TYPE_NATIVE),
+        Value::Nil => Borrowed(TYPE_NIL),
+        Value::String(_) => Borrowed(TYPE_STRING),
+        Value::Record(rec) => Owned(format!("(record \"{}\")", rec.name)),
         Value::RecordInstance(reci) => {
             let lt = reci.read().unwrap().record.name.clone();
             
-            Some(Owned(lt))
+            Owned(lt)
         }
         Value::Module(m) => {
-            Some(Owned(format!("(module \"{}\")", m.name)))
+            Owned(format!("(module \"{}\")", m.name))
         }
-        // unk => panic!("Cannot convert {unk:?} to internal type."),
     }
 }

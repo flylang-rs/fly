@@ -255,37 +255,6 @@ impl REPL {
                             eprintln!("{}", e.render());
                         }
                         Ok(ControlFlow::Value(val)) => {
-                            // let ty = flylang_tte::types::value_to_internal_type(&val).unwrap();
-
-                            // let method = self.interpreter.world()
-                            //     .read()
-                            //     .unwrap()
-                            //     .lookup(&ty)
-                            //     .and_then(|x| x.as_module())
-                            //     .map(|x| x.method_lookup("to_displayable"))
-                            //     .flatten()
-                            //     .ok_or_else(|| InterpreterError::NoPropertyForType { typename: ty, property: String::from("to_displayable"), callee_address: () })
-                            //     .unwrap();
-
-                            // let stringres =
-                            //     match self.interpreter.call_func(Arc::clone(self.interpreter.world()), None, &method, &[val]) {
-                            //         Ok(cf) => cf,
-                            //         Err(e) => {
-                            //             eprintln!("{}", e.render());
-
-                            //             continue;
-                            //         }
-                            //     };
-
-                            // if let ControlFlow::Value(Value::String(v)) = stringres {
-                            //     let output_fmt =
-                            //         REPLFormatter::format(&v).unwrap_or_else(|_| v.to_string());
-
-                            //     println!("      = {output_fmt}");
-                            // } else {
-                            //     panic!("Expected string value, got: {stringres:?}");
-                            // }
-
                             self.interpreter
                                 .world()
                                 .write()
