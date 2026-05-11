@@ -1,6 +1,5 @@
 use std::{
-    collections::HashMap,
-    sync::RwLock,
+    borrow::Cow, collections::HashMap, sync::RwLock
 };
 
 use dumpster::{Trace, sync::Gc};
@@ -57,14 +56,18 @@ impl Realm {
         &mut self.values
     }
 
-    pub fn lookup(&self, term: &str) -> Option<Value> {
+    pub fn lookup_ref(&self, term: &str) -> Option<Cow<'_, Value>> {
         // Search in current Realm.
         if let Some(val) = self.values.get(term) {
-            return Some(val.clone());
+            return Some(Cow::Borrowed(val));
         }
 
         // If not found, try searching in parent Realm.
-        self.parent.as_ref()?.read().unwrap().lookup(term)
+        Some(Cow::Owned(self.parent.as_ref()?.read().unwrap().lookup_ref(term)?.into_owned()))
+    }
+
+    pub fn lookup(&self, term: &str) -> Option<Value> {
+        self.lookup_ref(term).map(|x| x.into_owned())
     }
 
     /// Walks up the realm chain and it rewrites the value of variable
