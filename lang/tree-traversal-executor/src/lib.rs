@@ -1400,11 +1400,13 @@ impl Interpreter {
             )?
             .unwrap();
 
-        self.assign(realm, target, result.clone());
-
         Ok(if is_subexpression {
+            self.assign(realm, target, result.clone());
+
             ControlFlow::Value(result)
         } else {
+            self.assign(realm, target, result);
+
             ControlFlow::Nothing
         })
     }
