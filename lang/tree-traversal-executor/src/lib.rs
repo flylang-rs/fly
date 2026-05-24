@@ -10,7 +10,7 @@ use flylang_parser::ast::{DivisionKind, ExprKind, Expression, Statement, While};
 use log::debug;
 
 use crate::{
-    calltrace::{CallFrame, CallSegment},
+    callframe::{CallFrameInfo, CallSegment},
     control_flow::ControlFlow,
     error::{CallError, InterpreterError},
     gc_harness::DumpsterGCHandle,
@@ -30,7 +30,7 @@ use dumpster::sync::Gc;
 #[cfg(test)]
 pub mod tests;
 
-pub mod calltrace;
+pub mod callframe;
 pub mod control_flow;
 pub mod error;
 pub mod gc_harness;
@@ -57,7 +57,7 @@ pub struct Interpreter {
     module_registry: Arc<RwLock<HashMap<PathBuf, ModuleState>>>,
 
     // Contains call trace to output it when an error happens.
-    call_trace: Vec<CallFrame>,
+    call_trace: Vec<CallFrameInfo>,
 
     // Will be used when `Interpreter::drop` happens, cleaning up garbage.
     _gc_drop_trigger: DumpsterGCHandle,
@@ -122,7 +122,7 @@ impl Interpreter {
         &self.world
     }
 
-    pub fn calltrace(&self) -> &[CallFrame] {
+    pub fn calltrace(&self) -> &[CallFrameInfo] {
         &self.call_trace
     }
 
@@ -994,7 +994,7 @@ impl Interpreter {
             .map(|x| x.function_name.clone())
             .unwrap_or_else(|| "<main>".to_string());
 
-        self.call_trace.push(CallFrame {
+        self.call_trace.push(CallFrameInfo {
             function_name: name.value, // the function being called
             from: last.into(),
             call_site: CallSegment {
@@ -1015,7 +1015,7 @@ impl Interpreter {
             .map(|x| x.function_name.clone())
             .unwrap_or_else(|| "<main>".to_string());
 
-        self.call_trace.push(CallFrame {
+        self.call_trace.push(CallFrameInfo {
             function_name: method_key,
             from: last.to_string().into(),
             call_site: CallSegment {
