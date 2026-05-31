@@ -103,6 +103,14 @@ impl ExprKind {
             None
         }
     }
+
+    pub fn as_block(&self) -> Option<&[Statement]> {
+        if let Self::Block(bk) = self {
+            Some(bk)
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Debug, Clone, Trace)]
@@ -132,6 +140,16 @@ pub enum Statement {
     },
 
     Expr(Expression),
+}
+
+impl Statement {
+    pub fn as_expression(&self) -> Option<&Expression> {
+        if let Self::Expr(expr) = self {
+            return Some(expr);
+        }
+
+        None
+    }
 }
 
 #[derive(Debug, Clone, Trace)]

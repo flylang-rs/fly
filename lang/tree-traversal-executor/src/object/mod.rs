@@ -92,4 +92,20 @@ impl Value {
             None
         }
     }
+
+    pub fn refcount(&self) -> Option<usize> {
+        match self {
+            Value::Nil => None,
+            Value::Bool(_) => None,
+            Value::Integer(_) => None,
+            Value::Real(_) => None,
+            Value::Native(_) => None,
+            Value::String(fly_string) => fly_string.refcount().into(),
+            Value::Array(gc) => Gc::ref_count(gc).get().into(),
+            Value::Function(gc) => Gc::ref_count(gc).get().into(),
+            Value::Record(gc) => Gc::ref_count(gc).get().into(),
+            Value::RecordInstance(gc) => Gc::ref_count(gc).get().into(),
+            Value::Module(gc) => Gc::ref_count(gc).get().into(),
+        }
+    }
 }

@@ -228,7 +228,7 @@ impl REPL {
 
         let result = self
             .interpreter
-            .execute(ast)
+            .execute_nodestruct(ast)
             .map_err(REPLError::InterpreterError)?;
 
         Ok(result)

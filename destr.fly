@@ -1,0 +1,16 @@
+record A {}
+
+func A::destruct() {
+  print("*glass shatter sound*")
+}
+
+func c() {
+  a = new A {}
+  b = a
+
+  return b
+}
+
+d = c()
+
+# Drop is called here.

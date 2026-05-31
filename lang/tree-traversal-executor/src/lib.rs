@@ -129,12 +129,23 @@ impl Interpreter {
     /// Entry point of the interpreter, it accepts a list of statements given by the parser.
     /// Since it accepts any kind of statement including expressions, it will return a value.
     pub fn execute(&mut self, ast: Vec<Statement>) -> InterpreterResult<ControlFlow> {
-        self.exec_inner(&Gc::clone(&self.world), &ast, true)
+        self.exec_inner(&Gc::clone(&self.world), &ast, true, true)
+    }
+
+    pub fn execute_nodestruct(&mut self, ast: Vec<Statement>) -> InterpreterResult<ControlFlow> {
+        self.exec_inner(&Gc::clone(&self.world), &ast, true, false)
     }
 
     /// Script version of `Interpreter::execute`. Doesn't break when value is returned.
     pub fn execute_script(&mut self, ast: Vec<Statement>) -> InterpreterResult<ControlFlow> {
-        self.exec_inner(&Gc::clone(&self.world), &ast, false)
+        self.exec_inner(&Gc::clone(&self.world), &ast, false, true)
+    }
+
+    pub fn execute_script_nodestruct(
+        &mut self,
+        ast: Vec<Statement>,
+    ) -> InterpreterResult<ControlFlow> {
+        self.exec_inner(&Gc::clone(&self.world), &ast, false, false)
     }
 
     /// Trampoline for executor: operate with given realm and the parsed code
@@ -143,27 +154,86 @@ impl Interpreter {
         realm: &SharedRealm,
         ast: &[Statement],
         return_on_value: bool,
+        run_destructors: bool,
     ) -> InterpreterResult<ControlFlow> {
+        let mut control_flow: ControlFlow = ControlFlow::Nothing;
+
         for i in ast {
             let stmt = self.exec_single_statement(realm, i)?;
 
             debug!("Got: {i:?} => {stmt:?}");
 
             match stmt {
-                cf @ ControlFlow::Return(_) => return Ok(cf),
-                cf @ ControlFlow::Break => return Ok(cf),
-                cf @ ControlFlow::Continue => return Ok(cf),
+                cf @ ControlFlow::Return(_) => {
+                    control_flow = cf;
+                    break;
+                }
+                cf @ ControlFlow::Break => {
+                    control_flow = cf;
+                    break;
+                }
+                cf @ ControlFlow::Continue => {
+                    control_flow = cf;
+                    break;
+                }
 
-                cf @ ControlFlow::Value(_) if return_on_value => return Ok(cf),
+                cf @ ControlFlow::Value(_) if return_on_value => {
+                    control_flow = cf;
+                    break;
+                }
 
                 ControlFlow::Value(_) => continue,
                 ControlFlow::Nothing => continue,
             }
         }
 
-        debug!("Nothing returned");
+        if run_destructors {
+            while !realm.read().unwrap().values().is_empty() {
+                let mut names: Vec<String> = vec![];
 
-        Ok(ControlFlow::Nothing)
+                for (name, i) in realm.read().unwrap().values() {
+                    debug!("{name} has {:?} references", i.refcount());
+
+                    // If it's only remaining object in the realm, run destructor for it.
+                    if i.refcount().map(|x| x == 1).unwrap_or_default() {
+                        if let Some(ri) = i.as_record_instance() {
+                            names.push(name.to_owned());
+
+                            let destructor = ri.read().unwrap().record.lookup_method("destruct");
+
+                            let dr = &ri.read().unwrap().record.definition_realm;
+
+                            // Call its destructor.
+                            if let Some(de) = destructor {
+                                debug!("+++ Call {name}'s destructor!");
+
+                                self.call_func(dr, None, &de, core::slice::from_ref(i))
+                                    .unwrap();
+                            }
+                        }
+                    }
+                }
+
+                if names.is_empty() {
+                    let first_entry = realm
+                        .read()
+                        .unwrap()
+                        .values()
+                        .iter()
+                        .next()
+                        .map(|x| x.0.clone())
+                        .unwrap();
+
+                    realm.write().unwrap().values_mut().remove(&first_entry);
+                } else {
+                    for i in names {
+                        realm.write().unwrap().values_mut().remove(&i);
+                    }
+                }
+            }
+        }
+
+        Ok(control_flow)
     }
 
     fn import_module(
@@ -215,7 +285,7 @@ impl Interpreter {
 
         let module_realm = Gc::new(RwLock::new(Realm::dive(Gc::clone(&self.builtins))));
 
-        self.exec_inner(&module_realm, &ast, false)?;
+        self.exec_inner(&module_realm, &ast, false, true)?;
 
         self.module_registry
             .write()
@@ -329,7 +399,7 @@ impl Interpreter {
                     };
 
                     if let ExprKind::Block(bk) = &block_value.value {
-                        self.exec_inner(realm, bk, false)
+                        self.exec_inner(realm, bk, false, true)
                     } else {
                         panic!("Expected a block!")
                     }
@@ -407,7 +477,7 @@ impl Interpreter {
                     };
 
                     if let ExprKind::Block(bk) = &block_value.value {
-                        let block_result = self.exec_inner(realm, bk, false)?;
+                        let block_result = self.exec_inner(realm, bk, false, true)?;
 
                         match block_result {
                             ControlFlow::Return(_) => return Ok(block_result),
@@ -601,7 +671,7 @@ impl Interpreter {
             ExprKind::String(st) => ControlFlow::Value(Value::String(FlyString::new(st.clone()))),
             ExprKind::Block(ast) => {
                 let inner_realm = Gc::new(RwLock::new(Realm::dive(Gc::clone(realm))));
-                let block_result = self.exec_inner(&inner_realm, ast, false)?;
+                let block_result = self.exec_inner(&inner_realm, ast, false, true)?;
 
                 match block_result {
                     ControlFlow::Return(_) => block_result,
@@ -749,7 +819,7 @@ impl Interpreter {
             ExprKind::PropertyAccess { .. } => {
                 let lhs = self.resolve_lvalue(realm, expr)?;
 
-                let value = self.read_lvalue(realm, &lhs);
+                let value = self.read_lvalue(realm, &expr.address, &lhs)?;
 
                 return Ok(ControlFlow::Value(value));
             }
@@ -896,7 +966,7 @@ impl Interpreter {
 
                 let lvalue = self.resolve_lvalue(realm, &new_decl.name)?;
 
-                let record_def = self.read_lvalue(realm, &lvalue);
+                let record_def = self.read_lvalue(realm, &new_decl.name.address, &lvalue)?;
 
                 let record_def = match record_def {
                     Value::Record(record) => record,
@@ -1294,10 +1364,25 @@ impl Interpreter {
         }
     }
 
-    fn read_lvalue(&mut self, realm: &SharedRealm, target: &LValue) -> Value {
+    fn read_lvalue(
+        &mut self,
+        realm: &SharedRealm,
+        addr: &Address,
+        target: &LValue,
+    ) -> InterpreterResult<Value> {
         match target {
-            LValue::Identifier(name) => realm.read().unwrap().lookup(name.as_str()).unwrap(),
-            LValue::PrivateIdentifier(name) => realm.read().unwrap().lookup(name.as_str()).unwrap(),
+            LValue::Identifier(name) => realm.read().unwrap().lookup(name.as_str()).ok_or(
+                InterpreterError::NameNotDefined {
+                    name: name.to_string(),
+                    address: addr.clone(),
+                },
+            ),
+            LValue::PrivateIdentifier(name) => realm.read().unwrap().lookup(name.as_str()).ok_or(
+                InterpreterError::NameNotDefined {
+                    name: name.to_string(),
+                    address: addr.clone(),
+                },
+            ),
             LValue::Index { container, index } => {
                 let Value::Array(arr) = container else {
                     panic!("Cannot index into type: {:?}", container);
@@ -1307,15 +1392,28 @@ impl Interpreter {
                     panic!("Type `{:?}` cannot be used as an index", index);
                 };
 
-                arr.lock().unwrap()[*i as usize].clone()
+                Ok(arr.lock().unwrap()[*i as usize].clone())
             }
             LValue::Property { object, name } => {
                 if let Value::RecordInstance(object) = object {
-                    return object.read().unwrap().lookup(name).unwrap().clone();
+                    return object
+                        .read()
+                        .unwrap()
+                        .lookup(name)
+                        .map(|x| x.clone())
+                        .ok_or(InterpreterError::NameNotDefined {
+                            name: name.to_string(),
+                            address: addr.clone(),
+                        });
                 }
 
                 if let Value::Module(mo) = object {
-                    return mo.realm.read().unwrap().lookup(name).unwrap();
+                    return mo.realm.read().unwrap().lookup(name).ok_or(
+                        InterpreterError::NameNotDefined {
+                            name: name.to_string(),
+                            address: addr.clone(),
+                        },
+                    );
                 }
 
                 panic!("Unexpected property object type: {object:?}")
@@ -1384,7 +1482,7 @@ impl Interpreter {
         let target = self.resolve_lvalue(realm, name)?;
 
         // Read current value — identifier needs a lookup, indexed needs evaluation
-        let current = self.read_lvalue(realm, &target);
+        let current = self.read_lvalue(realm, &name.address, &target)?;
         let rhs = self.evaluate_expression(realm, value, true)?;
 
         let ControlFlow::Value(rhs) = rhs else {

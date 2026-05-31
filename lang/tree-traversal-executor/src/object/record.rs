@@ -17,7 +17,7 @@ pub struct Record {
     pub definition_realm: SharedRealm,
 }
 
-impl Record {
+impl Record {    
     pub fn lookup_method(&self, name: &str) -> Option<Value> {
         self.methods.read().unwrap().get(name).cloned()
     }

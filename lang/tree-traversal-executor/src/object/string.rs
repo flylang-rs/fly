@@ -13,6 +13,10 @@ impl FlyString {
             _ref: s.into()
         }
     }
+
+    pub fn refcount(&self) -> usize {
+        Arc::strong_count(&self._ref)
+    }
 }
 
 impl Add for FlyString {

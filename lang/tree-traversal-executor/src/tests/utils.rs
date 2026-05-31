@@ -39,7 +39,7 @@ impl Tester {
             flylang_lexparse_glue::parse_source(src.into()).map_err(TestError::LoadingError)?;
 
         self.interp
-            .execute(ast)
+            .execute_nodestruct(ast)
             .map_err(TestError::InterpreterError)
     }
 
@@ -50,7 +50,7 @@ impl Tester {
             flylang_lexparse_glue::parse_source(src.into()).map_err(TestError::LoadingError)?;
 
         self.interp
-            .execute_script(ast)
+            .execute_script_nodestruct(ast)
             .map_err(TestError::InterpreterError)
     }
 }
