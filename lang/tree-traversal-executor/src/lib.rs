@@ -188,82 +188,84 @@ impl Interpreter {
         }
 
         if run_destructors {
-            while !realm.read().unwrap().values().is_empty() {
-                let mut names: Vec<String> = vec![];
+            self.run_destructors(realm)?;
+        }
 
-                for (name, i) in realm.read().unwrap().values() {
-                    debug!("{name} has {:?} references", i.refcount());
+        Ok(control_flow)
+    }
 
-                    // If it's only remaining object in the realm, run destructor for it.
-                    if i.refcount().map(|x| x == 1).unwrap_or_default() {
-                        if let Some(ri) = i.as_record_instance() {
-                            names.push(name.to_owned());
+    fn run_destructors(&mut self, realm: &SharedRealm) -> InterpreterResult<()> {
+        while !realm.read().unwrap().values().is_empty() {
+            let mut names: Vec<String> = vec![];
 
-                            let destructor = ri.read().unwrap().record.lookup_method("destruct");
+            for (name, value) in realm.read().unwrap().values() {
+                debug!("{name} has {:?} references", value.refcount());
 
-                            let dr = &ri.read().unwrap().record.definition_realm;
-
-                            // Call its destructor.
-                            if let Some(de) = destructor {
-                                debug!("+++ Call {name}'s destructor!");
-
-                                self.call_func(dr, None, &de, core::slice::from_ref(i))
-                                    .unwrap();
-                            }
-                        }
-
-                        if let Some(ar) = i.as_array() {
-                            debug!("Check array!");
-
-                            let mut bind = ar.lock().unwrap();
-
-                            for i in bind.iter() {
-                                let needs_freeing =
-                                    i.refcount().map(|x| x == 1).unwrap_or_default();
-
-                                if needs_freeing {
-                                    if let Some(ri) = i.as_record_instance() {
-                                        let destructor =
-                                            ri.read().unwrap().record.lookup_method("destruct");
-
-                                        let dr = &ri.read().unwrap().record.definition_realm;
-
-                                        // Call its destructor.
-                                        if let Some(de) = destructor {
-                                            debug!("+++ Call {name}'s destructor!");
-
-                                            self.call_func(dr, None, &de, core::slice::from_ref(i))
-                                                .unwrap();
-                                        }
-                                    }
-                                }
-                            }
-
-                            bind.clear();
-                        }
-                    }
+                if value.refcount().map(|x| x == 1).unwrap_or_default() {
+                    self.run_destructors_for_value(name, value)?;
+                    names.push(name.to_owned());
                 }
+            }
 
-                if names.is_empty() {
-                    let first_entry = realm
-                        .read()
-                        .unwrap()
-                        .values()
-                        .iter()
-                        .next()
-                        .map(|x| x.0.clone())
-                        .unwrap();
+            if names.is_empty() {
+                let first_entry = realm
+                    .read()
+                    .unwrap()
+                    .values()
+                    .iter()
+                    .next()
+                    .map(|x| x.0.clone())
+                    .unwrap();
 
-                    realm.write().unwrap().values_mut().remove(&first_entry);
-                } else {
-                    for i in names {
-                        realm.write().unwrap().values_mut().remove(&i);
-                    }
+                realm.write().unwrap().values_mut().remove(&first_entry);
+            } else {
+                for name in names {
+                    realm.write().unwrap().values_mut().remove(&name);
                 }
             }
         }
 
-        Ok(control_flow)
+        Ok(())
+    }
+
+    fn run_destructors_for_value(
+        &mut self,
+        name: &str,
+        value: &Value,
+    ) -> InterpreterResult<()> {
+        if let Some(ri) = value.as_record_instance() {
+            let ri_guard = ri.read().unwrap();
+            let destructor = ri_guard.record.lookup_method("destruct");
+            let dr = &ri_guard.record.definition_realm;
+
+            if let Some(de) = destructor {
+                debug!("+++ Call {name}'s destructor!");
+                self.call_func(dr, None, &de, core::slice::from_ref(value))?;
+            }
+
+            for field in &ri_guard.fields {
+                self.run_destructors_for_value(name, &field.value)?;
+            }
+        }
+
+        if let Some(ar) = value.as_array() {
+            debug!("Check array!");
+
+            let mut bind = ar.lock().unwrap();
+
+            for nested_value in bind.iter() {
+                let needs_freeing = nested_value.refcount().map(|x| x == 1).unwrap_or_default();
+
+                if needs_freeing {
+                    self.run_destructors_for_value(name, nested_value)?;
+                }
+            }
+
+            // Clear array to avoid calling destructor for the same object again.
+            bind.clear();
+        }
+
+        Ok(())
     }
 
     fn import_module(

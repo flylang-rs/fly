@@ -1,0 +1,21 @@
+record Holder {
+  public a;
+  public b;
+  public c;
+}
+
+func Holder::destruct() {
+  print("Drop the holder!");
+}
+
+record A { public name; }
+
+func A::destruct() {
+  print("Drop " + self.name);
+}
+
+ho = new Holder {
+  a: new A { name: "1" },
+  b: new A { name: "2" },
+  c: new A { name: "3" }
+}
