@@ -1,0 +1,17 @@
+record A { public name; }
+
+func A::destruct() { print("drop! " + self.name) }
+
+a = []
+
+{
+  b = new A { name: "1" }
+  c = new A { name: "2" }
+  d = new A { name: "3" }
+
+  a = [b, c, d]
+
+  print("Block exit (no drops before)")
+}
+
+print("Drop now!")

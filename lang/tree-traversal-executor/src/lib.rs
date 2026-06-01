@@ -211,6 +211,36 @@ impl Interpreter {
                                     .unwrap();
                             }
                         }
+
+                        if let Some(ar) = i.as_array() {
+                            debug!("Check array!");
+
+                            let mut bind = ar.lock().unwrap();
+
+                            for i in bind.iter() {
+                                let needs_freeing =
+                                    i.refcount().map(|x| x == 1).unwrap_or_default();
+
+                                if needs_freeing {
+                                    if let Some(ri) = i.as_record_instance() {
+                                        let destructor =
+                                            ri.read().unwrap().record.lookup_method("destruct");
+
+                                        let dr = &ri.read().unwrap().record.definition_realm;
+
+                                        // Call its destructor.
+                                        if let Some(de) = destructor {
+                                            debug!("+++ Call {name}'s destructor!");
+
+                                            self.call_func(dr, None, &de, core::slice::from_ref(i))
+                                                .unwrap();
+                                        }
+                                    }
+                                }
+                            }
+
+                            bind.clear();
+                        }
                     }
                 }
 
