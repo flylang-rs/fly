@@ -1,0 +1,9 @@
+[package]
+name = "feathervm-compiler"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+flylang-parser = { path = "../parser" }
+flylang-lexparse-glue = { path = "../lexparse-glue" }
+feathervm-definitions = { path = "../feathervm-definitions" }

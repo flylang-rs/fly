@@ -1,0 +1,14 @@
+[package]
+name = "feathervm"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+flylang-ast-analyzer = { path = "../analyzer" }
+flylang-common = { path = "../common" }
+flylang-diagnostics = { path = "../diagnostics" }
+flylang-lexer = { path = "../lexer" }
+flylang-parser = { path = "../parser" }
+flylang-lexparse-glue = { path = "../lexparse-glue" }
+
+log = "0.4.29"

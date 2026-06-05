@@ -1,0 +1,47 @@
+# func fib(n) {
+#     if n < 2 {
+#         return n
+#     }
+#
+#     return fib(n - 1) + fib(n - 2)
+# }
+
+mk.fn 0     # Register function `fib` at locals index 0
+
+st.l 0      # Store it 
+
+li.uo
+ret
+
+fib:
+	ld.l 0      # Load value in index 0 - n argument in locals table
+	cmp.sic 2     # Compare with short integer constant (a i32-limited integer stored in bytecode, not in constant table)
+
+	b.l .B0     # If less, go to end
+
+	ld.l 0
+	dec         # n - 1
+
+	call fib, 1 # fib function with arity 1
+
+	ld.l 0
+	sub.sic 2       # n - 2
+
+	call fib, 1
+
+	add         # fib(n-1) + fib(n-2)
+
+	ret         # Return
+
+.B0:
+	ld.l 0
+
+	ret
+
+# ============================
+#
+# Constant table:
+# - 0: `fib` - function pointer
+#
+# Global table:
+# - 0: `fib` - function

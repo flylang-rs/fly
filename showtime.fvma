@@ -1,0 +1,36 @@
+# Showtime example - how to import modules, perform loading, arithmetics and storing operations, also calling functions
+
+import mod1   # Import module named `mod1`
+
+# ST.L <index> - Store value to local realm
+# Pops value from the stack and puts it to local table at specified index.
+st.l 0
+
+# a = 4
+
+# ST.LSIC <index>, <value> - Store short integer constant value to local realm
+# st = store; lsic = local + short integer constant
+st.lsic 1, 4     # Variable name `a` (its index 1) with constant integer value 4
+
+# b = 9
+
+st.lsic 2, 9     # Variable nmae `b` (its index 2)
+
+# c = a + b
+
+# LD.L <index> - Load value from a local realm at specified index and push it to the stack.
+ld.l 1
+ld.l 2
+
+add
+
+st.l 3
+
+# LD.UO - Push nil to the stack
+# LD - load; UO - undefined object (nil)
+ld.uo
+
+ret
+
+# ============================
+#

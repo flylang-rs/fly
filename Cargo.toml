@@ -7,7 +7,7 @@ edition = "2024"
 members = [
     "lang/analyzer",
     "lang/common",
-    "lang/diagnostics",
+    "lang/diagnostics", "lang/feathervm", "lang/feathervm-compiler", "lang/feathervm-definitions", "lang/feathervm-interpreter",
     "lang/lexer",
     "lang/lexparse-glue",
     "lang/parser",
