@@ -8,13 +8,13 @@ st.l 0
 
 # a = 4
 
-# ST.LSIC <index>, <value> - Store short integer constant value to local realm
+# ST.LSC <index>, <value> - Store short integer constant value to local realm
 # st = store; lsic = local + short integer constant
-st.lsic 1, 4     # Variable name `a` (its index 1) with constant integer value 4
+st.lsc 1, 4     # Variable name `a` (its index 1) with constant integer value 4
 
 # b = 9
 
-st.lsic 2, 9     # Variable nmae `b` (its index 2)
+st.lsc 2, 9     # Variable nmae `b` (its index 2)
 
 # c = a + b
 
@@ -26,6 +26,18 @@ add
 
 st.l 3
 
+ld.l 0    # Load `mod1`
+
+# LD.NC <index>, <name> - Load constant name from value (should be a module) index 
+ld.nc 0, 0    # mod1.print
+
+# Value already pushed, let's call a function
+# Stack trace:
+# - 1: integer value - 13
+# - 0: function - mod1.print
+
+call 1
+
 # LD.UO - Push nil to the stack
 # LD - load; UO - undefined object (nil)
 ld.uo
@@ -33,4 +45,5 @@ ld.uo
 ret
 
 # ============================
-#
+# Constant table:
+# - 0: "print" - String

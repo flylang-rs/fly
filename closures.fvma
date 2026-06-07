@@ -1,0 +1,59 @@
+# func a() {
+#     q = 49
+#     func b() {
+#         func c() {
+#             print(q)
+#         }
+#         c()
+#     }
+#     b()
+# }
+#
+# a()
+
+mk.fn 0
+
+# Can be optimized out, but we don't know will be `a` called outside or not, so keep it here.
+st.l 0
+ld.l 0
+
+call 0
+
+ret
+
+a:
+  st.lsc 0, 49     # q = 49
+
+  mk.fn 1
+
+  st.l 1
+  ld.l 1
+
+  call 0
+  ret
+
+b:
+  mk.fn 2
+
+  st.l 0
+  ld.l 0
+
+  call 0
+  ret
+
+c:
+  ld.o 2, 0
+
+  # LD.BC - Load builtin from builtins scope (Scope #-1). Uses a string constant to locate needed symbol.
+  ld.bc 3
+
+  call 1  # Arity = 1
+  ret
+
+
+# ===================
+# Constant table:
+# - 0: Function pointer - `a`
+# - 1: Function pointer - `b`
+# - 2: Function pointer - `c`
+# - 3: String - "print"

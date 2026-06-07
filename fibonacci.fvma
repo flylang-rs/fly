@@ -22,12 +22,19 @@ fib:
 	ld.l 0
 	dec         # n - 1
 
-	call fib, 1 # fib function with arity 1
+  # LD.O <depth>, <index> - Load values from outer scope (its table)
+  # <depth> means how much parent realms we should traverse to reach the needed one
+  # <index> is an index in the realm's local table
+  ld.o 1, 0   # Scope #0 (global), index 0 - fib function
+
+	call 1 # fib function with arity 1
 
 	ld.l 0
 	sub.sic 2       # n - 2
 
-	call fib, 1
+  ld.o 1, 0   # Scope #0 (global), index 0 - fib function
+
+	call 1
 
 	add         # fib(n-1) + fib(n-2)
 
