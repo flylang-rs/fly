@@ -18,18 +18,19 @@ st.lsc 2, 9     # Variable nmae `b` (its index 2)
 
 # c = a + b
 
-# LD.L <index> - Load value from a local realm at specified index and push it to the stack.
+# LD.L <index:loctbl> - Load value from a local realm at specified index and push it to the stack.
 ld.l 1
 ld.l 2
 
+# Pop two values from the stack and perform addition.
 add
 
 st.l 3
 
 ld.l 0    # Load `mod1`
 
-# LD.NC <index>, <name> - Load constant name from value (should be a module) index 
-ld.nc 0, 0    # mod1.print
+# LD.NC <name:const> - Load constant name from value (must be a module).w
+ld.nc 0    # mod1.print
 
 # Value already pushed, let's call a function
 # Stack trace:
@@ -38,9 +39,9 @@ ld.nc 0, 0    # mod1.print
 
 call 1
 
-# LD.UO - Push nil to the stack
-# LD - load; UO - undefined object (nil)
-ld.uo
+# LD.NIL - Push nil to the stack
+# LD - load; NIL - nil
+### ld.nil   # Not needed here, mod.print1 already put nil.
 
 ret
 

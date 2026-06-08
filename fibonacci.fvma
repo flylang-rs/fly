@@ -6,12 +6,28 @@
 #     return fib(n - 1) + fib(n - 2)
 # }
 
-mk.fn 0     # Register function `fib` at locals index 0
+mk.fn 0     # Register function `fib` at locals index 0, using current realm as definition scope
 
 st.l 0      # Store it 
 
-li.uo
+ld.nil
+
 ret
+
+# Arguments from the stack are being transferred to the locals table like this:
+# +-------------------+
+# |      arg_n        |   /|\
+# +-------------------+  / | \
+# |      arg_n-1      |    |
+# +-------------------+    |
+# |       ...         |    |
+# +-------------------+    |
+# |       arg1        |    |
+# +-------------------+
+# |     callee fn     |
+# +-------------------+
+
+# locals table: [0: arg1, ..., n-1: arg_n-1, n: arg_n, n+1: local variable 1, ..., n+k: local variable k]
 
 fib:
 	ld.l 0      # Load value in index 0 - n argument in locals table
