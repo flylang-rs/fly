@@ -13,3 +13,4 @@ flylang-lexparse-glue = { path = "../lexparse-glue" }
 
 log = "0.4.29"
 dumpster = "2.1.0"
+os_info = "3.15.0"

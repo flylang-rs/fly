@@ -111,6 +111,14 @@ impl ExprKind {
             None
         }
     }
+
+    pub fn into_id(self) -> Option<String> {
+        if let ExprKind::Identifier(id) = self {
+            Some(id)
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Debug, Clone, Trace)]

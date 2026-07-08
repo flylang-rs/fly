@@ -1,5 +1,5 @@
-use flylang_common::address::Address;
-use flylang_diagnostics::{additions::Note, error::DiagnosticsReport};
+use flylang_common::{address::Address, spanned::Spanned};
+use flylang_diagnostics::{additions::{Help, Note, TextEdit}, error::DiagnosticsReport};
 
 #[rustfmt::skip]
 #[derive(Debug, Clone)]
@@ -22,7 +22,7 @@ pub enum InterpreterError {
     },
     NoPropertyForType {
         typename: String,
-        property: String,
+        property: Spanned<String>,
         callee_address: Address
     },
     CallError(CallError)
@@ -124,14 +124,33 @@ impl DiagnosticsReport for InterpreterError {
                 }
             }
             InterpreterError::NoPropertyForType { typename, property, callee_address } => {
+                let is_module = typename.starts_with("(module ");
+
+                let helps: &[Help<'_>] = if is_module {
+                    let mut new_span = property.address.span.clone();
+
+                    new_span = (new_span.start - 1)..new_span.start;
+
+                    &[
+                        Help::new(
+                            "You're trying to access a module by using dot `.` character. Use double colons `::` instead",
+                            vec![
+                                TextEdit::new(new_span, "::".to_string())
+                            ]
+                        )
+                    ]
+                } else {
+                    &[]
+                };
+
                 flylang_diagnostics::Diagnostics {}.error_ext(
                     &mut result,
-                    &format!("Property `{property}` is not defined for type `{typename}`"),
+                    &format!("Property `{}` is not defined for type `{typename}`", property.value),
                     callee_address,
                     &[
                         Note::new(callee_address.clone(), "here"),
                     ],
-                    &[],
+                    helps,
                 )
             }
         }

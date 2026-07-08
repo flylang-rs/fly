@@ -15,6 +15,7 @@ pub mod nil;
 pub mod print;
 pub mod reals;
 pub mod strings;
+pub mod system;
 pub mod types;
 
 pub type RustInteropFnInner = fn(

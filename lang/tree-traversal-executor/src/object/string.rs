@@ -43,6 +43,12 @@ impl From<String> for FlyString {
     }
 }
 
+impl From<&str> for FlyString {
+    fn from(value: &str) -> Self {
+        Self { _ref: Arc::new(value.into()) }
+    }
+}
+
 // SAFETY: Reference cycles cannot happen within `::alloc::string::String` type.
 unsafe impl<V: Visitor> TraceWith<V> for FlyString {
     fn accept(&self, _visitor: &mut V) -> Result<(), ()> {

@@ -84,6 +84,7 @@ impl Interpreter {
             runtime::nil::init,
             runtime::print::init,
             runtime::reals::init,
+            runtime::system::init,
             runtime::strings::init,
             runtime::types::init,
         ];
@@ -739,7 +740,7 @@ impl Interpreter {
                         panic!()
                     };
 
-                    let prop = property.value.as_id().unwrap();
+                    let prop = property.clone().map(|x| x.into_id().unwrap());
 
                     let type_name = types::value_to_internal_type(&obj);
 
@@ -749,17 +750,17 @@ impl Interpreter {
                             ri.read()
                                 .unwrap()
                                 .record
-                                .lookup_method(prop)
+                                .lookup_method(&prop.value)
                                 .ok_or_else(|| InterpreterError::NoPropertyForType {
                                     typename: type_name.to_string(),
-                                    property: prop.to_string(),
+                                    property: prop.clone(),
                                     callee_address: property.address.clone(),
                                 })?
                         } else {
                             // If not, use oldstyle mode, format strings into a path.
                             // But it's no longer actual since everything is moved into modules.
 
-                            let method_key = format!("{type_name}::{prop}");
+                            let method_key = format!("{type_name}::{}", prop.value);
 
                             let bind = realm.read().unwrap();
                             let oldstyle_value = bind.lookup_ref(&method_key);
@@ -768,17 +769,17 @@ impl Interpreter {
                                 unreachable!("call: Oldstyle mode is no longer actual!");
                             } else {
                                 bind.lookup_ref(&type_name)
-                                    .and_then(|x| x.as_module()?.method_lookup(prop))
+                                    .and_then(|x| x.as_module()?.method_lookup(&prop.value))
                                     .ok_or_else(|| InterpreterError::NoPropertyForType {
                                         typename: type_name.to_string(),
-                                        property: prop.to_string(),
+                                        property: prop.clone(),
                                         callee_address: property.address.clone(),
                                     })?
                             }
                         }
                     };
 
-                    let method_key = format!("{type_name}::{prop}");
+                    let method_key = format!("{type_name}::{}", &prop.value);
 
                     let mut args = vec![obj]; // receiver (self) is first argument
 
