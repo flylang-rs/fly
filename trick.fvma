@@ -1,0 +1,32 @@
+# x = 0
+# {
+#    b = 1
+#    x = b
+# }
+#
+
+# ST.LSC - Store local short constant 
+# Stores a value in local table.
+st.lsc 0, 0
+
+mk.fn 0
+
+# Function is being pushed to the stack by `mk.fn`, since it's not actually a function but just a block, 
+# we won't save it somewhere, and call it without any arguments immediately.
+call 0   # Target arity = 0
+
+ret
+
+# It's just a label, it does nothing.
+.B1:
+    # b = 1
+    st.lsc 0, 1
+
+    # ST.O <depth> <local index> - store outer, like LD.O, but for storing.
+    # Stores a value from the stack to the value from outer scope.
+    # Depth = 1; Value b stored at local index 0;
+    # x = b
+    st.o 1, 0
+
+# Constant table:
+# 0 - function pointer to `.B1`

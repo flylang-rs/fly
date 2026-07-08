@@ -96,6 +96,42 @@ fn show_help() {
     println!("  To be added soon.");
 }
 
+fn compile_file(options: &CommandLineArguments, source: Source) {
+    let source = Arc::new(source);
+
+    if options.show_lexems {
+        let tokens = flylang_lexparse_glue::lex_source(Arc::clone(&source), true).map(|x| {
+            x.iter()
+                .map(|y| (y.value.clone(), y.address.span.clone()))
+                .collect::<Vec<_>>()
+        });
+
+        println!("{:?}", tokens);
+    }
+
+    let ast = match flylang_lexparse_glue::parse_source(Arc::clone(&source)) {
+        Ok(st) => st,
+        Err(LoadingError::AnalyzeFailed) => {
+            std::process::exit(1);
+        }
+        Err(e) => {
+            eprintln!("{}", e.render());
+
+            std::process::exit(1)
+        }
+    };
+
+    if options.show_ast {
+        eprintln!("{ast:#?}");
+    }
+
+    let compiler = feathervm_compiler::Compiler::new();
+
+    let blocks = compiler.compile(&ast).unwrap();
+
+    println!("{blocks:#?}");
+}
+
 fn main() -> std::io::Result<()> {
     env_logger::builder()
         .default_format()
@@ -138,7 +174,9 @@ fn main() -> std::io::Result<()> {
 
     let source_code = std::fs::read_to_string(&filepath)?;
 
-    run_file(&cmd_opts, Source::new(filepath, source_code));
+    compile_file(&cmd_opts, Source::new(filepath, source_code));
+
+    // run_file(&cmd_opts, Source::new(filepath, source_code));
 
     Ok(())
 }

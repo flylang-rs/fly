@@ -304,6 +304,7 @@ version = "0.1.2"
 dependencies = [
  "crossterm",
  "env_logger",
+ "feathervm-compiler",
  "flylang-ast-analyzer",
  "flylang-common",
  "flylang-diagnostics",

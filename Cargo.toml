@@ -22,6 +22,7 @@ flylang-ast-analyzer = { path = "lang/analyzer/" }
 flylang-lexparse-glue = { path = "lang/lexparse-glue/" }
 flylang-diagnostics = { path = "lang/diagnostics/" }
 flylang-tte = { path = "lang/tree-traversal-executor/" }
+feathervm-compiler = { path = "lang/feathervm-compiler" }
 
 log = "0.4.29"
 env_logger = "0.11.8"
