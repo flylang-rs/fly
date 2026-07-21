@@ -6,3 +6,5 @@ edition = "2024"
 [dependencies]
 num-derive = "0.4.2"
 num-traits = "0.2.19"
+
+flylang-parser = { path = "../parser" }

@@ -284,6 +284,7 @@ dependencies = [
 name = "feathervm-definitions"
 version = "0.1.0"
 dependencies = [
+ "flylang-parser",
  "num-derive",
  "num-traits",
 ]

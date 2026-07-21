@@ -1,28 +1,44 @@
 use std::fmt::{Debug, Display};
 
-use crate::bytecode::RawOpCode;
+use crate::bytecode::Operation;
 
-/// Represents an opcode or an operand for it.
-#[derive(Debug)]
+pub type Number = String;
+
+#[derive(Debug, Clone)]
 pub enum BlockValue {
-    Opcode(RawOpCode),
-    ByteValue(u8),
-    ShortValue(u16),
-    WordValue(u32),
-    ShortIntegerConstant(i32),
+    Add,
+    Mul,
+    PushNumber(Number)
 }
 
 #[derive(Debug)]
-pub struct VMBlock {
-    code: Vec<BlockValue>
+pub enum VMBlock {
+    Block {
+        code: Vec<BlockValue>
+    },
+    Single(BlockValue)
+}
+
+impl VMBlock {
+    pub fn into_single(self) -> Option<BlockValue> {
+        match self {
+            Self::Single(a) => Some(a),
+            _ => None
+        }
+    }
 }
 
 impl Display for VMBlock {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // f.debug_struct("VMBlock").field("code", &self.code).finish()
         f.write_str("<anonymous>: ")?;
-        
-        f.debug_list().entries(&self.code).finish()?;
+
+        let mut list = f.debug_list();
+
+        match self {
+            VMBlock::Block { code } => list.entries(code),
+            VMBlock::Single(block_value) => list.entry(&block_value),
+        }.finish()?;
 
         Ok(())
     }

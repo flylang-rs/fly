@@ -1,4 +1,4 @@
-use feathervm_definitions::block::VMBlock;
+use feathervm_definitions::{block::{BlockValue, VMBlock}, bytecode::Operation};
 use flylang_parser::{
     ast::{
         ExprKind, Expression,
@@ -51,10 +51,45 @@ impl Compiler {
         }
     }
 
+    fn load_value(&self, expr: &Expression) -> Result<Vec<BlockValue>, String> {
+        let value = self.compile_expr(expr)?;
+
+        match value {
+            VMBlock::Block { code } => Ok(code),
+            VMBlock::Single(block_value) => Ok(vec![block_value]),
+        }
+    }
+
     fn compile_expr(&self, statement: &Expression) -> Result<VMBlock, String> {
         match &statement.value {
             ExprKind::Add(a, b) => {
-                todo!("{a:?} {b:?}")
+                let value_a = self.load_value(a)?;
+                let value_b = self.load_value(b)?;
+
+                let mut result = vec![];
+
+                result.extend_from_slice(&value_a);
+                result.extend_from_slice(&value_b);
+                
+                result.push(BlockValue::Add);
+
+                Ok(VMBlock::Block { code: result })
+            }
+            ExprKind::Mul(a, b) => {
+                let value_a = self.load_value(a)?;
+                let value_b = self.load_value(b)?;
+
+                let mut result = vec![];
+
+                result.extend_from_slice(&value_a);
+                result.extend_from_slice(&value_b);
+
+                result.push(BlockValue::Mul);
+
+                Ok(VMBlock::Block { code: result })
+            }
+            ExprKind::Number(nr) => {
+                Ok(VMBlock::Single(BlockValue::PushNumber(nr.clone())))
             }
             _ => todo!("Compile other expression kinds"),
         }
