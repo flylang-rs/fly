@@ -8,22 +8,32 @@ pub type Number = String;
 pub enum BlockValue {
     Add,
     Mul,
-    PushNumber(Number)
+    Sub,
+    Div,
+    DivRoundUp,
+    DivRoundDown,
+    Mod,
+    BitShiftLeft,
+    BitShiftRight,
+    BitAnd,
+    BitOr,
+    BitXor,
+    BitNot,
+    PushNumber(Number),
+    LoadName(String),
 }
 
 #[derive(Debug)]
 pub enum VMBlock {
-    Block {
-        code: Vec<BlockValue>
-    },
-    Single(BlockValue)
+    Block { code: Vec<BlockValue> },
+    Single(BlockValue),
 }
 
 impl VMBlock {
     pub fn into_single(self) -> Option<BlockValue> {
         match self {
             Self::Single(a) => Some(a),
-            _ => None
+            _ => None,
         }
     }
 }
@@ -38,8 +48,10 @@ impl Display for VMBlock {
         match self {
             VMBlock::Block { code } => list.entries(code),
             VMBlock::Single(block_value) => list.entry(&block_value),
-        }.finish()?;
+        }
+        .finish()?;
 
         Ok(())
     }
 }
+
