@@ -1,7 +1,10 @@
-use feathervm_definitions::{block::{BlockValue, VMBlock}, bytecode::Operation};
+use feathervm_definitions::{
+    block::{BlockValue, VMBlock},
+    bytecode::Operation,
+};
 use flylang_parser::{
     ast::{
-        ExprKind, Expression,
+        DivisionKind, ExprKind, Expression,
         Statement::{self, Expr},
     },
     state,
@@ -70,7 +73,7 @@ impl Compiler {
 
                 result.extend_from_slice(&value_a);
                 result.extend_from_slice(&value_b);
-                
+
                 result.push(BlockValue::Add);
 
                 Ok(VMBlock::Block { code: result })
@@ -88,8 +91,56 @@ impl Compiler {
 
                 Ok(VMBlock::Block { code: result })
             }
-            ExprKind::Number(nr) => {
-                Ok(VMBlock::Single(BlockValue::PushNumber(nr.clone())))
+            ExprKind::Div(a, b, dk) => {
+                let value_a = self.load_value(a)?;
+                let value_b = self.load_value(b)?;
+
+                let mut result = vec![];
+
+                result.extend_from_slice(&value_a);
+                result.extend_from_slice(&value_b);
+
+                let bv = match dk {
+                    DivisionKind::Neutral => BlockValue::Div,
+                    DivisionKind::RoundingUp => BlockValue::DivRoundUp,
+                    DivisionKind::RoundingDown => BlockValue::DivRoundDown,
+                };
+
+                result.push(bv);
+
+                Ok(VMBlock::Block { code: result })
+            }
+            ExprKind::Sub(a, b) => {
+                let value_a = self.load_value(a)?;
+                let value_b = self.load_value(b)?;
+
+                let mut result = vec![];
+
+                result.extend_from_slice(&value_a);
+                result.extend_from_slice(&value_b);
+
+                result.push(BlockValue::Sub);
+
+                Ok(VMBlock::Block { code: result })
+            }
+            ExprKind::Number(nr) => Ok(VMBlock::Single(BlockValue::PushNumber(nr.clone()))),
+            ExprKind::String(st) => Ok(VMBlock::Single(BlockValue::PushString(st.clone()))),
+            ExprKind::Assignment { name, value } => {
+                let compiled_expr = self.compile_expr(value)?.into_content();
+
+                let mut result = vec![];
+
+                result.extend_from_slice(&compiled_expr);
+                result.push(BlockValue::Define(
+                    name.value
+                        .as_id()
+                        .expect("Expected identifier as variable name.")
+                        .into(),
+                ));
+
+                // todo!("Transform assignment! Name: {name:?}; Value: {compiled_expr:?}");
+
+                Ok(VMBlock::Block { code: result })
             }
             _ => todo!("Compile other expression kinds"),
         }

@@ -4,6 +4,7 @@ use crate::bytecode::Operation;
 
 pub type Number = String;
 
+// TODO: Rename BlockValue to Op, and make a structure that encapsulates it by adding Span to it.
 #[derive(Debug, Clone)]
 pub enum BlockValue {
     Add,
@@ -20,6 +21,8 @@ pub enum BlockValue {
     BitXor,
     BitNot,
     PushNumber(Number),
+    PushString(String),
+    Define(String),
     LoadName(String),
 }
 
@@ -34,6 +37,13 @@ impl VMBlock {
         match self {
             Self::Single(a) => Some(a),
             _ => None,
+        }
+    }
+
+    pub fn into_content(self) -> Vec<BlockValue> {
+        match self {
+            Self::Single(val) => vec![val],
+            Self::Block { code } => code
         }
     }
 }
