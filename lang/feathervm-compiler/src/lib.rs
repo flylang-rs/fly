@@ -1,7 +1,8 @@
 use feathervm_definitions::{
-    block::{BlockValue, VMBlock},
+    block::{BlockValue, Op, VMBlock},
     bytecode::Operation,
 };
+use flylang_common::spanned::Spanned;
 use flylang_parser::{
     ast::{
         DivisionKind, ExprKind, Expression,
@@ -74,7 +75,7 @@ impl Compiler {
                 result.extend_from_slice(&value_a);
                 result.extend_from_slice(&value_b);
 
-                result.push(BlockValue::Add);
+                result.push(Spanned::new(Op::Add, statement.address.clone()));
 
                 Ok(VMBlock::Block { code: result })
             }
@@ -87,7 +88,7 @@ impl Compiler {
                 result.extend_from_slice(&value_a);
                 result.extend_from_slice(&value_b);
 
-                result.push(BlockValue::Mul);
+                result.push(Spanned::new(Op::Mul, statement.address.clone()));
 
                 Ok(VMBlock::Block { code: result })
             }
@@ -101,12 +102,12 @@ impl Compiler {
                 result.extend_from_slice(&value_b);
 
                 let bv = match dk {
-                    DivisionKind::Neutral => BlockValue::Div,
-                    DivisionKind::RoundingUp => BlockValue::DivRoundUp,
-                    DivisionKind::RoundingDown => BlockValue::DivRoundDown,
+                    DivisionKind::Neutral => Op::Div,
+                    DivisionKind::RoundingUp => Op::DivRoundUp,
+                    DivisionKind::RoundingDown => Op::DivRoundDown,
                 };
 
-                result.push(bv);
+                result.push(Spanned::new(bv, statement.address.clone()));
 
                 Ok(VMBlock::Block { code: result })
             }
@@ -119,23 +120,32 @@ impl Compiler {
                 result.extend_from_slice(&value_a);
                 result.extend_from_slice(&value_b);
 
-                result.push(BlockValue::Sub);
+                result.push(Spanned::new(Op::Sub, statement.address.clone()));
 
                 Ok(VMBlock::Block { code: result })
             }
-            ExprKind::Number(nr) => Ok(VMBlock::Single(BlockValue::PushNumber(nr.clone()))),
-            ExprKind::String(st) => Ok(VMBlock::Single(BlockValue::PushString(st.clone()))),
+            ExprKind::Number(nr) => Ok(VMBlock::Single(Spanned::new(
+                Op::PushNumber(nr.clone()),
+                statement.address.clone(),
+            ))),
+            ExprKind::String(st) => Ok(VMBlock::Single(Spanned::new(
+                Op::PushString(st.clone()),
+                statement.address.clone(),
+            ))),
             ExprKind::Assignment { name, value } => {
                 let compiled_expr = self.compile_expr(value)?.into_content();
 
                 let mut result = vec![];
 
                 result.extend_from_slice(&compiled_expr);
-                result.push(BlockValue::Define(
-                    name.value
-                        .as_id()
-                        .expect("Expected identifier as variable name.")
-                        .into(),
+                result.push(Spanned::new(
+                    Op::Define(
+                        name.value
+                            .as_id()
+                            .expect("Expected identifier as variable name.")
+                            .into(),
+                    ),
+                    statement.address.clone(),
                 ));
 
                 // todo!("Transform assignment! Name: {name:?}; Value: {compiled_expr:?}");

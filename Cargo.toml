@@ -10,8 +10,7 @@ members = [
     "lang/diagnostics", "lang/feathervm", "lang/feathervm-compiler", "lang/feathervm-definitions", "lang/feathervm-interpreter",
     "lang/lexer",
     "lang/lexparse-glue",
-    "lang/parser",
-    "lang/tree-traversal-executor"
+    "lang/parser"
 ]
 
 [dependencies]
@@ -21,7 +20,6 @@ flylang-parser = { path = "lang/parser/" }
 flylang-ast-analyzer = { path = "lang/analyzer/" }
 flylang-lexparse-glue = { path = "lang/lexparse-glue/" }
 flylang-diagnostics = { path = "lang/diagnostics/" }
-flylang-tte = { path = "lang/tree-traversal-executor/" }
 feathervm-compiler = { path = "lang/feathervm-compiler" }
 
 log = "0.4.29"

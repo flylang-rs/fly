@@ -2,11 +2,9 @@ use core::fmt::Debug;
 
 use flylang_common::{spanned::Spanned, visibility::Visibility};
 
-pub use dumpster::{Trace, sync::Gc};
-
 pub type Expression = Spanned<ExprKind>;
 
-#[derive(Debug, Clone, Trace)]
+#[derive(Debug, Clone)]
 pub enum ExprKind {
     // Binary operations
     Add(Box<Expression>, Box<Expression>),
@@ -113,7 +111,7 @@ impl ExprKind {
     }
 }
 
-#[derive(Debug, Clone, Trace)]
+#[derive(Debug, Clone)]
 pub enum Statement {
     Break,
     Continue,
@@ -152,7 +150,7 @@ impl Statement {
     }
 }
 
-#[derive(Debug, Clone, Trace)]
+#[derive(Debug, Clone)]
 pub struct Function {
     pub name: Box<Expression>,
     pub visibility: Visibility,
@@ -161,20 +159,20 @@ pub struct Function {
     pub body: Box<Statement>,
 }
 
-#[derive(Debug, Clone, Trace)]
+#[derive(Debug, Clone)]
 pub struct If {
     pub condition: Box<Expression>,
     pub body: Box<Statement>,
     pub else_body: Option<Box<Statement>>,
 }
 
-#[derive(Debug, Clone, Trace)]
+#[derive(Debug, Clone)]
 pub struct While {
     pub condition: Box<Expression>,
     pub body: Box<Statement>,
 }
 
-#[derive(Debug, Clone, Trace)]
+#[derive(Debug, Clone)]
 pub struct VariableDefinition {
     pub name: Spanned<String>,
     pub visibility: Visibility,
@@ -182,7 +180,7 @@ pub struct VariableDefinition {
     pub value: Option<Box<Expression>>,
 }
 
-#[derive(Debug, Clone, Trace)]
+#[derive(Debug, Clone)]
 pub struct RecordDefinition {
     pub name: Spanned<String>,
     pub visibility: Visibility,
@@ -191,13 +189,13 @@ pub struct RecordDefinition {
 
 pub type KeyValueMapWithDuplicates = Vec<(Spanned<String>, Expression)>;
 
-#[derive(Debug, Clone, Trace)]
+#[derive(Debug, Clone)]
 pub struct NewObjectDeclaration {
     pub name: Box<Expression>,
     pub fields: KeyValueMapWithDuplicates,
 }
 
-#[derive(Debug, Copy, Clone, Trace)]
+#[derive(Debug, Copy, Clone)]
 pub enum DivisionKind {
     Neutral,
     RoundingUp,

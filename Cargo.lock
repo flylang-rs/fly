@@ -276,6 +276,7 @@ name = "feathervm-compiler"
 version = "0.1.0"
 dependencies = [
  "feathervm-definitions",
+ "flylang-common",
  "flylang-lexparse-glue",
  "flylang-parser",
 ]
@@ -284,6 +285,7 @@ dependencies = [
 name = "feathervm-definitions"
 version = "0.1.0"
 dependencies = [
+ "flylang-common",
  "flylang-parser",
  "num-derive",
  "num-traits",
@@ -312,7 +314,6 @@ dependencies = [
  "flylang-lexer",
  "flylang-lexparse-glue",
  "flylang-parser",
- "flylang-tte",
  "log",
  "owo-colors",
 ]
@@ -369,25 +370,10 @@ dependencies = [
 name = "flylang-parser"
 version = "0.1.2"
 dependencies = [
- "dumpster",
  "flylang-common",
  "flylang-diagnostics",
  "flylang-lexer",
  "insta",
- "log",
-]
-
-[[package]]
-name = "flylang-tte"
-version = "0.1.2"
-dependencies = [
- "dumpster",
- "flylang-ast-analyzer",
- "flylang-common",
- "flylang-diagnostics",
- "flylang-lexer",
- "flylang-lexparse-glue",
- "flylang-parser",
  "log",
 ]
 

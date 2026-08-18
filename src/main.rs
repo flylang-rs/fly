@@ -9,71 +9,71 @@ use flylang_lexparse_glue::LoadingError;
 use crate::arguments::CommandLineArguments;
 
 pub mod arguments;
-pub mod repl;
+// pub mod repl;
 
-fn run_file(options: &CommandLineArguments, source: Source) {
-    let source = Arc::new(source);
+// fn run_file(options: &CommandLineArguments, source: Source) {
+//     let source = Arc::new(source);
 
-    if options.show_lexems {
-        let tokens = flylang_lexparse_glue::lex_source(Arc::clone(&source), true).map(|x| {
-            x.iter()
-                .map(|y| (y.value.clone(), y.address.span.clone()))
-                .collect::<Vec<_>>()
-        });
+//     if options.show_lexems {
+//         let tokens = flylang_lexparse_glue::lex_source(Arc::clone(&source), true).map(|x| {
+//             x.iter()
+//                 .map(|y| (y.value.clone(), y.address.span.clone()))
+//                 .collect::<Vec<_>>()
+//         });
 
-        println!("{:?}", tokens);
-    }
+//         println!("{:?}", tokens);
+//     }
 
-    let ast = match flylang_lexparse_glue::parse_source(Arc::clone(&source)) {
-        Ok(st) => st,
-        Err(LoadingError::AnalyzeFailed) => {
-            std::process::exit(1);
-        }
-        Err(e) => {
-            eprintln!("{}", e.render());
+//     let ast = match flylang_lexparse_glue::parse_source(Arc::clone(&source)) {
+//         Ok(st) => st,
+//         Err(LoadingError::AnalyzeFailed) => {
+//             std::process::exit(1);
+//         }
+//         Err(e) => {
+//             eprintln!("{}", e.render());
 
-            std::process::exit(1)
-        }
-    };
+//             std::process::exit(1)
+//         }
+//     };
 
-    if options.show_ast {
-        eprintln!("{ast:#?}");
-    }
+//     if options.show_ast {
+//         eprintln!("{ast:#?}");
+//     }
 
-    let mut interpreter = flylang_tte::Interpreter::new();
+//     let mut interpreter = flylang_tte::Interpreter::new();
 
-    let result = match interpreter.execute_script(ast) {
-        Ok(res) => res,
-        Err(e) => {
-            flylang_diagnostics::report_simple_error("Exception occured, showing traceback...");
+//     let result = match interpreter.execute_script(ast) {
+//         Ok(res) => res,
+//         Err(e) => {
+//             flylang_diagnostics::report_simple_error("Exception occured, showing traceback...");
 
-            for (nr, i) in interpreter.calltrace().iter().enumerate() {
-                let addr = if let Some((l, c)) = i.call_site.address_line_col {
-                    format!(":{l}:{c}")
-                } else {
-                    String::new()
-                };
+//             for (nr, i) in interpreter.calltrace().iter().enumerate() {
+//                 let addr = if let Some((l, c)) = i.call_site.address_line_col {
+//                     format!(":{l}:{c}")
+//                 } else {
+//                     String::new()
+//                 };
 
-                flylang_diagnostics::report_simple_error(&format!(
-                    "  - #{}: {} called from {}{} ({})",
-                    nr + 1,
-                    i.function_name,
-                    i.call_site.address_filename,
-                    addr,
-                    i.from.as_deref().unwrap_or("???")
-                ));
-            }
+//                 flylang_diagnostics::report_simple_error(&format!(
+//                     "  - #{}: {} called from {}{} ({})",
+//                     nr + 1,
+//                     i.function_name,
+//                     i.call_site.address_filename,
+//                     addr,
+//                     i.from.as_deref().unwrap_or("???")
+//                 ));
+//             }
 
-            eprintln!();
+//             eprintln!();
 
-            eprintln!("{}", e.render());
+//             eprintln!("{}", e.render());
 
-            std::process::exit(1)
-        }
-    };
+//             std::process::exit(1)
+//         }
+//     };
 
-    info!("Program finished with result: {result:?}");
-}
+//     info!("Program finished with result: {result:?}");
+// }
 
 fn show_help() {
     let prog_name = std::env::args().next().unwrap();
@@ -148,7 +148,8 @@ fn main() -> std::io::Result<()> {
     }
 
     if std::env::args().any(|x| x == "--repl") {
-        repl::REPL::new().enter();
+        // repl::REPL::new().enter();
+        eprintln!("REPL is not supported now due to work on VM.");
 
         std::process::exit(0);
     }

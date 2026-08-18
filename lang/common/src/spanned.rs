@@ -3,18 +3,18 @@ use dumpster::Trace;
 
 use crate::address::Address;
 
-#[derive(Clone, Trace)]
-pub struct Spanned<T: Trace> {
+#[derive(Clone)]
+pub struct Spanned<T> {
     pub value: T,
     pub address: Address,
 }
 
-impl<T: Trace> Spanned<T> {
+impl<T> Spanned<T> {
     pub fn new(value: T, address: Address) -> Self {
         Self { value, address }
     }
 
-    pub fn map<R: Trace>(self, f: impl FnOnce(T) -> R) -> Spanned<R> {
+    pub fn map<R>(self, f: impl FnOnce(T) -> R) -> Spanned<R> {
         Spanned {
             value: f(self.value),
             address: self.address.clone(),
@@ -22,7 +22,7 @@ impl<T: Trace> Spanned<T> {
     }
 }
 
-impl<T: Debug + Trace> Debug for Spanned<T> {
+impl<T: Debug> Debug for Spanned<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_tuple("Spanned")
             .field(&self.value)

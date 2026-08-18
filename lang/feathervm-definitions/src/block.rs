@@ -1,12 +1,12 @@
 use std::fmt::{Debug, Display};
 
-use crate::bytecode::Operation;
+use flylang_common::spanned::Spanned;
 
 pub type Number = String;
 
 // TODO: Rename BlockValue to Op, and make a structure that encapsulates it by adding Span to it.
 #[derive(Debug, Clone)]
-pub enum BlockValue {
+pub enum Op {
     Add,
     Mul,
     Sub,
@@ -25,6 +25,8 @@ pub enum BlockValue {
     Define(String),
     LoadName(String),
 }
+
+pub type BlockValue = Spanned<Op>;
 
 #[derive(Debug)]
 pub enum VMBlock {
