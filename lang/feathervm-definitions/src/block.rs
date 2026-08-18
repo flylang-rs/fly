@@ -23,6 +23,7 @@ pub enum Op {
     PushNumber(Number),
     PushString(String),
     Define(String),
+    Closure(Closure),
     LoadName(String),
 }
 
@@ -67,3 +68,7 @@ impl Display for VMBlock {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct Closure {
+
+}

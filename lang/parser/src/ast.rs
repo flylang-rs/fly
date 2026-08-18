@@ -152,7 +152,7 @@ impl Statement {
 
 #[derive(Debug, Clone)]
 pub struct Function {
-    pub name: Box<Expression>,
+    pub name: Box<Expression>,    // Function name can be also a path for a record or module. It's an expression.
     pub visibility: Visibility,
     pub is_static: bool,
     pub arguments: Vec<Expression>,

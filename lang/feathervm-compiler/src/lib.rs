@@ -1,11 +1,10 @@
 use feathervm_definitions::{
     block::{BlockValue, Op, VMBlock},
-    bytecode::Operation,
 };
 use flylang_common::spanned::Spanned;
 use flylang_parser::{
     ast::{
-        DivisionKind, ExprKind, Expression,
+        DivisionKind, ExprKind, Expression, Function,
         Statement::{self, Expr},
     },
     state,
@@ -45,7 +44,7 @@ impl Compiler {
             Statement::Break => todo!(),
             Statement::Continue => todo!(),
             Statement::VariableDefinition(variable_definition) => todo!(),
-            Statement::Function(function) => todo!(),
+            Statement::Function(function) => self.compile_function(function),
             Statement::If(_) => todo!(),
             Statement::While(_) => todo!(),
             Statement::RecordDefinition(record_definition) => todo!(),
@@ -158,5 +157,26 @@ impl Compiler {
         // todo!("WHAT");
 
         // Ok()
+    }
+
+    fn compile_function(&self, func: &Function) -> Result<VMBlock, String> {
+        let name = match &func.name.value {
+            ExprKind::Identifier(id) => id,
+            kind => todo!("Function name is complex: {kind:?}"),
+        };
+
+        let body = match &*func.body {
+            Expr(spanned) => {
+                match &spanned.value {
+                    ExprKind::Block(bk) => bk,
+                    _ => unreachable!("Function body is not a block expression")
+                }
+            },
+            _ => unreachable!("Function body is not an expression"),
+        };
+
+        let body_compiled = self.compile(&body)?;
+
+        todo!("Function: name: {name:?}; Body: {body_compiled:?}");
     }
 }
