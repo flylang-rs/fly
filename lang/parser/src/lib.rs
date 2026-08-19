@@ -124,10 +124,15 @@ impl Parser {
 
         let end_token_addr = self.expect(TokenValue::CloseBrace)?.address;
 
-        Ok(ast::Statement::Expr(Spanned {
-            value: ast::ExprKind::Block(statements),
-            address: token_addr.merge(&end_token_addr),
-        }))
+        let address = token_addr.merge(&end_token_addr);
+
+        Ok(ast::Statement::new(
+            ast::StatementKind::Expr(Spanned {
+                value: ast::ExprKind::Block(statements),
+                address: address.clone(),
+            }),
+            address,
+        ))
     }
 
     fn parse_func(
@@ -135,7 +140,7 @@ impl Parser {
         visibility: Visibility,
         is_static: bool,
     ) -> ParserResult<ast::Statement> {
-        self.expect(TokenValue::Func)?;
+        let token_addr = self.expect(TokenValue::Func)?.address;
 
         let name = self.parse_expression(31)?;
 
@@ -145,13 +150,18 @@ impl Parser {
 
         let body = self.parse_block()?;
 
-        Ok(ast::Statement::Function(ast::Function {
-            name: name.into(),
-            arguments,
-            is_static,
-            visibility,
-            body: Box::new(body),
-        }))
+        let address = token_addr.merge(&body.address);
+
+        Ok(ast::Statement::new(
+            ast::StatementKind::Function(ast::Function {
+                name: name.into(),
+                arguments,
+                is_static,
+                visibility,
+                body: Box::new(body),
+            }),
+            address,
+        ))
     }
 
     // Maybe it should be in lexer.
@@ -734,17 +744,22 @@ impl Parser {
     }
 
     fn parse_return(&mut self) -> ParserResult<ast::Statement> {
-        self.next_token();
+        let address = self.next_token().unwrap().address;
 
         let value = self.parse_expression(0)?;
 
-        Ok(ast::Statement::Return {
-            value: Box::new(value),
-        })
+        let address = address.merge(&value.address);
+
+        Ok(ast::Statement::new(
+            ast::StatementKind::Return {
+                value: Box::new(value),
+            },
+            address,
+        ))
     }
 
     fn parse_if(&mut self) -> ParserResult<ast::Statement> {
-        self.next_token();
+        let address = self.next_token().unwrap().address;
 
         let condition = self.parse_expression(0)?;
 
@@ -762,29 +777,48 @@ impl Parser {
             }
         }
 
-        Ok(ast::Statement::If(ast::If {
-            condition: Box::new(condition),
-            body: Box::new(body),
-            else_body: else_body.map(Box::new),
-        }))
+        let address = address.merge(
+            else_body
+                .as_ref()
+                .or(Some(&body))
+                .map(|x| &x.address)
+                .unwrap(),
+        );
+
+        Ok(ast::Statement::new(
+            ast::StatementKind::If(ast::If {
+                condition: Box::new(condition),
+                body: Box::new(body),
+                else_body: else_body.map(Box::new),
+            }),
+            address,
+        ))
     }
 
     fn parse_while(&mut self) -> ParserResult<ast::Statement> {
-        self.next_token();
+        let address = self.next_token().unwrap().address;
 
         let condition = self.parse_expression(0)?;
 
         let body = self.parse_block()?;
 
-        Ok(ast::Statement::While(ast::While {
-            condition: Box::new(condition),
-            body: Box::new(body),
-        }))
+        let address = address.merge(&body.address);
+
+        Ok(ast::Statement::new(
+            ast::StatementKind::While(ast::While {
+                condition: Box::new(condition),
+                body: Box::new(body),
+            }),
+            address,
+        ))
     }
 
     fn parse_use(&mut self) -> ParserResult<ast::Statement> {
-        let tok = self.next_token();
-        self.context_stack.push(tok.unwrap());
+        let tok = self.next_token().unwrap();
+
+        let address = tok.address.clone();
+
+        self.context_stack.push(tok);
 
         match self.peek() {
             Some(TokenValue::OpenParen) => {
@@ -794,19 +828,29 @@ impl Parser {
 
                 let body = self.parse_block()?;
 
-                Ok(ast::Statement::Scope {
-                    held_value: Box::new(held_value),
-                    body: Box::new(body),
-                })
+                let address = address.merge(&body.address);
+
+                Ok(ast::Statement::new(
+                    ast::StatementKind::Scope {
+                        held_value: Box::new(held_value),
+                        body: Box::new(body),
+                    },
+                    address,
+                ))
             }
             _ => {
                 let path = self.parse_expression(0)?;
 
                 self.context_stack.pop();
 
-                Ok(ast::Statement::ModuleUsageDeclaration {
-                    path: Box::new(path),
-                })
+                let address = address.merge(&path.address);
+
+                Ok(ast::Statement::new(
+                    ast::StatementKind::ModuleUsageDeclaration {
+                        path: Box::new(path),
+                    },
+                    address,
+                ))
             }
         }
     }
@@ -825,21 +869,21 @@ impl Parser {
     fn parse_break_or_continue(&mut self) -> ParserResult<ast::Statement> {
         match self.peek() {
             Some(TokenValue::Continue) => {
-                self.next_token();
+                let addr = self.next_token().unwrap().address;
 
-                Ok(ast::Statement::Continue)
+                Ok(ast::Statement::new(ast::StatementKind::Continue, addr))
             }
             Some(TokenValue::Break) => {
-                self.next_token();
+                let addr = self.next_token().unwrap().address;
 
-                Ok(ast::Statement::Break)
+                Ok(ast::Statement::new(ast::StatementKind::Break, addr))
             }
             _ => unreachable!(),
         }
     }
 
     fn parse_private(&mut self) -> ParserResult<ast::Statement> {
-        self.next_token();
+        let address = self.next_token().unwrap().address;
 
         let eof = self.eof_addr.clone();
         let current_token = self.peek().ok_or_else(|| ParserError::UnexpectedEOF(eof))?;
@@ -857,12 +901,17 @@ impl Parser {
 
                     let name_string = name_string.map(|x| x.unwrap());
 
-                    return Ok(ast::Statement::VariableDefinition(VariableDefinition {
-                        name: name_string,
-                        visibility: Visibility::Local,
-                        type_annotation: None,
-                        value: Some(value),
-                    }));
+                    let address = address.merge(&name_string.address);
+
+                    return Ok(ast::Statement::new(
+                        ast::StatementKind::VariableDefinition(VariableDefinition {
+                            name: name_string,
+                            visibility: Visibility::Local,
+                            type_annotation: None,
+                            value: Some(value),
+                        }),
+                        address,
+                    ));
                 } else {
                     panic!("Cannot apply `private` to expression `{:?}`", expr.value);
                 }
@@ -882,7 +931,7 @@ impl Parser {
     }
 
     fn parse_record(&mut self, visibility: Visibility) -> ParserResult<ast::Statement> {
-        self.next_token();
+        let addr = self.next_token().unwrap().address;
 
         let name = self
             .next_token()
@@ -900,11 +949,16 @@ impl Parser {
 
         let fields = self.parse_record_block()?;
 
-        Ok(ast::Statement::RecordDefinition(RecordDefinition {
-            name,
-            visibility,
-            fields,
-        }))
+        let addr = addr.merge(&fields.address);
+
+        Ok(ast::Statement::new(
+            ast::StatementKind::RecordDefinition(RecordDefinition {
+                name,
+                visibility,
+                fields,
+            }),
+            addr,
+        ))
     }
 
     fn parse_record_block(&mut self) -> ParserResult<Spanned<Vec<ast::Statement>>> {
@@ -925,7 +979,7 @@ impl Parser {
                 // `public name`
                 // `private name`
                 vis @ (TokenValue::Public | TokenValue::Private) => {
-                    self.next_token();
+                    let address = self.next_token().unwrap().address;
 
                     let name = self
                         .next_token()
@@ -943,18 +997,23 @@ impl Parser {
                         }
                     };
 
+                    let address = address.merge(&name.address);
+
                     // eprintln!("Public or private field with value: {:?}", name);
 
-                    fields.push(ast::Statement::VariableDefinition(VariableDefinition {
-                        name,
-                        visibility: match vis {
-                            TokenValue::Public => Visibility::Global,
-                            TokenValue::Private => Visibility::Local,
-                            _ => unreachable!(),
-                        },
-                        type_annotation: None, // TODO: Parse type annotation
-                        value: None,           // it's just a declaration
-                    }));
+                    fields.push(ast::Statement::new(
+                        ast::StatementKind::VariableDefinition(VariableDefinition {
+                            name,
+                            visibility: match vis {
+                                TokenValue::Public => Visibility::Global,
+                                TokenValue::Private => Visibility::Local,
+                                _ => unreachable!(),
+                            },
+                            type_annotation: None, // TODO: Parse type annotation
+                            value: None,           // it's just a declaration
+                        }),
+                        address,
+                    ));
                 }
                 // Closing brace
                 TokenValue::CloseBrace => break,
@@ -994,7 +1053,7 @@ impl Parser {
             }
             TokenValue::Identifier(_) => {
                 return Err(ParserError::StaticNotAllowedHere {
-                    static_keyword_addr: this_addr
+                    static_keyword_addr: this_addr,
                 });
             }
             _ => {
@@ -1025,7 +1084,9 @@ impl Parser {
             _ /* tok */ => {
                 let lhs = self.parse_expression(0)?;
 
-                Ok(ast::Statement::Expr(lhs))
+                let address = lhs.address.clone();
+
+                Ok(ast::Statement::new(ast::StatementKind::Expr(lhs), address))
             }
         }
     }

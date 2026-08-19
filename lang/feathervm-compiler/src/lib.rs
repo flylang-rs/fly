@@ -1,14 +1,11 @@
-use feathervm_definitions::{
-    block::{BlockValue, Op, VMBlock},
-};
+use feathervm_definitions::block::{BlockValue, Closure, Op, VMBlock};
 use flylang_common::spanned::Spanned;
 use flylang_parser::{
     ast::{
-        DivisionKind, ExprKind, Expression, Function,
-        Statement::{self, Expr},
-    },
-    state,
+        DivisionKind, ExprKind, Expression, Function, Statement, StatementKind,
+    }, state,
 };
+use log::debug;
 
 mod value;
 
@@ -39,18 +36,18 @@ impl Compiler {
     }
 
     fn compile_statement(&self, statement: &Statement) -> Result<VMBlock, String> {
-        match statement {
-            Expr(spanned) => self.compile_expr(spanned),
-            Statement::Break => todo!(),
-            Statement::Continue => todo!(),
-            Statement::VariableDefinition(variable_definition) => todo!(),
-            Statement::Function(function) => self.compile_function(function),
-            Statement::If(_) => todo!(),
-            Statement::While(_) => todo!(),
-            Statement::RecordDefinition(record_definition) => todo!(),
-            Statement::ModuleUsageDeclaration { path } => todo!(),
-            Statement::Scope { held_value, body } => todo!(),
-            Statement::Return { value } => todo!(),
+        match &statement.value {
+            StatementKind::Expr(spanned) => self.compile_expr(spanned),
+            StatementKind::Break => todo!(),
+            StatementKind::Continue => todo!(),
+            StatementKind::VariableDefinition(variable_definition) => todo!(),
+            StatementKind::Function(function) => self.compile_function(Spanned::new(function, statement.address.clone())),
+            StatementKind::If(_) => todo!(),
+            StatementKind::While(_) => todo!(),
+            StatementKind::RecordDefinition(record_definition) => todo!(),
+            StatementKind::ModuleUsageDeclaration { path } => todo!(),
+            StatementKind::Scope { held_value, body } => todo!(),
+            StatementKind::Return { value } => todo!(),
         }
     }
 
@@ -131,6 +128,10 @@ impl Compiler {
                 Op::PushString(st.clone()),
                 statement.address.clone(),
             ))),
+            ExprKind::Identifier(id) => Ok(VMBlock::Single(Spanned::new(
+                Op::LoadName(id.to_string()),
+                statement.address.clone()
+            ))),
             ExprKind::Assignment { name, value } => {
                 let compiled_expr = self.compile_expr(value)?.into_content();
 
@@ -151,7 +152,7 @@ impl Compiler {
 
                 Ok(VMBlock::Block { code: result })
             }
-            _ => todo!("Compile other expression kinds"),
+            kind => todo!("Compile other expression kinds: {kind:?}"),
         }
 
         // todo!("WHAT");
@@ -159,24 +160,46 @@ impl Compiler {
         // Ok()
     }
 
-    fn compile_function(&self, func: &Function) -> Result<VMBlock, String> {
+    fn compile_function(&self, func: Spanned<&Function>) -> Result<VMBlock, String> {
+        let (func, addr) = (func.value, func.address);
+
         let name = match &func.name.value {
             ExprKind::Identifier(id) => id,
             kind => todo!("Function name is complex: {kind:?}"),
         };
 
-        let body = match &*func.body {
-            Expr(spanned) => {
-                match &spanned.value {
-                    ExprKind::Block(bk) => bk,
-                    _ => unreachable!("Function body is not a block expression")
-                }
+        let body = match &*&func.body.value {
+            StatementKind::Expr(spanned) => match &spanned.value {
+                ExprKind::Block(bk) => bk,
+                _ => unreachable!("Function body is not a block expression"),
             },
             _ => unreachable!("Function body is not an expression"),
         };
 
+        let arglist: Vec<_> = func
+            .arguments
+            .iter()
+            .map(|x| {
+                match x.value.as_id() {
+                    Some(x) => x.to_string(),
+                    None => panic!("Expected identifier as argument, got: {:?}", x)
+                }
+            }).collect();
+
+        debug!("Argument list: {arglist:?}");
+
         let body_compiled = self.compile(&body)?;
 
-        todo!("Function: name: {name:?}; Body: {body_compiled:?}");
+
+        let closure = Op::Closure(Closure { body: body_compiled, arguments: arglist });
+
+        let mut result = vec![];
+
+        result.push(BlockValue::new(closure, addr.clone()));
+        result.push(BlockValue::new(Op::Define(name.clone()), addr));
+
+        // todo!("Function: name: {name:?}; Ops: {result:#?}");
+
+        Ok(VMBlock::Block { code: result })
     }
 }

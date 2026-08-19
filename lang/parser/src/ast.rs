@@ -111,8 +111,10 @@ impl ExprKind {
     }
 }
 
+pub type Statement = Spanned<StatementKind>;
+
 #[derive(Debug, Clone)]
-pub enum Statement {
+pub enum StatementKind {
     Break,
     Continue,
 
@@ -140,7 +142,7 @@ pub enum Statement {
     Expr(Expression),
 }
 
-impl Statement {
+impl StatementKind {
     pub fn as_expression(&self) -> Option<&Expression> {
         if let Self::Expr(expr) = self {
             return Some(expr);

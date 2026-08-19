@@ -29,7 +29,7 @@ pub enum Op {
 
 pub type BlockValue = Spanned<Op>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum VMBlock {
     Block { code: Vec<BlockValue> },
     Single(BlockValue),
@@ -70,5 +70,6 @@ impl Display for VMBlock {
 
 #[derive(Debug, Clone)]
 pub struct Closure {
-
+    pub body: Vec<VMBlock>,
+    pub arguments: Vec<String>,
 }

@@ -1,8 +1,9 @@
+use flylang_common::spanned::Spanned;
 use flylang_diagnostics::{
     Diagnostics,
     additions::{Help, Note, TextEdit},
 };
-use flylang_parser::ast::{ExprKind, Expression, Function, Statement};
+use flylang_parser::ast::{ExprKind, Expression, Function, Statement, StatementKind};
 use log::debug;
 
 pub struct Analyzer<'a> {
@@ -36,9 +37,9 @@ impl<'a> Analyzer<'a> {
 
     pub fn analyze(&mut self) {
         for i in self.ast {
-            match i {
-                Statement::Expr(ex) => self.analyze_expression(ex),
-                Statement::Function(func) => self.analyze_function(func),
+            match &i.value {
+                StatementKind::Expr(ex) => self.analyze_expression(ex),
+                StatementKind::Function(func) => self.analyze_function(Spanned::new(func, i.address.clone())),
 
                 // A lot things to analyze.
                 _ => (),
@@ -46,7 +47,7 @@ impl<'a> Analyzer<'a> {
         }
     }
 
-    fn analyze_function(&mut self, _func: &Function) {
+    fn analyze_function(&mut self, _func: Spanned<&Function>) {
         // IDK what to analyze here yet.
         // ...
     }

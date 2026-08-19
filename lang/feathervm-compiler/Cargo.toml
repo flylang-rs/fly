@@ -8,3 +8,5 @@ flylang-common = { path = "../common" }
 flylang-parser = { path = "../parser" }
 flylang-lexparse-glue = { path = "../lexparse-glue" }
 feathervm-definitions = { path = "../feathervm-definitions" }
+log = "0.4.33"
+env_logger = "0.11.11"
