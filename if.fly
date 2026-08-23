@@ -1,0 +1,9 @@
+a = 0
+
+if a == 4 {
+  _debugiw("four")
+} else if a == 9 {
+  _debugiw("nine")
+} else {
+  _debugiw("zero")
+}
