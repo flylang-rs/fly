@@ -21,6 +21,9 @@ impl Compiler {
     }
 
     pub fn compile(&self, ast: &[flylang_parser::ast::Statement]) -> Result<Vec<VMBlock>, String> {
+        // AST shouldn't be empty, so we can work safely with address info.
+        assert!(!ast.is_empty());
+
         // Placeholder for the actual compilation logic.
         // In a real implementation, this would involve parsing the source code,
         // generating bytecode, and returning it as a vector of bytes.
@@ -31,6 +34,16 @@ impl Compiler {
 
             blocks.push(block);
         }
+
+        // The code below is dedicated to the single Return opcode.
+        let return_address = {
+            let first = ast.first().map(|x| x.address.clone()).unwrap();
+            let last = ast.last().map(|x| &x.address).unwrap();
+
+            first.merge(last)
+        };
+
+        blocks.push(VMBlock::Single(BlockValue::new(Op::Return, return_address)));
 
         Ok(blocks)
     }
@@ -48,6 +61,7 @@ impl Compiler {
             StatementKind::ModuleUsageDeclaration { path } => todo!(),
             StatementKind::Scope { held_value, body } => todo!(),
             StatementKind::Return { value } => todo!(),
+            StatementKind::NoOp => self.compile_noop(statement),
         }
     }
 
@@ -57,7 +71,12 @@ impl Compiler {
         match value {
             VMBlock::Block { code } => Ok(code),
             VMBlock::Single(block_value) => Ok(vec![block_value]),
+            VMBlock::Empty => Ok(vec![]),
         }
+    }
+
+    fn compile_noop(&self, _stmt: &Statement) -> Result<VMBlock, String> {
+        Ok(VMBlock::Empty)
     }
 
     fn compile_expr(&self, statement: &Expression) -> Result<VMBlock, String> {

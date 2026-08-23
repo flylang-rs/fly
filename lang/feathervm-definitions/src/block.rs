@@ -22,9 +22,11 @@ pub enum Op {
     BitNot,
     PushNumber(Number),
     PushString(String),
-    Define(String),
-    Closure(Closure),
-    LoadName(String),
+    Define(String),     // name of definition
+    Closure(Closure),   // closure info
+    LoadName(String),   // name of object
+    Return,
+    Call(usize),        // arity
 }
 
 pub type BlockValue = Spanned<Op>;
@@ -33,6 +35,7 @@ pub type BlockValue = Spanned<Op>;
 pub enum VMBlock {
     Block { code: Vec<BlockValue> },
     Single(BlockValue),
+    Empty,
 }
 
 impl VMBlock {
@@ -45,8 +48,9 @@ impl VMBlock {
 
     pub fn into_content(self) -> Vec<BlockValue> {
         match self {
+            Self::Empty => vec![],
             Self::Single(val) => vec![val],
-            Self::Block { code } => code
+            Self::Block { code } => code,
         }
     }
 }
@@ -61,6 +65,7 @@ impl Display for VMBlock {
         match self {
             VMBlock::Block { code } => list.entries(code),
             VMBlock::Single(block_value) => list.entry(&block_value),
+            VMBlock::Empty => list.entry(&Vec::<BlockValue>::new()),
         }
         .finish()?;
 

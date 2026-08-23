@@ -112,6 +112,10 @@ impl Parser {
             stmts.push(self.parse_statement()?);
         }
 
+        if stmts.is_empty() {
+            stmts.push(Spanned::new(ast::StatementKind::NoOp, self.eof_addr.clone()));
+        }
+
         Ok(stmts)
     }
 

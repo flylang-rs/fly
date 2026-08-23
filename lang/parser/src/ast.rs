@@ -140,6 +140,8 @@ pub enum StatementKind {
     },
 
     Expr(Expression),
+
+    NoOp   // Used to indicate code without any useful operations (encountered in code with spaces only).
 }
 
 impl StatementKind {
