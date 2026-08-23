@@ -1,0 +1,13 @@
+func x() {
+  return 4
+}
+
+func y() {
+  return 9
+}
+
+func t() {
+  return nil
+}
+
+_debugiw(x() + y())

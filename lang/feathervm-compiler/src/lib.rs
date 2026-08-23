@@ -1,9 +1,8 @@
 use feathervm_definitions::block::{BlockValue, Closure, Op, VMBlock};
 use flylang_common::spanned::Spanned;
 use flylang_parser::{
-    ast::{
-        DivisionKind, ExprKind, Expression, Function, Statement, StatementKind,
-    }, state,
+    ast::{DivisionKind, ExprKind, Expression, Function, Statement, StatementKind},
+    state,
 };
 use log::debug;
 
@@ -54,13 +53,15 @@ impl Compiler {
             StatementKind::Break => todo!(),
             StatementKind::Continue => todo!(),
             StatementKind::VariableDefinition(variable_definition) => todo!(),
-            StatementKind::Function(function) => self.compile_function(Spanned::new(function, statement.address.clone())),
+            StatementKind::Function(function) => {
+                self.compile_function(Spanned::new(function, statement.address.clone()))
+            }
             StatementKind::If(_) => todo!(),
             StatementKind::While(_) => todo!(),
             StatementKind::RecordDefinition(record_definition) => todo!(),
             StatementKind::ModuleUsageDeclaration { path } => todo!(),
             StatementKind::Scope { held_value, body } => todo!(),
-            StatementKind::Return { value } => todo!(),
+            StatementKind::Return { value } => self.compile_return(value),
             StatementKind::NoOp => self.compile_noop(statement),
         }
     }
@@ -77,6 +78,14 @@ impl Compiler {
 
     fn compile_noop(&self, _stmt: &Statement) -> Result<VMBlock, String> {
         Ok(VMBlock::Empty)
+    }
+
+    fn compile_return(&self, expr: &Expression) -> Result<VMBlock, String> {
+        let mut value = self.compile_expr(expr)?;
+
+        value.push(BlockValue::new(Op::Return, expr.address.clone()));
+
+        Ok(value)
     }
 
     fn compile_expr(&self, statement: &Expression) -> Result<VMBlock, String> {
@@ -149,7 +158,7 @@ impl Compiler {
             ))),
             ExprKind::Identifier(id) => Ok(VMBlock::Single(Spanned::new(
                 Op::LoadName(id.to_string()),
-                statement.address.clone()
+                statement.address.clone(),
             ))),
             ExprKind::Assignment { name, value } => {
                 let compiled_expr = self.compile_expr(value)?.into_content();
@@ -170,6 +179,34 @@ impl Compiler {
                 // todo!("Transform assignment! Name: {name:?}; Value: {compiled_expr:?}");
 
                 Ok(VMBlock::Block { code: result })
+            }
+            ExprKind::Call { callee, parameters } => {
+                let mut callee_val = self.load_value(callee)?;
+
+                // To convert Vec<Result<T, E>> into Result<Vec<T>, E> use `.collect()` method (make sure you make an iterator out of that vec).
+                let params_val: Result<Vec<VMBlock>, _> =
+                    parameters.iter().map(|x| self.compile_expr(x)).collect();
+
+                let params_val = params_val?;
+
+                let param_len = params_val.len();
+
+                callee_val.extend(
+                    params_val
+                        .into_iter()
+                        .map(|x| x.into_content().into_iter())
+                        .flatten(),
+                );
+
+                callee_val.push(BlockValue::new(
+                    Op::Call(param_len),
+                    statement.address.clone(),
+                ));
+
+                Ok(VMBlock::Block { code: callee_val })
+            }
+            ExprKind::Nil => {
+                Ok(VMBlock::Single(BlockValue::new(Op::PushNil, statement.address.clone())))
             }
             kind => todo!("Compile other expression kinds: {kind:?}"),
         }
@@ -198,19 +235,20 @@ impl Compiler {
         let arglist: Vec<_> = func
             .arguments
             .iter()
-            .map(|x| {
-                match x.value.as_id() {
-                    Some(x) => x.to_string(),
-                    None => panic!("Expected identifier as argument, got: {:?}", x)
-                }
-            }).collect();
+            .map(|x| match x.value.as_id() {
+                Some(x) => x.to_string(),
+                None => panic!("Expected identifier as argument, got: {:?}", x),
+            })
+            .collect();
 
         debug!("Argument list: {arglist:?}");
 
         let body_compiled = self.compile(&body)?;
 
-
-        let closure = Op::Closure(Closure { body: body_compiled, arguments: arglist });
+        let closure = Op::Closure(Closure {
+            body: body_compiled,
+            arguments: arglist,
+        });
 
         let mut result = vec![];
 

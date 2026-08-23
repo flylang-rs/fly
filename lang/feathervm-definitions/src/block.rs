@@ -22,6 +22,7 @@ pub enum Op {
     BitNot,
     PushNumber(Number),
     PushString(String),
+    PushNil,
     Define(String),     // name of definition
     Closure(Closure),   // closure info
     LoadName(String),   // name of object
@@ -51,6 +52,20 @@ impl VMBlock {
             Self::Empty => vec![],
             Self::Single(val) => vec![val],
             Self::Block { code } => code,
+        }
+    }
+
+    pub fn push(&mut self, value: BlockValue) {
+        match self {
+            VMBlock::Block { code } => code.push(value),
+            VMBlock::Single(spanned) => {
+                let new = vec![spanned.clone(), value];
+
+                *self = VMBlock::Block { code: new };
+            },
+            VMBlock::Empty => {
+                *self = VMBlock::Single(value);
+            },
         }
     }
 }
