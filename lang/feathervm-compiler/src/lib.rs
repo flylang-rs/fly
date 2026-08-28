@@ -34,6 +34,15 @@ impl Compiler {
             blocks.push(block);
         }
 
+        // Stage 2: Sometimes blocks doesn't have a Return operation. Add it.
+
+        let last_op = blocks.last().and_then(|x| x.last()).map(|x| &x.value);
+
+        // If last operation is return, keep it as-is.
+        if matches!(last_op, Some(Op::Return)) {
+            return Ok(blocks);
+        }
+
         // The code below is dedicated to the single Return opcode.
         let return_address = {
             let first = ast.first().map(|x| x.address.clone()).unwrap();
@@ -56,7 +65,7 @@ impl Compiler {
             StatementKind::Function(function) => {
                 self.compile_function(Spanned::new(function, statement.address.clone()))
             }
-            StatementKind::If(_) => todo!(),
+            StatementKind::If(cond) => todo!(),
             StatementKind::While(_) => todo!(),
             StatementKind::RecordDefinition(record_definition) => todo!(),
             StatementKind::ModuleUsageDeclaration { path } => todo!(),

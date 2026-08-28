@@ -68,6 +68,14 @@ impl VMBlock {
             },
         }
     }
+
+    pub fn last(&self) -> Option<&BlockValue> {
+        match self {
+            VMBlock::Block { code } => code.last(),
+            VMBlock::Single(spanned) => Some(spanned),
+            VMBlock::Empty => None,
+        }
+    }
 }
 
 impl Display for VMBlock {
